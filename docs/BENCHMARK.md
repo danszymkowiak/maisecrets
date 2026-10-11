@@ -94,8 +94,8 @@ differently than on the real value. The report says so.
 
 A mention is `pos` when **either** annotator marked it `DIRECT` or `QUASI` (the union), `neg`
 when both marked it `NO_MASK`. The union keeps a detection on something one annotator wanted
-hidden from counting as a false alarm. TAB has almost no in-scope `pos` spans, so it is scored
-for precision, and for out-of-scope coverage.
+hidden from counting as a false alarm. TAB has no in-scope `pos` spans, so it is scored by the
+share of documents with no false alarm, and for out-of-scope coverage.
 
 ### Regions
 
@@ -109,8 +109,10 @@ with its own config.
 Per dataset, per type, per split, and per rule:
 
 - TP, FP, FN (and CredData's unreviewed rate), precision, recall, F1.
-- **The dataset score:** F1 where the dataset has in-scope `pos` spans; precision where it has none
-  (TAB).
+- **The clean-sample rate:** the share of samples without a false positive.
+- **The dataset score:** F1 where the dataset has in-scope `pos` spans; the clean-sample rate where it
+  has none (TAB). Precision cannot serve there: with no true positive possible it is 0% at the first
+  false alarm (the first baseline gave TAB 0% for 4 false alarms in 1,268 documents).
 - **The overall score:** the mean of the dataset scores, each dataset weighted equally, because each
   stands for a different use (code, legal text, general PII, finance).
 - Hits per rule; the **rules that never fire** on any dataset are listed for possible removal.

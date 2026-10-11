@@ -21,4 +21,15 @@ uv run --project bench python bench/setup.py --creddata ../CredData --tab ../tex
 - Gretel: downloaded from Hugging Face into the data directory.
 
 Each dataset becomes `<data>/parquet/<dataset>.parquet`; `manifest.json` records its version and counts.
-A second run with the same versions builds nothing. The run command follows with TASK-11.9.
+A second run with the same versions builds nothing.
+
+## Run
+
+```bash
+uv run --project bench python bench/run.py                      # every dataset, all cores (about 4 minutes)
+uv run --project bench python bench/run.py --only gretel --limit 2000
+```
+
+It writes `<data>/runs/<time>/report.md` and `metrics.json`: per dataset, type, split and rule the counts,
+precision, recall, F1, the share of clean samples and the dataset score, the equal-weight overall score, and
+the rules that never fired. Counts, rates and rule ids only, never a value.
