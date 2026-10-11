@@ -1,0 +1,12 @@
+name = "aba-routing: ABA checksum"
+why = "Presidio validates ABA routing numbers (3-7-1 weights); the port does not. 121 false alarms on Gretel dev, every one a plain digit run."
+
+[[change]]
+op = "set"
+rule = "aba-routing#0"
+validator = "bench:aba"
+
+[[change]]
+op = "set"
+rule = "aba-routing#1"
+validator = "bench:aba"

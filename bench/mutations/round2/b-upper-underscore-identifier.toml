@@ -1,0 +1,17 @@
+name = "Keyword rules: skip an UPPER_lower… identifier value"
+why = "CredData: 765 false alarms of this shape for 1 true find; ai4privacy loses 12 true finds (passwords of this shape)."
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+allow = ['''^["'`]?[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*_[a-z]''']
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+allow = ['''^["'`]?[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*_[a-z]''']
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+allow = ['''^["'`]?[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*_[a-z]''']

@@ -1,0 +1,8 @@
+name = "us-bank: a bank word just before the number, and not after a SWIFT tag"
+why = "Round 1's near-word version (within tolerance) plus the SWIFT tag exclusion."
+
+[[change]]
+op = "set"
+rule = "us-bank"
+regex = '''(?i:(?:account|acct|bank|check|debit|save)\b\D{0,30}?)(?<!:[013-9]\d:)(?<!:2[0-46-9]:)(?<!:\d\d[A-Z]:)\b([0-9]{8,17})\b'''
+secret_group = 1

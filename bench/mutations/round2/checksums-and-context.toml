@@ -1,0 +1,47 @@
+name = "Combined: the checksums and the narrowed context words (no us-bank change)"
+why = "aba, it, se checksums; us-passport and us-license#1 context words."
+
+[[change]]
+op = "set"
+rule = "aba-routing#0"
+validator = "bench:aba"
+
+[[change]]
+op = "set"
+rule = "aba-routing#1"
+validator = "bench:aba"
+
+[[change]]
+op = "set"
+rule = "it-fiscal-code"
+validator = "bench:it_fiscal"
+
+[[change]]
+op = "set"
+rule = "it-vat-code"
+validator = "luhn"
+
+[[change]]
+op = "set"
+rule = "se-personnummer#0"
+validator = "bench:se_pnr"
+
+[[change]]
+op = "set"
+rule = "se-personnummer#1"
+validator = "bench:se_pnr"
+
+[[change]]
+op = "set"
+rule = "us-passport#0"
+context = ["passport", "passport#", "passport number", "passport no"]
+
+[[change]]
+op = "set"
+rule = "us-passport#1"
+context = ["passport", "passport#", "passport number", "passport no"]
+
+[[change]]
+op = "set"
+rule = "us-license#1"
+context = ["driver", "license", "licence", "driving", "dl", "dls", "cdls", "lic#"]

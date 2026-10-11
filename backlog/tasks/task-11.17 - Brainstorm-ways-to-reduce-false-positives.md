@@ -1,9 +1,10 @@
 ---
 id: TASK-11.17
 title: Brainstorm ways to reduce false positives
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 15:46'
+updated_date: '2026-10-11 17:19'
 labels:
   - benchmark
   - design
@@ -24,3 +25,15 @@ Requested by the user 2026-10-11. Most of the lost score is false alarms: Gretel
 - [ ] #1 A written list of approaches, each with the false alarms it targets (rule, count on dev) and its risk to recall
 - [ ] #2 The most promising become backlog tasks or bench/mutations files, judged with bench/round.py judge
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Spike findings 2026-10-11 (run 20261011-173619, probes print counts and masked shapes only; a few synthetic ai4privacy samples read with the user's OK).
+
+Family A, number rules (Gretel): Presidio validates aba-routing, it-fiscal-code, it-vat-code, se-personnummer; the port does not (detect.PRESIDIO_VALIDATOR). Bench checksums (maisecrets_bench/validators.py; vectors: ABA 011000015, CF RSSMRA85T10A562S, personnummer 811218-9876). Share of today's hits passing: aba#0 TP 40/362, FP 40/185 (Gretel's routing numbers are generated and mostly fail: not testable here, right in real use); it-fiscal TP 3/3, FP 5/203; it-vat (Luhn) TP 0/3, FP 2/175; se#0 TP 16/18, FP 8/124; se#1 TP 0/11. Context words too generic: us-passport (us, united, states, travel, document), us-bank (check, save, debit), us-license#1 (identification, permit, lic). us-bank: 1,000+ of 2,798 dev FPs follow a SWIFT MT tag (:20:, :28C:, ...). Mutations in bench/mutations/round2/ (aba-checksum, it-checksums, se-checksum, us-passport-context, us-license-context, us-bank-context, us-bank-swift, us-bank-swift-near, checksums-and-context).
+
+Family B, keyword rules (CredData): FPs are spread (193 of 307 files with a judged hit have one; leaving out the 20 noisiest files only lifts P 78.6 -> 85.1, capping per file lowers it). By value shape (all splits, FP/TP): identifiers 'UPPER-UPPER-..._' 375/0 on every dataset; 'UPPER_lower...' 765 FP for 1 CredData TP and 12 ai4privacy TP; digits:word on ds-keyword-colon 33/0 (ai4privacy -4). Value classes with low precision on ds-keyword-equal-signs: has-brackets 56/4, template 6/0, path-ish 51/16. Mutations b-*.toml use a new bench field allow (regexes on the value).
+
+Family C, ai4privacy email/ip/phone 'FPs' are label gaps, not rule errors: only ~18 of 3,600 dev cases have a raw mask entry for the value. (1) ai4privacy's own chunking: the value at offset 0 of a continuation record (ids ...B, ...C) is unlabelled: email 1,005, ip 318, phone 20. (2) text the generator wrote around the injected PII (filler phones such as +1-234-567-8901, emails and IPs in obvious slots). Scorer option: do not count a detection at offset 0 of a continuation record; (2) cannot be split from real FPs without reading text, so ai4privacy precision is a lower bound.
+<!-- SECTION:NOTES:END -->

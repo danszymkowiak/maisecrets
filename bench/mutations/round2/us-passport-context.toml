@@ -1,0 +1,12 @@
+name = "us-passport: passport words only as context"
+why = "The context words 'us', 'united', 'states', 'travel' and 'document' stand in most US finance documents; 247 false alarms on Gretel (all splits) for 19 finds."
+
+[[change]]
+op = "set"
+rule = "us-passport#0"
+context = ["passport", "passport#", "passport number", "passport no"]
+
+[[change]]
+op = "set"
+rule = "us-passport#1"
+context = ["passport", "passport#", "passport number", "passport no"]

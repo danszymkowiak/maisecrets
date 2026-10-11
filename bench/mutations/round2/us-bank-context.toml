@@ -1,0 +1,7 @@
+name = "us-bank: account words only as context"
+why = "'check', 'save' and 'debit' stand in most finance documents; 4,117 false alarms on Gretel (all splits) for 251 finds."
+
+[[change]]
+op = "set"
+rule = "us-bank"
+context = ["account", "account#", "acct", "account number", "bank account"]

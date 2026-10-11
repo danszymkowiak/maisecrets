@@ -1,0 +1,7 @@
+name = "ds-keyword-colon: skip digits, a colon and a word (a time or a ratio)"
+why = "CredData: 33 false alarms, no true find there; ai4privacy loses 4."
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+allow = ['''^["'`]?\d+:[a-z]+$''']

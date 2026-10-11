@@ -1,0 +1,7 @@
+name = "us-license#1: licence words only as context for a bare digit run"
+why = "'identification', 'permit' and 'lic' pass a 6-to-14-digit number in finance text; 273 false alarms on Gretel (all splits) for 27 finds."
+
+[[change]]
+op = "set"
+rule = "us-license#1"
+context = ["driver", "license", "licence", "driving", "dl", "dls", "cdls", "lic#"]

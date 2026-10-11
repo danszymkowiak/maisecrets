@@ -1,0 +1,12 @@
+name = "se-personnummer: Luhn over the last ten digits"
+why = "Presidio validates it; the port does not. 124 false alarms on Gretel (all splits) for 18 finds."
+
+[[change]]
+op = "set"
+rule = "se-personnummer#0"
+validator = "bench:se_pnr"
+
+[[change]]
+op = "set"
+rule = "se-personnummer#1"
+validator = "bench:se_pnr"

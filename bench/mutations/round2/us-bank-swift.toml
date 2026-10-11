@@ -1,0 +1,7 @@
+name = "us-bank: not a SWIFT MT field tag's number (except :25:, the account field)"
+why = "Dev export: 1,000+ of 2,798 us-bank false alarms follow a tag such as :20: or :28C: (statement reference, sequence number)."
+
+[[change]]
+op = "set"
+rule = "us-bank"
+regex = '''(?<!:[013-9]\d:)(?<!:2[0-46-9]:)(?<!:\d\d[A-Z]:)\b[0-9]{8,17}\b'''

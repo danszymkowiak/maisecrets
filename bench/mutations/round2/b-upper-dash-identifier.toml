@@ -1,0 +1,17 @@
+name = "Keyword rules: skip an UPPER-UPPER-…_ identifier value"
+why = "CredData: 375 false alarms of this shape, no true find on any dataset (probe, all splits)."
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+allow = ['''^["'`]?[A-Z]+(?:-[A-Z]+)+_''']
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+allow = ['''^["'`]?[A-Z]+(?:-[A-Z]+)+_''']
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+allow = ['''^["'`]?[A-Z]+(?:-[A-Z]+)+_''']

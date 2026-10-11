@@ -8,7 +8,9 @@
     rule = "us-bank"
 
     [[change]]
-    op = "set"              # set fields of a rule: regex, keywords, entropy, score, context, require_context, stopwords
+    op = "set"              # set fields: regex, keywords, entropy, score, context, require_context, stopwords,
+                            # validator (the detector's, or one of maisecrets_bench/validators.py: "bench:aba"),
+                            # allow (regexes on the value that skip a hit, added to the rule's own)
     rule = "phone"
     regex = "..."
 
@@ -23,14 +25,16 @@ the scores of a mutated run with the baseline."""
 from __future__ import annotations
 
 import dataclasses
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import score
+from . import score, validators
 from .paths import BenchError
 
-SETTABLE = {"regex", "keywords", "entropy", "score", "context", "require_context", "stopwords", "secret_group"}
+SETTABLE = {"regex", "keywords", "entropy", "score", "context", "require_context", "stopwords", "secret_group",
+            "validator", "allow"}
 EPS = 1e-12
 RECALL_TOLERANCE = 0.005    # half a point of recall (docs/BENCHMARK.md, Judging a change)
 VERDICT_ORDER = {"strict": 0, "tolerance": 1, "rejected": 2}
@@ -70,6 +74,11 @@ def _fields(c: dict, where: str) -> dict:
             continue
         if k not in SETTABLE:
             raise BenchError(f"{where}: field {k!r} cannot be set (settable: {', '.join(sorted(SETTABLE))})")
+        if k == "validator" and v not in detect.VALIDATORS and v not in validators.BENCH:
+            raise BenchError(f"{where}: validator {v!r} is not the detector's nor in validators.py")
+        if k == "allow":
+            out[k] = tuple((re.compile(rx), "secret") for rx in v)
+            continue
         out[k] = detect._Lazy(v) if k == "regex" else tuple(v) if isinstance(v, list) else v
     return out
 
@@ -90,6 +99,7 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
     """A new rule list with the mutation applied; `rules` itself is not changed. With strict=False a change to a rule
     this list does not hold is skipped: the rules differ by region, and us-bank is not in the German group."""
     from .detector import detect
+    detect.VALIDATORS.update(validators.BENCH)
     out = list(rules)
     ids = {r.id for r in out}
     for n, c in enumerate(m.changes, 1):
@@ -102,11 +112,14 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
             out = [r for r in out if r.id != c["rule"]]
         elif c["op"] == "set":
             fields = _fields(c, where)
-            out = [dataclasses.replace(r, **fields) if r.id == c["rule"] else r for r in out]
+            allow = fields.pop("allow", ())
+            out = [dataclasses.replace(r, **fields, allow_regexes=r.allow_regexes + allow) if r.id == c["rule"] else r
+                   for r in out]
         else:
             if c.get("id") in ids:
                 raise BenchError(f"{where}: rule {c.get('id')!r} exists already; use op = \"set\"")
-            new = detect.Rule(id=c["id"], type=c["type"], **_fields(c, where))
+            fields = _fields(c, where)
+            new = detect.Rule(id=c["id"], type=c["type"], allow_regexes=fields.pop("allow", ()), **fields)
             at = next((i + 1 for i, r in enumerate(out) if r.id == c.get("after")), len(out))
             out.insert(at, new)
         ids = {r.id for r in out}

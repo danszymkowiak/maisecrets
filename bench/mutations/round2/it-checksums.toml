@@ -1,0 +1,12 @@
+name = "it-fiscal-code and it-vat-code: their check characters"
+why = "Presidio validates both; the port does not. 378 false alarms on Gretel (all splits) for 6 finds. The partita IVA check digit is Luhn."
+
+[[change]]
+op = "set"
+rule = "it-fiscal-code"
+validator = "bench:it_fiscal"
+
+[[change]]
+op = "set"
+rule = "it-vat-code"
+validator = "luhn"
