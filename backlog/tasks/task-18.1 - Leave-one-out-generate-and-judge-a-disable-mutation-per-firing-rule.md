@@ -1,9 +1,10 @@
 ---
 id: TASK-18.1
 title: 'Leave-one-out: generate and judge a disable mutation per firing rule'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:53'
+updated_date: '2026-10-11 20:41'
 labels:
   - benchmark
 dependencies: []
@@ -20,6 +21,6 @@ From the newest full run's rule table (metrics.json rules, hits > 0), write one 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A script or mutate.py option generates the per-rule mutations from a run; a test covers it
+- [x] #1 A script or mutate.py option generates the per-rule mutations from a run; a test covers it
 - [ ] #2 All firing rules judged; results.json and report.md in the data directory
 <!-- AC:END -->

@@ -56,6 +56,7 @@ builds it.
 | `bench/usefulness.py [--run …]` | `usefulness.md` in the run | per dataset: in-scope share, saturation, rules firing only there, how many probes (dropping a top rule) move its score, overlap with the others; a keep or drop-candidate verdict |
 | `bench/mutate.py <files> [--guard …]` | `<data>/mutations/<time>/report.md`, `results.json` | each rule change accepted (no dataset worse in recall, precision or clean samples), accepted within tolerance (no dataset's score lower, recall at most 0.5 points lower; `--recall-tolerance`) or rejected with the reason, ranked by verdict and the change of the mean score |
 | `bench/perturb.py [--only …] [--per-dataset 400]` | `<data>/perturb/<time>/report.md`, `results.json` | recall per dataset when every positive is rewritten by one transform (zero-width, soft hyphen, fullwidth, homoglyph, ANSI reset, CR, wrap, base64, hex, entity, escape, truncation) |
+| `bench/loo.py [--baseline …]` | `<data>/loo/<time>/report.md`, `results.json`, `mutations/` | each rule that fired, disabled on its own and judged as `mutate.py` does: an accepted removal is a candidate, the rejected ones are the rules that earn their place |
 | `bench/errors.py [--split dev]` | `errors-dev.md`, `errors-dev.jsonl` in the run | false positives by rule and misses by type, by shape and the common words before them |
 
 ## A rule change
