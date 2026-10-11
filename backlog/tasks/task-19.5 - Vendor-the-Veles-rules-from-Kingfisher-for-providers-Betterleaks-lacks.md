@@ -4,6 +4,7 @@ title: Vendor the Veles rules from Kingfisher for providers Betterleaks lacks
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
+updated_date: '2026-10-11 21:58'
 labels:
   - detection
   - benchmark
@@ -28,3 +29,12 @@ Kingfisher's generated/rules/veles.yml (at a pinned tag, v2.11.1 when this was w
 - [ ] #1 A sync script pinned to a Kingfisher tag; NOTICE names Veles (Apache-2.0) and Kingfisher
 - [ ] #2 Rules that overlap a Betterleaks rule are skipped; each remaining rule is judged on the bench and kept or dropped with a reason
 <!-- AC:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-10-11 21:58
+---
+Licence (user, 2026-10-11: the fork is public, so licences must hold for any user): Veles is Apache-2.0 and Kingfisher's catalogue is a modified derivative. Carry over the Veles attribution from Kingfisher's generated/NOTICES.txt and the upstream licence text, mark the rules as modified (Apache-2.0 4b), and record the pinned Veles revision from generated/provenance.json.
+---
+<!-- COMMENTS:END -->
