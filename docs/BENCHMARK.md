@@ -123,8 +123,13 @@ Per dataset, per type, per split, and per rule:
 - **The overall score:** the mean of the dataset scores, each dataset weighted equally, because each
   stands for a different use (code, legal text, general PII, finance).
 - Hits per rule; the **rules that never fire** on any dataset are listed for possible removal.
-- Where a rule has a score (Presidio's score, an entropy threshold, a context word), precision-recall
-  curves and AUC (TASK-11.11); a rule without one is a single point, and the report says n/a.
+- Where a rule has a score, `bench/curves.py` re-runs the detector with the gates open (entropy thresholds
+  at 0, context requirements off) and keeps each candidate's score. A gitleaks entropy rule gets a curve
+  of precision over *retained* (the share of the rule's true positives at the lowest threshold that a
+  threshold keeps), its area, and the point at today's threshold. A Presidio context gate is on or off,
+  so it gets two points, with and without the gate. A rule without a score, or without a judged candidate,
+  is n/a. The relaxed run lets a candidate take a span another rule would have claimed, so the curves are
+  approximate, and a true positive there is any overlap with an in-scope positive, whatever its type.
 
 ## Is a dataset worth keeping
 

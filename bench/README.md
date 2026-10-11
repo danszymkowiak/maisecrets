@@ -80,3 +80,13 @@ The brief holds dev scores, the rules with the most false alarms and their defin
 the mutation format, all masked. `judge` scores each proposal on dev and on check; it is accepted only if it
 passes both, and of check only the verdict and the change of the mean come back. `bench/mutations/round1/` is
 the first round, written from a brief.
+
+## Curves for the rules with a score
+
+```bash
+uv run --project bench python bench/curves.py     # about 5 minutes; writes curves.md into the newest full run
+```
+
+Per gitleaks entropy rule: today's threshold, its precision and retained share, the area under the curve and the
+best precision that keeps 90% of the rule's finds. Per Presidio context-gated rule: true and false positives with
+the gate and without it.
