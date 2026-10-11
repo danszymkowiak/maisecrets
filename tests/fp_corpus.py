@@ -598,6 +598,10 @@ NO_HIT = [
     ('aig example mail', 'Contact: support@example.com\n'),
     ('aig example mail sub', 'git config user.email ci@build.example.org\n'),
     ('aig local mail', 'sender = alerts@nas.local\n'),
+    # prose after a keyword and a colon in a markdown table cell (TASK-15, docs/BENCHMARK.md)
+    ('md prose after keyword', '| s§ecrets: precision and recall; values obfuscated with their shape kept |'),
+    ('md prose after singular keyword', '| p§assword: rotation and storage |'),
+    ('de md prose after keyword', '| K§ennwort: speicherung und rotation |'),
 ]
 
 HIT = [
@@ -624,4 +628,8 @@ HIT = [
     ('TP aig mail', 'Maintainer: ma§x.§mu§st§er§@f§ir§ma§-x§yz§.d§e\n', [('EMAIL', 'ma§x.§mu§st§er§@f§ir§ma§-x§yz§.d§e')]),
     ('TP aig ttl s§ecret', 'REFRESH_T§OKEN = Kx§7Q§p2§Zr§9L§m4§Wn\n', [('SECRET', 'Kx§7Q§p2§Zr§9L§m4§Wn')]),
     ('TP aig star in value', 'k§ennwort: 4C§X!§Dk§Q1§ya§*U§T-§Ci§$\n', [('SECRET', '4C§X!§Dk§Q1§ya§*U§T-§Ci§$')]),
+    # a letters-only value is still a hit when no prose word follows it, and with prose outside a table
+    ('TP singular prose', 'p§assword: tulipsforever and the rest\n', [('SECRET', 'tu§lip§sf§or§ev§er')]),
+    ('TP letters only', 'p§assword: tulipsforever\n', [('SECRET', 'tu§lip§sf§or§ev§er')]),
+    ('TP letters then comment', 'p§assword: tulipsforever  # rotate monthly\n', [('SECRET', 'tu§lip§sf§or§ev§er')]),
 ]

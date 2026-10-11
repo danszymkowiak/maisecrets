@@ -552,6 +552,13 @@ def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]
 # holds spaces. A cut value that is one capitalised word ("secret: Developers, Webhooks, …",
 # "a secret: PostToolUse must …", both in this repository) is the start of a sentence.
 _DS_QUOTE_GROUP = {"ds-keyword-colon": 3, "ds-keyword-equal-signs": 4}
+# a function word right after a letters-only value: the label opened a sentence, not a value. Only the label
+# languages' commonest joining words, so that a password followed by a comment or a line break still counts.
+# Applied only in a markdown table cell (TASK-15): upstream keeps a password label with a word and prose after it
+# a hit on purpose, in plain text (tests/fp_corpus.py, 'label+random after value word';
+# tests/test_detect_rules.py, test_one_lowercase_word_before_more_prose_stays_a_value)
+_PROSE_AFTER_RE = re.compile(r" (?:and|or|of|for|with|to|in|the|is|are|und|oder|der|die|das|mit|für|ist|sind)"
+                             r"(?![^\W_])")
 # the end of the label in the vendored colon rules, and the same with up to three spaces, tabs,
 # no-break or narrow no-break spaces before the colon
 _COLON_AFTER_LABEL = "([]\\'\"]{0,2})?:"
@@ -1035,6 +1042,11 @@ def _label_before(text: str, start: int) -> str:
     return m.group(1) if m else ""
 
 
+def _in_table_cell(text: str, start: int) -> bool:
+    """The value at `start` sits in a markdown table row, as the label of a prose cell (TASK-15)."""
+    return text[text.rfind("\n", 0, start) + 1:start].lstrip().startswith("|")
+
+
 def _pass_equals_user(whole: str, secret: str) -> bool:
     """`postgres:postgres@`, `curl -u admin:admin`: a password equal to the user name is a default."""
     sec = secret.strip("\"' ")
@@ -1171,6 +1183,9 @@ def scan(text: str, enabled: set[str] | None = None) -> list[Match]:
                 continue
             if rule.id.startswith("ds-keyword") and _names_its_label(text, start, secret):
                 continue
+            if (rule.id.startswith("ds-keyword") and secret.isalpha() and secret.islower()
+                    and _PROSE_AFTER_RE.match(text, end) and _in_table_cell(text, start)):
+                continue   # a sentence goes on after the first word: a table cell of prose (TASK-15)
             if (rule.id.startswith("ds-keyword") and _LABEL_SHAPE.fullmatch(secret.strip())
                     and _NAME_LABEL_RE.fullmatch(secret.strip()) and "\n" in text[m.start():start]):
                 continue   # the next line is a label of its own: `DB_PASSWORD=\nAPI_KEY=`, `Zugangsdaten:\nBenutzer:`
