@@ -4,10 +4,12 @@ title: Betterleaks sync script with a filter-expression converter (test first)
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
+updated_date: '2026-10-11 22:45'
 labels:
   - detection
   - tdd
-dependencies: []
+dependencies:
+  - TASK-21.8
 references:
   - scripts/sync_gitleaks.py
   - >-

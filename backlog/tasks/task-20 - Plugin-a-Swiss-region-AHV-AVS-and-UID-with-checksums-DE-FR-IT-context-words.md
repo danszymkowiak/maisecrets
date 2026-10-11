@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:40'
+updated_date: '2026-10-11 22:45'
 labels:
   - plugin
   - detection
@@ -13,6 +14,7 @@ labels:
 dependencies:
   - TASK-11.33
   - TASK-11.37
+  - TASK-21.8
 references:
   - >-
     research_notes/Deterministic redaction detection

@@ -6,11 +6,13 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:53'
+updated_date: '2026-10-11 22:45'
 labels:
   - plugin
   - detection
   - tdd
-dependencies: []
+dependencies:
+  - TASK-21.8
 priority: high
 ordinal: 78000
 ---

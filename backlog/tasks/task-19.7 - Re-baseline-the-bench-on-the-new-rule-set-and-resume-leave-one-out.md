@@ -4,12 +4,12 @@ title: Re-baseline the bench on the new rule set and resume leave-one-out
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
+updated_date: '2026-10-11 22:45'
 labels:
   - benchmark
 dependencies:
   - TASK-19.4
   - TASK-19.5
-  - TASK-19.6
 parent_task_id: TASK-19
 priority: high
 ordinal: 60000

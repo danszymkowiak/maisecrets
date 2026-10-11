@@ -1,13 +1,14 @@
 ---
 id: TASK-18.1
 title: 'Leave-one-out: generate and judge a disable mutation per firing rule'
-status: In Progress
+status: To Do
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-11 21:31'
+updated_date: '2026-10-11 22:45'
 labels:
   - benchmark
-dependencies: []
+dependencies:
+  - TASK-19.7
 parent_task_id: TASK-18
 priority: high
 ordinal: 50000
@@ -17,6 +18,8 @@ ordinal: 50000
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
 From the newest full run's rule table (metrics.json rules, hits > 0), write one disable mutation per rule (generated into the data directory, not the repository) and judge all with bench/mutate.py: disable-only, so each reruns only its samples. Include the synthetic dataset as a guard once its baseline exists (TASK-11.19). Then judge the passing ones with round.py on dev and check.
+
+Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new datasets (TASK-11.33, 11.34, 11.35, 11.37), the new metrics (TASK-21: recall floors per type on valid gold, then weighted false positives per 1,000 tokens; verdict in TASK-21.8) and the new rule set (TASK-19, re-baselined in TASK-19.7). Judge by TASK-21.8's verdict; the old strict/within-tolerance verdict and the mean score change appear only as a comparison. Numbers quoted above come from the blended score and the gitleaks rules of 2026-10-11: re-measure before relying on them.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
