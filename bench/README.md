@@ -68,3 +68,15 @@ seconds; any other re-runs everything. `bench/mutations/` holds the first candid
 `report.md`, `usefulness.md`, the mutation `report.md` and `errors-*.md` hold counts, rates, rule ids, shapes
 and common words only: they may go into an issue. The parquet files and `detections.parquet` stay local: the
 first hold the datasets, the second positions into them.
+
+## An agent round
+
+```bash
+uv run --project bench python bench/round.py brief                  # what an agent may read (dev only)
+uv run --project bench python bench/round.py judge bench/mutations/round1/*.toml
+```
+
+The brief holds dev scores, the rules with the most false alarms and their definitions, the misses by type and
+the mutation format, all masked. `judge` scores each proposal on dev and on check; it is accepted only if it
+passes both, and of check only the verdict and the change of the mean come back. `bench/mutations/round1/` is
+the first round, written from a brief.
