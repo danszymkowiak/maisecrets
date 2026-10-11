@@ -35,6 +35,12 @@ class CurveTests(unittest.TestCase):
         self.assertEqual(curves.at(c, 3.5)["tp"], 1)
         self.assertEqual(curves.at(c, 0.0)["tp"], 2)
 
+    def test_the_most_precise_threshold_that_keeps_a_share_of_the_true_positives(self):
+        c = curves.sweep([(1.0, True), (2.0, False), (3.0, True), (4.0, False), (5.0, True)])
+        self.assertEqual(curves.best(c, 2 / 3)["threshold"], 3.0)
+        self.assertEqual(curves.best(c, 1.0)["threshold"], 1.0)
+        self.assertIsNone(curves.best([], 0.5))
+
     def test_the_two_points_of_a_context_gate(self):
         p = curves.gate_points([(True, True), (True, False), (False, False), (False, True)])
         self.assertEqual(p["with_context"], {"tp": 1, "fp": 1, "precision": 0.5})

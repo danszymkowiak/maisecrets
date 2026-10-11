@@ -1,0 +1,32 @@
+name = "Generic rules: skip label-negative"
+why = "TASK-11.23. A negative label (token_count, password_hash, tokenizer) by the word-set table."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:label_negative"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:label_negative"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:label_negative"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:label_negative"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:label_negative"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:label_negative"

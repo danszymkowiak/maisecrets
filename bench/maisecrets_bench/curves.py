@@ -38,6 +38,12 @@ def at(curve: list[dict], threshold: float) -> dict:
     return {"threshold": threshold, "tp": 0, "fp": 0, "precision": 1.0, "retained": 0.0}
 
 
+def best(curve: list[dict], min_retained: float) -> dict | None:
+    """The most precise row that keeps at least min_retained of the true positives (the lowest threshold on a tie)."""
+    rows = [r for r in curve if r["retained"] >= min_retained - 1e-12]
+    return max(rows, key=lambda r: (r["precision"], -r["threshold"])) if rows else None
+
+
 def gate_points(points: list[tuple[bool, bool]]) -> dict:
     """points: (context word nearby, is_tp). The rule with its context gate, and without it."""
     def p(rows):

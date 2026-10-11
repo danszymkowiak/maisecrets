@@ -1,0 +1,32 @@
+name = "Generic rules: skip bigram-309"
+why = "TASK-11.22. Letter-bigram log-odds above 3.092 outside a strong label (dev: keeps 99.5% of the finds)."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:bigram_309"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:bigram_309"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:bigram_309"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:bigram_309"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:bigram_309"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:bigram_309"

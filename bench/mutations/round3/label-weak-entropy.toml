@@ -1,0 +1,32 @@
+name = "Generic rules: skip label-weak-entropy"
+why = "TASK-11.23. label-negative, and a weak label needs 3 bits of entropy."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:label_weak_entropy"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:label_weak_entropy"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:label_weak_entropy"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:label_weak_entropy"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:label_weak_entropy"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:label_weak_entropy"

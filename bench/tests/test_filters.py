@@ -99,5 +99,39 @@ class DigestFilterTests(unittest.TestCase):
         self.assertTrue(self.keep("bench:digest_any", "pass" + "word = " + HEX40, HEX40))
 
 
+class WordlikeFilterTests(unittest.TestCase):
+    """TASK-11.22, with a word list of its own (filters read MAISECRETS_BENCH_WORDS)."""
+
+    def setUp(self):
+        import os
+        import tempfile
+        d = tempfile.mkdtemp()
+        p = os.path.join(d, "words")
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("connection\ntimeout\npool\nsize\n")
+        saved = os.environ.get("MAISECRETS_BENCH_WORDS")
+        os.environ["MAISECRETS_BENCH_WORDS"] = p
+        filters._WORDS.clear()
+
+        def restore():
+            filters._WORDS.clear()
+            if saved is None:
+                os.environ.pop("MAISECRETS_BENCH_WORDS", None)
+            else:
+                os.environ["MAISECRETS_BENCH_WORDS"] = saved
+        self.addCleanup(restore)
+
+    def keep(self, name, text, value):
+        start = text.index(value)
+        return filters.FILTERS[name](value, text, start, start + len(value))
+
+    def test_a_word_made_value_is_dropped_and_a_random_one_stays(self):
+        self.assertFalse(self.keep("bench:wordlike_75", "api_" + "key = connectionTimeout", "connectionTimeout"))
+        self.assertTrue(self.keep("bench:wordlike_75", "api_" + "key = Xq7vR2" + "mK9pLw", "Xq7vR2" + "mK9pLw"))
+
+    def test_a_strong_label_keeps_a_word_made_value(self):
+        self.assertTrue(self.keep("bench:wordlike_75", "pass" + "word = poolsize", "poolsize"))
+
+
 if __name__ == "__main__":
     unittest.main()

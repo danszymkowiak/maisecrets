@@ -46,12 +46,67 @@ def object_id(value: str, text: str, start: int, end: int) -> bool:
     return not (called or ({"id", "oid", "objectid"} & words and not words & SECRET_WORDS))
 
 
+# TASK-11.22: word-likeness, outside a strong label (password123 under a password label stays a hit). The word list
+# is SCOWL's american-english (Debian wamerican; SCOWL's permissive licence), read from the system, never bundled;
+# MAISECRETS_BENCH_WORDS names another file. 73,133 words, 93 ms to load and 8 MB in /usr/bin/python3 3.12.
+# Thresholds chosen on dev of run 20261011-220740: above 0.75 dropped 201 false alarms and no find, above 0.444 kept
+# 99.5% of the finds; the bigram threshold 3.092 kept 99.5%.
+STRONG_WORDS = {"password", "passwd", "pwd", "secret"}
+_WORDS: dict = {}
+
+
+def _words():
+    if not _WORDS:
+        import os
+        from pathlib import Path
+        from . import wordlike
+        from .paths import BenchError
+        path = Path(os.environ.get("MAISECRETS_BENCH_WORDS", "/usr/share/dict/american-english"))
+        if not path.is_file():
+            raise BenchError(f"word list {path} not found: install wamerican (SCOWL) or set MAISECRETS_BENCH_WORDS")
+        _WORDS["words"] = wordlike.load_words(path)
+        _WORDS["bigrams"] = wordlike.bigram_table(_WORDS["words"])
+    return _WORDS
+
+
+def _wordlike(measure: str, threshold: float) -> Filter:
+    def keep(value: str, text: str, start: int, end: int) -> bool:
+        from . import wordlike
+        if _label_words(text, start) & STRONG_WORDS:
+            return True
+        w = _words()
+        got = (wordlike.coverage(value, w["words"]) if measure == "coverage"
+               else wordlike.bigram_score(value, w["bigrams"]))
+        return got <= threshold
+    return keep
+
+
+def label_negative(value: str, text: str, start: int, end: int) -> bool:
+    """TASK-11.23: drop a hit whose label is a negative one (token_count, password_hash, tokenizer)."""
+    from . import labelclass
+    from .detector import detect
+    return labelclass.classify(detect._label_before(text, start)) != "negative"
+
+
+def label_weak_entropy(value: str, text: str, start: int, end: int) -> bool:
+    """TASK-11.23: label_negative, and a weak label (key, auth, credential) needs 3 bits of entropy per character."""
+    from . import entropy, labelclass
+    from .detector import detect
+    cls = labelclass.classify(detect._label_before(text, start))
+    return cls != "negative" and not (cls == "weak" and entropy.raw(value) < 3.0)
+
+
 FILTERS: dict[str, Filter] = {
     "bench:drop_all": lambda value, text, start, end: False,
     "bench:digest_label": digest_label,
     "bench:digest_prefix": digest_prefix,
     "bench:object_id": object_id,
     "bench:digest_any": lambda *a: digest_label(*a) and digest_prefix(*a) and object_id(*a),
+    "bench:wordlike_75": _wordlike("coverage", 0.75),
+    "bench:wordlike_44": _wordlike("coverage", 0.444),
+    "bench:bigram_309": _wordlike("bigram", 3.092),
+    "bench:label_negative": label_negative,
+    "bench:label_weak_entropy": label_weak_entropy,
 }
 ACTIVE: dict[str, str] = {}     # rule id -> filter name, set by mutation.apply in each process
 
