@@ -47,7 +47,8 @@ def main(argv: list[str]) -> int:
             (out / "brief.md").write_text(rnd.brief(rdir, setup.default_out()), encoding="utf-8")
             print(f"brief: {out / 'brief.md'} (from {rdir.name})")
             return 0
-        roles = {n: "guard" for n in args.guard.split(",") if n}
+        in_run = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))["datasets"]
+        roles = {**run.default_roles(in_run), **{n: "guard" for n in args.guard.split(",") if n}}
         results = rnd.judge([mutation.load(p) for p in args.mutations], rdir, setup.default_out(), roles, args.jobs,
                             args.recall_tolerance / 100)
     except BenchError as exc:

@@ -1,10 +1,10 @@
 ---
 id: TASK-11.19
 title: 'bench: a synthetic tool-output dataset and a perturbation suite'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 17:06'
-updated_date: '2026-10-11 17:28'
+updated_date: '2026-10-11 20:36'
 labels:
   - benchmark
 dependencies: []
@@ -23,8 +23,14 @@ CredData, TAB, ai4privacy and Gretel are file and prose corpora: they hold no AN
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 bench/setup.py builds the dataset deterministically from a seed; values come from rule-shaped generators, never from a real token; scripts/scan_tree.py stays clean
-- [ ] #2 Every template has pos and neg spans with exact offsets; a test checks offsets against the text
-- [ ] #3 The perturbation report lists recall per transform (zero-width, soft hyphen, NFKC-foldable, homoglyph, ANSI, CR, wrap, base64, hex, entity, escape, truncation) per dataset
-- [ ] #4 Decide its role (scored or guard, TASK-11.15 rules) and record the baseline in docs/BENCHMARK.md
+- [x] #1 bench/setup.py builds the dataset deterministically from a seed; values come from rule-shaped generators, never from a real token; scripts/scan_tree.py stays clean
+- [x] #2 Every template has pos and neg spans with exact offsets; a test checks offsets against the text
+- [x] #3 The perturbation report lists recall per transform (zero-width, soft hyphen, NFKC-foldable, homoglyph, ANSI, CR, wrap, base64, hex, entity, escape, truncation) per dataset
+- [x] #4 Decide its role (scored or guard, TASK-11.15 rules) and record the baseline in docs/BENCHMARK.md
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Generated tool-output dataset (bench/maisecrets_bench/adapters/synthetic.py): 10 templates x 300 samples from seed 20261011, rule-shaped generators, pos and neg spans with exact offsets (test_synthetic). Perturbation suite (bench/perturb.py, 12 transforms + none) with recall per dataset. Role: guard (run.GUARD, applied by mutate.py and round.py). Baselines in docs/BENCHMARK.md: synthetic score 99.2% (5,540 TP, 2 FP, 86 misses); digests/ids drew no false alarms; every perturbation costs 35-90 points of recall on synthetic. scan_tree is clean for the tree (its 5 hits are in the untracked research_notes/).
+<!-- SECTION:FINAL_SUMMARY:END -->

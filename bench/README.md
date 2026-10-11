@@ -33,6 +33,7 @@ uv run --project bench python bench/errors.py                        # false pos
 | CredData (Samsung) | 11,030 source files, 15,753 credentials and 48,061 near misses, values obfuscated | Apache-2.0 tooling, each file its project's licence | you clone `https://github.com/Samsung/CredData` and run its `download_data.py --data_dir data` (hours), then `--creddata <path>` |
 | TAB | 1,268 ECHR court decisions, identifiers marked by two annotators | MIT | cloned into the data directory, or `--tab <path>` |
 | Gretel synthetic_pii_finance_multilingual | 55,940 finance documents in 7 languages | Apache-2.0 | downloaded from Hugging Face |
+| synthetic tool output | 3,000 generated terminal outputs (printenv, git diff, kubectl, lockfiles, ...); a guard, not in the mean | ours | generated from a fixed seed; nothing downloaded |
 | ai4privacy pii-masking-300k | 225,405 records in 6 languages | **academic and non-commercial use only** (AI4Privacy licence) | opt-in: `--with-ai4privacy`, for your own local measurement |
 
 Each dataset becomes `<data>/parquet/<dataset>.parquet` in one schema, with a dev or check split by source.
@@ -54,6 +55,7 @@ builds it.
 | `bench/run.py [--only …] [--limit N]` | `<data>/runs/<time>/report.md`, `metrics.json`, `detections.parquet` | per dataset, type, split and rule: counts, precision, recall, F1, share of clean samples, the dataset score and the equal-weight mean; rules that never fired |
 | `bench/usefulness.py [--run …]` | `usefulness.md` in the run | per dataset: in-scope share, saturation, rules firing only there, how many probes (dropping a top rule) move its score, overlap with the others; a keep or drop-candidate verdict |
 | `bench/mutate.py <files> [--guard …]` | `<data>/mutations/<time>/report.md`, `results.json` | each rule change accepted (no dataset worse in recall, precision or clean samples), accepted within tolerance (no dataset's score lower, recall at most 0.5 points lower; `--recall-tolerance`) or rejected with the reason, ranked by verdict and the change of the mean score |
+| `bench/perturb.py [--only …] [--per-dataset 400]` | `<data>/perturb/<time>/report.md`, `results.json` | recall per dataset when every positive is rewritten by one transform (zero-width, soft hyphen, fullwidth, homoglyph, ANSI reset, CR, wrap, base64, hex, entity, escape, truncation) |
 | `bench/errors.py [--split dev]` | `errors-dev.md`, `errors-dev.jsonl` in the run | false positives by rule and misses by type, by shape and the common words before them |
 
 ## A rule change

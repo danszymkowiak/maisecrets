@@ -33,7 +33,7 @@ def main(argv: list[str]) -> int:
         manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
         base_dir = args.baseline or run.newest_full_run(data_dir() / "runs", manifest)
         samples, det, names = mutate.baseline(base_dir, setup.default_out())
-        roles = {n: "guard" for n in args.guard.split(",") if n}
+        roles = {**run.default_roles(names), **{n: "guard" for n in args.guard.split(",") if n}}
         unknown = set(roles) - set(names)
         if unknown:
             raise BenchError(f"--guard names datasets not in the baseline: {', '.join(sorted(unknown))}")

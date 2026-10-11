@@ -32,6 +32,7 @@ The detector runs in a temp maisecrets home (`MAISECRETS_HOME`), never the real 
 | TAB (ECHR court texts) | a document; spans from two annotators | `DIRECT`/`QUASI`/`NO_MASK` per mention | precision on legal prose; out-of-scope coverage |
 | ai4privacy `pii-masking-300k` | a record; `privacy_mask` spans | PII labels, six languages | PII: precision and recall |
 | Gretel `synthetic_pii_finance_multilingual` | a document; `pii_spans` | finance PII and credentials, several languages | PII and secrets in finance text |
+| synthetic tool output (generated) | one filled template | injected values `pos`, digests and ids `neg` | guard: terminal output an agent sees |
 
 Licences: CredData's tooling is Apache-2.0 and each file keeps its source project's licence
 (CredData kept permissive ones); TAB is MIT; Gretel is Apache-2.0. ai4privacy allows academic and
@@ -130,6 +131,64 @@ Per dataset, per type, per split, and per rule:
   so it gets two points, with and without the gate. A rule without a score, or without a judged candidate,
   is n/a. The relaxed run lets a candidate take a span another rule would have claimed, so the curves are
   approximate, and a true positive there is any overlap with an in-scope positive, whatever its type.
+
+## Synthetic tool output
+
+The file and prose corpora hold no terminal output: no `printenv`, `git diff`, `grep -n`, `cat -n`,
+`kubectl get secret -o yaml`, docker config, `curl -v`, lockfile or `docker images --digests`. The
+setup generates such a dataset (`maisecrets_bench/adapters/synthetic.py`, TASK-11.19): ten templates,
+300 samples each, from a fixed seed, in English. Secrets (GitHub, GitLab, AWS, Slack, Stripe, npm,
+JWT, passwords, also base64-wrapped in a Kubernetes secret and a docker `auth`), e-mail addresses,
+public IPs and phone numbers are `pos` spans; commit ids, UUIDs, SHA-256 and MD5 digests, npm
+`integrity` and go.sum `h1:` strings and MongoDB ObjectIds are `neg` spans. Every value is drawn from a
+generator of its rule's shape: nothing is downloaded and no real token exists anywhere. The dataset's
+version is the seed, the size and a hash of the generator, so a changed generator builds it again.
+
+**Role, decided 2026-10-11 (TASK-11.19): guard.** It is ours, so a rule tuned to raise its score would
+be tuned to our own generator; it gets no weight in the overall mean. But it is the only dataset of
+the output an agent actually reads, so a change must not make it worse (`run.GUARD`; `mutate.py` and
+`round.py` apply the role without `--guard`).
+
+**Baseline, 2026-10-11 (run 20261011-220740):** 5,540 TP, 2 FP, 86 misses: precision 100.0%, recall
+98.5%, score 99.2% (dev 99.3%, check 99.0%). E-mail, IP and phone 100% recall; secrets 97.8%. The
+misses are the generated 15 to 18 character passwords behind a weak label (`Authorization: Bearer`,
+an environment name, a grep hit) and four base64 docker `auth` values. The two false alarms are an
+`iban` on a go.sum `h1:` string and a `generic-api-key` on another. Digests, commit ids, UUIDs,
+ObjectIds and `integrity` strings drew no other false alarm: in tool output of this shape they are
+not the precision problem TASK-11.20 set out to fix.
+
+## Perturbation
+
+`bench/perturb.py` rewrites every in-scope positive of a fixed pick of samples per dataset (400 by
+default, by a hash of the sample id) with one transform and measures recall on the result:
+zero-width space and soft hyphen inside the value, fullwidth forms (NFKC folds them back), Cyrillic
+look-alike letters, an ANSI reset inside the value, a carriage return, a line wrap, base64, hex,
+HTML numeric entities, markdown escapes and truncation to three fifths. It shows how much a
+normaliser or a decode-and-rescan step could win; the scored runs never include it.
+
+**Baseline, 2026-10-11 (perturb 20261011-223530, 400 samples each; ai4privacy measured locally, not
+shown):** recall of in-scope positives, untouched first.
+
+| transform | CredData | Gretel | synthetic |
+|---|---|---|---|
+| none | 84.9% | 62.3% | 97.6% |
+| zero-width space | 21.9% | 12.7% | 50.5% |
+| soft hyphen | 21.9% | 12.7% | 50.5% |
+| fullwidth | 70.9% | 0.6% | 6.2% |
+| homoglyph | 79.4% | 27.4% | 62.6% |
+| ANSI reset | 22.8% | 15.0% | 58.0% |
+| CR | 50.6% | 12.7% | 59.3% |
+| line wrap | 45.2% | 12.7% | 58.4% |
+| base64 | 87.6% | 1.7% | 60.4% |
+| hex | 20.1% | 1.3% | 48.3% |
+| HTML entity | 13.9% | 0.8% | 29.1% |
+| markdown escape | 81.0% | 19.0% | 51.7% |
+| truncation | 11.8% | 7.3% | 31.9% |
+
+Every transform costs recall. The invisible characters (zero-width, soft hyphen, ANSI reset) and
+fullwidth forms could be undone by a normaliser with an offset map (TASK-11.25). The encodings could be
+undone by decode-and-rescan (TASK-11.26). CredData keeps more under homoglyph, escape and base64 because
+its keyword rules match the label and take any value after it.
 
 ## Is a dataset worth keeping
 

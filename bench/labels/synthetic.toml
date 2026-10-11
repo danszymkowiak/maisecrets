@@ -1,0 +1,13 @@
+# The generated tool-output dataset (maisecrets_bench/adapters/synthetic.py): its labels are maisecrets types for
+# the injected values, and the negatives (digests, ids, integrity strings) are out of scope as positives.
+
+[labels]
+SECRET = "SECRET"
+EMAIL = "EMAIL"
+IP = "IP"
+PHONE = "PHONE"
+COMMIT = "OUT_OF_SCOPE"
+UUID = "OUT_OF_SCOPE"
+DIGEST = "OUT_OF_SCOPE"
+INTEGRITY = "OUT_OF_SCOPE"
+OBJECT_ID = "OUT_OF_SCOPE"

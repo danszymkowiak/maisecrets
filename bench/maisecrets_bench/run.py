@@ -27,6 +27,15 @@ SKIP_TYPES = {"HIDDEN"}     # removal of invisible characters: no detection to s
 UNLABELLED_NEGATIVE = {"creddata": False}
 # left out of a default run: TAB is saturated and out of scope (docs/BENCHMARK.md, user decision 2026-10-11)
 DROPPED = {"tab"}
+# a dataset that guards: a change must not make it worse, but it has no weight in the overall mean. The generated
+# tool output is ours, so tuning to it would be circular (docs/BENCHMARK.md, Synthetic tool output)
+GUARD = {"synthetic"}
+
+
+def default_roles(names) -> dict:
+    return {n: "guard" for n in names if n in GUARD}
+
+
 # a dataset whose results stay local; its note goes into every report that includes it
 LOCAL_ONLY = {"ai4privacy": "ai4privacy: academic and non-commercial use only (AI4Privacy licence). Local "
                             "measurement; leave it out of anything sent upstream. The plugin's owner needs "
@@ -154,7 +163,7 @@ def summarise(results: dict, groups: dict) -> dict:
                 agg[k] += v[k]
             agg["by_dataset"][name] = v
     active = sorted({r for g in groups.values() for r in g["rules"]})
-    scores = {name: d["all"]["score"] for name, d in datasets.items()}
+    scores = {name: d["all"]["score"] for name, d in datasets.items() if name not in GUARD}
     return {"datasets": datasets, "overall": score.overall(scores) if scores else None, "scores": scores,
             "rules": dict(sorted(all_rules.items())),
             "never_fired": [r for r in active if r not in all_rules],
@@ -168,8 +177,10 @@ def _pct(x) -> str:
 
 def report(summary: dict, manifest: dict, seconds: float) -> str:
     """The markdown report: counts, rates and rule ids only."""
+    guards = sorted(n for n in summary["datasets"] if n in GUARD)
     out = ["# maisecrets rule benchmark", "", *licence_notes(summary["datasets"]), "",
-           f"Overall score (equal weight over datasets): **{_pct(summary['overall'])}**. Run time {seconds:.0f} s.", "",
+           f"Overall score (equal weight over the scored datasets): **{_pct(summary['overall'])}**. "
+           f"Run time {seconds:.0f} s." + (f" Guards, not in the mean: {', '.join(guards)}." if guards else ""), "",
            "| dataset | version | TP | FP | found | FN | precision | recall | F1 | clean samples | score |"
            " unreviewed /1k lines | out-of-scope touched |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for name, d in summary["datasets"].items():

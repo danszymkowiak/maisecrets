@@ -98,6 +98,12 @@ def gretel_source(cache: Path) -> Source:
                   lambda: {"dropped": stats.dropped})
 
 
+def synthetic_source() -> Source:
+    """Generated tool output from a fixed seed (maisecrets_bench/adapters/synthetic.py): nothing is fetched."""
+    from .adapters import synthetic
+    return Source("synthetic", synthetic.version, lambda: synthetic.samples(load_table("synthetic")), lambda: {})
+
+
 def ai4privacy_source(cache: Path) -> Source:
     """Opt-in and local: academic and non-commercial use only (maisecrets_bench/adapters/ai4privacy.py)."""
     from .adapters import ai4privacy
