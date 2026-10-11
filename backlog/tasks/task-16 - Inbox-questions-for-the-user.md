@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 13:06'
+updated_date: '2026-10-11 13:15'
 labels:
   - inbox
 dependencies: []
@@ -59,5 +59,10 @@ TASK-14 (flaky test): not reproduced in 7 full runs (4 suites in parallel; 3 run
 created: 2026-10-11 13:06
 ---
 TASK-8: the draft feature request for upstream (personal terms + PDF/image ask) is in TASK-8's notes. Options: (a) approve it as is, and I file it with /maisecrets:report feature (it prints a prefilled GitHub link; you open it and submit); (b) edit it first; (c) wait until the benchmark recommendations are ready and send both together. I recommend (c) because one contact with two concrete, tested contributions is likelier to get an answer than two separate requests; filing stays your click either way.
+---
+
+created: 2026-10-11 13:15
+---
+TASK-15 (false alarm on a keyword, a colon and prose): a narrow fix works: in ds-keyword rules, skip a letters-only lowercase value directly followed by a space and a joining word (and, or, of, the, und, oder, ...). Benchmark: 5 fewer false alarms of ds-keyword-colon (733 -> 728), no true positive lost on CredData, Gretel or TAB. But it contradicts a deliberate true positive in tests/fp_corpus.py: 'label+random after value word' (a password label, the word 'identifier', then 'and the token is ...') must stay a hit. Options: (a) take the fix and turn that corpus case into a NO_HIT (a plain word followed by 'and' is prose); (b) keep upstream's decision and close TASK-15 as 'keep the false alarm'; (c) a narrower fix that only skips inside a markdown table cell or after a plural label word ('secrets:', 'passwords:'). I recommend (c): it removes the case that happened without overruling the upstream decision; the benchmark can measure it the same way. The work is in stash 'wip TASK-15'.
 ---
 <!-- COMMENTS:END -->
