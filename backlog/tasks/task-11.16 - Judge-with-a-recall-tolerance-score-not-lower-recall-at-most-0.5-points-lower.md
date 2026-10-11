@@ -3,10 +3,10 @@ id: TASK-11.16
 title: >-
   Judge with a recall tolerance: score not lower, recall at most 0.5 points
   lower
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 15:15'
-updated_date: '2026-10-11 15:16'
+updated_date: '2026-10-11 15:50'
 labels:
   - benchmark
 dependencies: []
@@ -27,3 +27,9 @@ The user chose a tolerance (TASK-16, 2026-10-11): strict 'equal or better on eve
 - [x] #2 Reports show the verdict per change and rank strict and tolerance passes by mean change
 - [x] #3 docs/BENCHMARK.md 'Judging a change' and bench/README.md state the rule; tests cover the boundary
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+mutation.judge gives strict / tolerance / rejected (score not lower, recall at most 0.5 points lower, --recall-tolerance). Re-judged 2026-10-11: strict: drop uk-postcode. Within tolerance on dev and check: us-bank context word just before the number (+1.10 / +1.15), drop de-vat-id#0 (+0.03 / +0.00). Drop us-bank stays rejected (Gretel recall -0.61 points).
+<!-- SECTION:FINAL_SUMMARY:END -->
