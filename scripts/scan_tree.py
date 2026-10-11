@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from maisecrets import detect  # noqa: E402
 
-SKIP = {".git", ".claude", "__pycache__", "dist", "node_modules"}
+SKIP = {".git", ".claude", "__pycache__", "dist", "node_modules", ".venv"}   # .venv: installed packages (bench/)
 VENDORED = ("maisecrets/rules/",)   # the rule sets carry secret shapes by design
 
 

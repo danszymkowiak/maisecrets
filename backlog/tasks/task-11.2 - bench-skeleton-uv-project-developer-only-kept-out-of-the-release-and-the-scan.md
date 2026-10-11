@@ -3,10 +3,10 @@ id: TASK-11.2
 title: >-
   bench/ skeleton: uv project, developer-only, kept out of the release and the
   scan
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 10:20'
-updated_date: '2026-10-11 11:06'
+updated_date: '2026-10-11 11:13'
 labels:
   - benchmark
 dependencies: []
@@ -23,7 +23,7 @@ bench/pyproject.toml (uv; pyarrow, datasets, pandas or polars) separate from the
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 uv run --project bench python -c 'import pyarrow' works
+- [x] #1 uv run --project bench python -c 'import pyarrow' works
 - [ ] #2 release tree test counts bench/ as developer-only
-- [ ] #3 ruff and scan_tree pass with bench/
+- [x] #3 ruff and scan_tree pass with bench/
 <!-- AC:END -->

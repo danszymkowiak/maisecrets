@@ -19,3 +19,6 @@ hooks/incident-marker.*
 # written by `claude plugin test` and `--plugin-dir` (mod types): generated, never shipped
 /tsconfig.json
 .claude-plugin/types/
+
+# the benchmark's own environment (uv); its data lives outside the repository (docs/BENCHMARK.md)
+bench/.venv/

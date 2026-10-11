@@ -130,7 +130,7 @@ lint:
   # The ruff image has no shell, and the docker executor needs one. Pinned pip install instead.
   script:
     - pip install --quiet --disable-pip-version-check ruff==0.14.2 pyyaml==6.0.3
-    - ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills
+    - ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills bench
     # the plugin files as a directory check reads them (frontmatter YAML, manifests, hook paths)
     - python scripts/lint_plugin.py
 

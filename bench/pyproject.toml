@@ -1,0 +1,16 @@
+[project]
+name = "maisecrets-bench"
+version = "0.1.0"
+description = "Benchmark of the maisecrets detection rules against public labelled datasets (docs/BENCHMARK.md)"
+requires-python = ">=3.12"
+dependencies = [
+    "pyarrow>=17",
+    "datasets>=3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["maisecrets_bench"]

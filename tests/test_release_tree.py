@@ -63,7 +63,7 @@ class ReleaseTreeTests(unittest.TestCase):
     # file must ship, so a runtime folder missing from the allowlist, or a new file nobody classified,
     # turns this red
     DEV_ONLY_PREFIXES = ("tests/", "scripts/", "harness/", "beliefs/", ".github/", ".githooks/",
-                         "backlog/",
+                         "backlog/", "bench/",
                          # Codex installs from main; the directory held versions over the image refs in it
                          ".codex-plugin/")
     DEV_ONLY_FILES = {".gitlab-ci.yml", ".gitignore", ".gitattributes", ".ci-known-hosts-github", "CONTRIBUTING.md",
