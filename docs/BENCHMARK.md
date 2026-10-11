@@ -33,7 +33,10 @@ The detector runs in a temp maisecrets home (`MAISECRETS_HOME`), never the real 
 | ai4privacy `pii-masking-300k` | a record; `privacy_mask` spans | PII labels, six languages | PII: precision and recall |
 | Gretel `synthetic_pii_finance_multilingual` | a document; `pii_spans` | finance PII and credentials, several languages | PII and secrets in finance text |
 
-Each adapter notes the dataset's licence. The setup downloads; no derived file is published.
+Licences: CredData's tooling is Apache-2.0 and each file keeps its source project's licence
+(CredData kept permissive ones); TAB is MIT; Gretel is Apache-2.0. ai4privacy allows academic and
+non-commercial use only and needs a written licence for derivative works; whether it stays is the
+user's decision (inbox, TASK-11.6). The setup downloads; no derived file is published.
 
 ## One schema
 
