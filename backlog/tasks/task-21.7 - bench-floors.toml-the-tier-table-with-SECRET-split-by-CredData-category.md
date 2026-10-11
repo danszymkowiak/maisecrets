@@ -1,10 +1,10 @@
 ---
 id: TASK-21.7
 title: 'bench/floors.toml: the tier table, with SECRET split by CredData category'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-11 23:39'
 labels:
   - benchmark
 dependencies:
@@ -25,6 +25,12 @@ A data file the scorer reads: tiers (critical 0.999, high 0.99, default no regre
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 floors.toml holds the tiers and weights the user decided; SECRET is split into at least prefixed and generic
-- [ ] #2 Tests: an unknown type in floors.toml fails; every type in the label tables resolves to a tier
+- [x] #1 floors.toml holds the tiers and weights the user decided; SECRET is split into at least prefixed and generic
+- [x] #2 Tests: an unknown type in floors.toml fails; every type in the label tables resolves to a tier
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bench/floors.toml and maisecrets_bench/floors.py. Tiers as the user decided 2026-10-11: critical 0.999 (IBAN, CARD, US_SSN, US_BANK_NUMBER, SECRET_PREFIXED), high 0.99 (EMAIL, PHONE, IP, ABA, the German tax and ID types), default no_regression (SECRET_GENERIC and every unlisted type), none. CH_AHV and the Swiss IDs join when TASK-20 adds the types. SECRET splits for scoring: a CredData category is prefixed when a part names a vendor token with a fixed shape (36 parts listed), other datasets' SECRET labels are generic unless listed. Weights: gretel 2.0 and findocs 2.0, the proposal of TASK-21.1; the user's confirmation is TASK-21.1 AC 2 (inbox TASK-17). Tests: unknown type, SECRET in a tier, a type in two tiers, every label table type resolves, every prefixed part is a CredData part.
+<!-- SECTION:FINAL_SUMMARY:END -->

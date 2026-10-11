@@ -1,0 +1,47 @@
+# Recall floors per type and the dataset weights of the false-positive objective (docs/BENCHMARK.md, TASK-21).
+# Tiers decided by the user 2026-10-11. A floor is a recall share, "no_regression" (the type must not get worse) or
+# "none" (not scored). A type no tier lists gets default_tier. CH_AHV and the Swiss tax and ID numbers join their
+# tiers when TASK-20 adds the types (critical and high).
+
+default_tier = "default"
+
+[tiers.critical]
+floor = 0.999
+types = ["IBAN", "CARD", "US_SSN", "US_BANK_NUMBER", "SECRET_PREFIXED"]
+
+[tiers.high]
+floor = 0.99
+types = ["EMAIL", "PHONE", "IP", "ABA_ROUTING_NUMBER",
+         "DE_TAX_ID", "DE_TAX_NUMBER", "DE_VAT_ID", "DE_SOCIAL_SECURITY", "DE_ID_CARD", "DE_PASSPORT",
+         "DE_HEALTH_INSURANCE", "DE_FUEHRERSCHEIN"]
+
+[tiers.default]
+floor = "no_regression"
+types = ["SECRET_GENERIC"]
+
+[tiers.none]
+floor = "none"
+types = []        # names: maisecrets detects none, only the terms file (C25); no label table maps one to a type
+
+# Weight of a dataset in the false-positive objective; an unlisted dataset weighs 1. Gretel and findocs look like
+# the user's highest-risk content (user, 2026-10-11). 2.0 is the proposal of TASK-21.1; the user confirms it.
+[weights]
+gretel = 2.0
+findocs = 2.0
+
+# SECRET splits for scoring. A CredData category (colon-separated parts) is prefixed when a part names a token with a
+# vendor's fixed shape (a prefix such as AKIA, ghp_, xox, sk_live_, eyJ, -----BEGIN); everything else (API, Key,
+# Password, Token, CMD, CURL and SQL passwords, URL credentials, ...) is generic. Another dataset's SECRET label is
+# generic unless "dataset:label" is listed under prefixed_labels.
+[secret]
+prefixed_parts = [
+    "AWS Client ID", "AWS Multi", "Akamai Credentials", "Alibaba Access Key ID", "Alibaba Multi", "Anthropic API Key",
+    "Azure Access Token", "BASE64 Private Key", "BASE64 encoded PEM Private Key", "Docker Swarm Token",
+    "Facebook Access Token", "Github Classic Token", "Google API Key", "Google Multi", "Google OAuth Access Token",
+    "Google OAuth Refresh Token", "Grafana Access Policy Token", "Grafana Provisioned API Key",
+    "Grafana Service Account Token", "JSON Web Token", "Jira / Confluence PAT token", "MailGun API Key", "NKEY Seed",
+    "PASERK Keys", "PASETO Token", "PEM Private Key", "Perplexity API Key", "PostHog Credentials",
+    "Postman Credentials", "Salesforce Credentials", "Slack Token", "Stripe Credentials", "Tencent WeChat API App ID",
+    "Twilio Credentials", "Twilio Multi", "WunderGraph API Key",
+]
+prefixed_labels = []

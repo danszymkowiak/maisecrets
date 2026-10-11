@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-11 23:32'
+updated_date: '2026-10-11 23:39'
 labels:
   - inbox
 dependencies: []
@@ -44,5 +44,10 @@ TASK-11.32: the digest filter of TASK-11.20 passed strictly (no find lost, 7 fal
 created: 2026-10-11 23:32
 ---
 TASK-11.34/11.35/11.37: the usefulness check (run 20261012-011327) says keep for Nemotron-PII, Mendeley and findocs; all three now run as scored datasets, and the equal-weight mean moved from 71.5% to 79.8% because of them (Mendeley 95.0%, findocs 91.6%, Nemotron 77.4%). Options: (a) keep all three scored; (b) make Mendeley a guard (its in-scope types are only SSN, phone and card, at 100% precision, and it moves on 5 of 30 probes); (c) other. I recommend (a): TASK-21 replaces the equal-weight mean anyway, and under recall floors per type Mendeley's 51,283 SSNs and 42,527 cards give the critical tiers the sample size they need.
+---
+
+created: 2026-10-11 23:39
+---
+TASK-21.1/21.7: bench/floors.toml weighs gretel and findocs 2.0 in the false-positive objective (every other dataset 1.0), and splits SECRET into SECRET_PREFIXED (critical, 0.999: a CredData category naming a vendor token with a fixed shape, 36 parts listed in the file) and SECRET_GENERIC (no regression: API, Key, Password, Token, CMD/CURL/SQL passwords, URL credentials, ...). Options: (a) confirm 2.0 and the split as written; (b) another weight (name it); (c) move parts between prefixed and generic (name them). I recommend (a): 2.0 makes the two finance sets count as much as two others without letting one of them decide alone, and the split puts in the critical tier only shapes a dedicated rule can find. TASK-21.1 waits for this answer; the scoring code (TASK-21.8) does not.
 ---
 <!-- COMMENTS:END -->
