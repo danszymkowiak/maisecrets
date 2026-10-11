@@ -157,9 +157,16 @@ setup and runs leave it out by default. CredData and Gretel stay: each has rules
 A mutation (add, disable or replace a rule, change a threshold or a word list) is applied inside
 the bench, never by editing the project, and scored against the baseline on the same data.
 
-- **Inclusion:** on every dataset, precision and recall are each equal to or better than the
-  baseline. The counts are exact, so there is no noise to allow for.
-- **Ranking:** accepted mutations are ordered by the change of the overall score (equal weights).
+- **Inclusion, strict (*accepted*):** on every dataset, precision, recall and the share of clean
+  samples are each equal to or better than the baseline. The counts are exact, so there is no
+  noise to allow for.
+- **Inclusion with tolerance (*accepted within tolerance*):** not strict, but on every dataset the
+  score does not fall and recall falls by at most 0.5 points (`--recall-tolerance`). Chosen
+  2026-10-11: under the strict rule alone, dropping `us-bank` (mean +2.09, Gretel precision
+  75.1% to 87.1%) was rejected for 0.6 points of Gretel recall. Both verdicts are shown, so the
+  owner sees which changes cost a find.
+- **Ranking:** strict passes first, then those within tolerance, each ordered by the change of the
+  overall score (equal weights).
 - **Roles:** a dataset is *scored* (in the mean) or a *guard* (it must not get worse, but has no weight);
   a saturated dataset can serve as a guard (TASK-11.15).
 - A mutation that only disables rules is re-run on the samples where those rules fired in the baseline:
@@ -175,7 +182,7 @@ tokens and nothing else. So each dataset has one fixed split, by `group_id`, so 
 or document never lies on both sides:
 
 - **dev** (about 70%): the misses and false alarms an agent may read.
-- **check** (about 30%): only the totals. An agent's mutation must pass the inclusion rule on dev
+- **check** (about 30%): only the totals. An agent's mutation gets the worse of its verdicts on dev
   and on check.
 
 A change written by a person is judged on all of the data. The split is deterministic (a hash of

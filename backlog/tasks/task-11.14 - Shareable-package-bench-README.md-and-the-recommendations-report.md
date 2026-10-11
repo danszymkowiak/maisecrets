@@ -4,13 +4,13 @@ title: 'Shareable package: bench/README.md and the recommendations report'
 status: To Do
 assignee: []
 created_date: '2026-10-11 10:20'
-updated_date: '2026-10-11 12:50'
+updated_date: '2026-10-11 15:15'
 labels:
   - benchmark
   - upstream
 dependencies:
   - TASK-11.10
-  - TASK-16
+  - TASK-11.16
 parent_task_id: TASK-11
 priority: medium
 ordinal: 28000

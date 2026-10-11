@@ -53,7 +53,7 @@ builds it.
 |---|---|---|
 | `bench/run.py [--only …] [--limit N]` | `<data>/runs/<time>/report.md`, `metrics.json`, `detections.parquet` | per dataset, type, split and rule: counts, precision, recall, F1, share of clean samples, the dataset score and the equal-weight mean; rules that never fired |
 | `bench/usefulness.py [--run …]` | `usefulness.md` in the run | per dataset: in-scope share, saturation, rules firing only there, how many probes (dropping a top rule) move its score, overlap with the others; a keep or drop-candidate verdict |
-| `bench/mutate.py <files> [--guard …]` | `<data>/mutations/<time>/report.md`, `results.json` | each rule change accepted (no dataset worse in recall, precision or clean samples) or rejected with the reason, ranked by the change of the mean score |
+| `bench/mutate.py <files> [--guard …]` | `<data>/mutations/<time>/report.md`, `results.json` | each rule change accepted (no dataset worse in recall, precision or clean samples), accepted within tolerance (no dataset's score lower, recall at most 0.5 points lower; `--recall-tolerance`) or rejected with the reason, ranked by verdict and the change of the mean score |
 | `bench/errors.py [--split dev]` | `errors-dev.md`, `errors-dev.jsonl` in the run | false positives by rule and misses by type, by shape and the common words before them |
 
 ## A rule change
@@ -77,8 +77,8 @@ uv run --project bench python bench/round.py judge bench/mutations/round1/*.toml
 ```
 
 The brief holds dev scores, the rules with the most false alarms and their definitions, the misses by type and
-the mutation format, all masked. `judge` scores each proposal on dev and on check; it is accepted only if it
-passes both, and of check only the verdict and the change of the mean come back. `bench/mutations/round1/` is
+the mutation format, all masked. `judge` scores each proposal on dev and on check; its verdict is the worse of the
+two, and of check only the verdict and the change of the mean come back. `bench/mutations/round1/` is
 the first round, written from a brief.
 
 ## Curves for the rules with a score

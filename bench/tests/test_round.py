@@ -65,6 +65,7 @@ class RoundTests(unittest.TestCase):
         self.assertTrue(r["dev"]["accepted"])
         self.assertTrue(r["check"]["accepted"])
         self.assertTrue(r["accepted"])
+        self.assertEqual(r["verdict"], "strict")
         self.assertNotIn("datasets", r["check"], "check gives totals only")
 
 

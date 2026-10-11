@@ -108,6 +108,36 @@ class JudgeTests(unittest.TestCase):
         j = mutation.judge(self.BASE, dict(self.BASE), {})
         self.assertTrue(j["accepted"])
         self.assertEqual(j["overall_delta"], 0.0)
+        self.assertEqual(j["verdict"], "strict")
+
+    # a: 60 of 100 found, P 0.8, F1 0.6857; one find fewer is a recall loss of 1 point
+    def test_a_small_recall_loss_with_a_higher_score_passes_within_tolerance(self):
+        mut = dict(self.BASE, a=Counts(tp=80, fp=0, found=59, fn=41, samples=100, clean=100))
+        j = mutation.judge(self.BASE, mut, {}, recall_tolerance=0.01)
+        self.assertEqual(j["verdict"], "tolerance")
+        self.assertTrue(j["accepted"])
+        self.assertIn("a: recall", " ".join(j["reasons"]), "the reasons still say why it is not strict")
+
+    def test_a_recall_loss_beyond_the_tolerance_rejects(self):
+        mut = dict(self.BASE, a=Counts(tp=80, fp=0, found=58, fn=42, samples=100, clean=100))
+        j = mutation.judge(self.BASE, mut, {}, recall_tolerance=0.01)
+        self.assertEqual(j["verdict"], "rejected")
+        self.assertFalse(j["accepted"])
+
+    def test_a_lower_score_rejects_even_within_the_recall_tolerance(self):
+        mut = dict(self.BASE, a=Counts(tp=80, fp=20, found=59, fn=41, samples=100, clean=90))
+        j = mutation.judge(self.BASE, mut, {}, recall_tolerance=0.01)
+        self.assertEqual(j["verdict"], "rejected")
+
+    def test_the_default_tolerance_is_half_a_point(self):
+        self.assertEqual(mutation.RECALL_TOLERANCE, 0.005)
+        mut = dict(self.BASE, a=Counts(tp=80, fp=0, found=59, fn=41, samples=100, clean=100))
+        self.assertEqual(mutation.judge(self.BASE, mut, {})["verdict"], "rejected", "1 point is beyond the default")
+
+    def test_a_worse_guard_rejects_within_tolerance_too(self):
+        worse_guard = dict(self.BASE, g=Counts(fp=9, samples=1000, clean=991))
+        self.assertEqual(mutation.judge(self.BASE, worse_guard, {"g": "guard"}, recall_tolerance=0.5)["verdict"],
+                         "rejected")
 
 
 if __name__ == "__main__":

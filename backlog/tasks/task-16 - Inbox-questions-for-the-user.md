@@ -1,10 +1,10 @@
 ---
 id: TASK-16
 title: 'Inbox: questions for the user'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 14:23'
+updated_date: '2026-10-11 15:14'
 labels:
   - inbox
 dependencies: []
@@ -69,5 +69,10 @@ TASK-15 (false alarm on a keyword, a colon and prose): a narrow fix works: in ds
 created: 2026-10-11 14:23
 ---
 Answered in chat 2026-10-11: TAB dropped (TASK-11.15); ai4privacy option (b), local only, the owner must get permission first (TASK-11.6).
+---
+
+created: 2026-10-11 15:14
+---
+Answered in chat 2026-10-11: TASK-11.1 spec approved as is. TASK-11.10: allow a tolerance (a change passes when no dataset's score falls and recall falls by at most 0.5 points; strict passes stay marked apart). TASK-11.14: one combined recommendations page per round. TASK-14: leave open, waiting for a recurrence. TASK-15: the narrower fix (markdown table cell or plural label word). TASK-8: send together with the bench recommendations.
 ---
 <!-- COMMENTS:END -->

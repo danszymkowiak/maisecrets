@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from . import run, schema
-from .mutation import Mutation, judge
+from .mutation import RECALL_TOLERANCE, VERDICT_ORDER, Mutation, judge
 
 
 def baseline(run_dir: Path, parquet: Path) -> tuple[list, dict, list[str]]:
@@ -35,7 +35,8 @@ def _totals(samples: list, det: dict) -> dict:
     return {name: sum(per.values(), run.score.Counts()) for name, per in run.score_all(samples, det).items()}
 
 
-def evaluate(mutations: list[Mutation], samples: list, base_det: dict, roles: dict, jobs: int) -> list[dict]:
+def evaluate(mutations: list[Mutation], samples: list, base_det: dict, roles: dict, jobs: int,
+             recall_tolerance: float = RECALL_TOLERANCE) -> list[dict]:
     from .mutation import validate
     for m in mutations:
         validate(m)
@@ -44,17 +45,22 @@ def evaluate(mutations: list[Mutation], samples: list, base_det: dict, roles: di
     for m in mutations:
         t0 = time.time()
         det, n = mutated_detections(m, samples, base_det, jobs)
-        j = judge(base, _totals(samples, det), roles)
+        j = judge(base, _totals(samples, det), roles, recall_tolerance)
         out.append({"name": m.name, "why": m.why, "changes": m.changes, "rerun_samples": n,
                     "seconds": time.time() - t0, **j})
-    return sorted(out, key=lambda r: (not r["accepted"], -r["overall_delta"]))
+    return sorted(out, key=lambda r: (VERDICT_ORDER[r["verdict"]], -r["overall_delta"]))
 
 
-def report(results: list[dict], baseline_dir: Path) -> str:
+VERDICT_TEXT = {"strict": "accepted", "tolerance": "accepted within tolerance", "rejected": "rejected"}
+
+
+def report(results: list[dict], baseline_dir: Path, recall_tolerance: float = RECALL_TOLERANCE) -> str:
     notes = run.licence_notes(results[0]["datasets"]) if results else []
     out = ["# Rule mutations", "", *notes, "",
-           f"Baseline: `{baseline_dir.name}`. Accepted: no dataset worse in recall, precision "
-           "or clean samples; ranked by the change of the mean score of the scored datasets.", "",
+           f"Baseline: `{baseline_dir.name}`. Accepted: no dataset worse in recall, precision or clean samples. "
+           f"Accepted within tolerance: on every dataset the score does not fall and recall falls by at most "
+           f"{100 * recall_tolerance:.2f} points. Ranked by verdict, then by the change of the mean score of the "
+           "scored datasets.", "",
            "| rank | mutation | verdict | mean score change | " + " | ".join(results[0]["datasets"]) + " |",
            "|---|---|---|---|" + "---|" * len(results[0]["datasets"])] if results else ["# Rule mutations", "", "none"]
     for i, r in enumerate(results, 1):
@@ -62,7 +68,7 @@ def report(results: list[dict], baseline_dir: Path) -> str:
         for name, d in r["datasets"].items():
             tag = " (guard)" if d["role"] == "guard" else ""
             cells.append(f"{100 * d['score_delta']:+.2f}{tag}")
-        out.append(f"| {i} | {r['name']} | {'accepted' if r['accepted'] else 'rejected'} | "
+        out.append(f"| {i} | {r['name']} | {VERDICT_TEXT[r['verdict']]} | "
                    f"{100 * r['overall_delta']:+.2f} | " + " | ".join(cells) + " |")
     for r in results:
         out += ["", f"## {r['name']}", "", r["why"] or "", ""]
@@ -81,5 +87,7 @@ def report(results: list[dict], baseline_dir: Path) -> str:
                        f"{arrow('clean_rate')} |")
         if r["reasons"]:
             out += ["", "Worse: " + "; ".join(r["reasons"])]
+        if r["beyond"]:
+            out += ["", "Rejected: " + "; ".join(r["beyond"])]
         out += ["", f"Re-ran {r['rerun_samples']} samples in {r['seconds']:.0f} s."]
     return "\n".join(out) + "\n"

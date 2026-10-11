@@ -4,12 +4,12 @@ title: Propose user-defined terms upstream
 status: To Do
 assignee: []
 created_date: '2026-10-11 07:01'
-updated_date: '2026-10-11 13:06'
+updated_date: '2026-10-11 15:15'
 labels:
   - upstream
 dependencies:
   - TASK-7
-  - TASK-16
+  - TASK-11.14
 priority: low
 ordinal: 8000
 ---
@@ -45,4 +45,6 @@ maisecrets finds values by shape, so a name, an address or a case number goes to
 - Proposed control C25 with five beliefs (replay_can_fail), tests for every path and a leak test over logs, audit, events, incidents and reports.
 
 The fork's commits can be offered as a pull request against upstream main, on Python 3.9 (the fork itself moved to 3.12; that part would stay out). Would you take such a change?
+
+2026-10-11: user chose to send this together with the bench recommendations page (TASK-11.14).
 <!-- SECTION:NOTES:END -->

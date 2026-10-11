@@ -77,6 +77,11 @@ class RunTests(unittest.TestCase):
         self.assertFalse(r["accepted"])
         self.assertEqual(r["rerun_samples"], 1, "only sample a had an e-mail hit")
         self.assertIn("toy: recall", " ".join(r["reasons"]))
+        self.assertEqual(r["verdict"], "rejected")
+        text = mutate.report([r], self.out)
+        self.assertIn("| rejected |", text)
+        self.assertIn("Rejected: toy:", text)
+        self.assertIn("at most 0.50 points", text)
 
     def test_the_report_names_the_overall_score(self):
         self.assertIn("Overall score", (self.out / "report.md").read_text(encoding="utf-8"))

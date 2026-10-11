@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import errors, mutate, run, schema, score
 from .detector import rule_index
-from .mutation import Mutation
+from .mutation import RECALL_TOLERANCE, VERDICT_ORDER, Mutation
 
 FORMAT = '''A mutation is a TOML file (one per proposal):
 
@@ -77,15 +77,18 @@ def brief(run_dir: Path, parquet: Path, top: int = 15) -> str:
     return "\n".join(out) + "\n"
 
 
-def judge(mutations: list[Mutation], run_dir: Path, parquet: Path, roles: dict, jobs: int) -> list[dict]:
+def judge(mutations: list[Mutation], run_dir: Path, parquet: Path, roles: dict, jobs: int,
+          recall_tolerance: float = RECALL_TOLERANCE) -> list[dict]:
+    """Each proposal on dev and on check; its verdict is the worse of the two."""
     out = []
     dev, det = _split_samples(run_dir, parquet, "dev")
     check, _ = _split_samples(run_dir, parquet, "check")
-    dev_r = {r["name"]: r for r in mutate.evaluate(mutations, dev, det, roles, jobs)}
-    check_r = {r["name"]: r for r in mutate.evaluate(mutations, check, det, roles, jobs)}
+    dev_r = {r["name"]: r for r in mutate.evaluate(mutations, dev, det, roles, jobs, recall_tolerance)}
+    check_r = {r["name"]: r for r in mutate.evaluate(mutations, check, det, roles, jobs, recall_tolerance)}
     for m in mutations:
         d, c = dev_r[m.name], check_r[m.name]
+        verdict = max(d["verdict"], c["verdict"], key=VERDICT_ORDER.get)
         out.append({"name": m.name, "why": m.why, "dev": d,
-                    "check": {"accepted": c["accepted"], "overall_delta": c["overall_delta"]},
-                    "accepted": d["accepted"] and c["accepted"]})
-    return sorted(out, key=lambda r: (not r["accepted"], -r["dev"]["overall_delta"]))
+                    "check": {"verdict": c["verdict"], "accepted": c["accepted"], "overall_delta": c["overall_delta"]},
+                    "verdict": verdict, "accepted": verdict != "rejected"})
+    return sorted(out, key=lambda r: (VERDICT_ORDER[r["verdict"]], -r["dev"]["overall_delta"]))

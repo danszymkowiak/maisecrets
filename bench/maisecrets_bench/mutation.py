@@ -32,6 +32,8 @@ from .paths import BenchError
 
 SETTABLE = {"regex", "keywords", "entropy", "score", "context", "require_context", "stopwords", "secret_group"}
 EPS = 1e-12
+RECALL_TOLERANCE = 0.005    # half a point of recall (docs/BENCHMARK.md, Judging a change)
+VERDICT_ORDER = {"strict": 0, "tolerance": 1, "rejected": 2}
 
 
 @dataclass(frozen=True)
@@ -122,17 +124,30 @@ def _worse(name: str, b: dict, m: dict) -> list[str]:
     return out
 
 
-def judge(base: dict, mut: dict, roles: dict) -> dict:
-    """Accepted when no dataset gets worse in recall, precision (where it has positives) or clean samples; a guard
-    dataset counts for that but not in the mean. overall_delta: the change of the mean score of the scored datasets."""
-    reasons, datasets, deltas = [], {}, []
+def _beyond_tolerance(name: str, b: dict, m: dict, tol: float) -> list[str]:
+    out = []
+    if m["score"] < b["score"] - EPS:
+        out.append(f"{name}: score {100 * b['score']:.2f}% -> {100 * m['score']:.2f}%")
+    if b["recall"] is not None and m["recall"] < b["recall"] - tol - EPS:
+        out.append(f"{name}: recall {100 * b['recall']:.2f}% -> {100 * m['recall']:.2f}%, beyond the tolerance")
+    return out
+
+
+def judge(base: dict, mut: dict, roles: dict, recall_tolerance: float = RECALL_TOLERANCE) -> dict:
+    """verdict "strict" when no dataset gets worse in recall, precision (where it has positives) or clean samples;
+    "tolerance" when it is not strict but on every dataset the score does not fall and recall falls by at most
+    recall_tolerance; else "rejected". A guard dataset counts for that but not in the mean. reasons: why it is not
+    strict; beyond: why it is rejected. overall_delta: the change of the mean score of the scored datasets."""
+    reasons, beyond, datasets, deltas = [], [], {}, []
     for name in sorted(base):
         b, m = score.metrics(base[name]), score.metrics(mut[name])
         reasons += _worse(name, b, m)
+        beyond += _beyond_tolerance(name, b, m, recall_tolerance)
         datasets[name] = {"role": roles.get(name, "scored"), "base": b, "mutated": m,
                           "score_delta": m["score"] - b["score"], "tp": (base[name].tp, mut[name].tp),
                           "fp": (base[name].fp, mut[name].fp), "found": (base[name].found, mut[name].found)}
         if roles.get(name, "scored") == "scored":
             deltas.append(m["score"] - b["score"])
-    return {"accepted": not reasons, "reasons": reasons, "datasets": datasets,
-            "overall_delta": sum(deltas) / len(deltas) if deltas else 0.0}
+    verdict = "strict" if not reasons else "tolerance" if not beyond else "rejected"
+    return {"verdict": verdict, "accepted": verdict != "rejected", "reasons": reasons, "beyond": beyond,
+            "datasets": datasets, "overall_delta": sum(deltas) / len(deltas) if deltas else 0.0}

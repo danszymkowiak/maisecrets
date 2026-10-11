@@ -3,8 +3,9 @@
 
     uv run --project bench python bench/mutate.py bench/mutations/*.toml [--baseline <run>] [--guard tab]
 
-Writes <data>/mutations/<time>/report.md and results.json: each mutation accepted or rejected, ranked by the change
-of the mean score of the scored datasets. A --guard dataset must not get worse but has no weight in the mean.
+Writes <data>/mutations/<time>/report.md and results.json: each mutation accepted, accepted within the recall
+tolerance or rejected, ranked by verdict and then by the change of the mean score of the scored datasets. A --guard
+dataset must not get worse but has no weight in the mean.
 """
 from __future__ import annotations
 
@@ -25,6 +26,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--baseline", type=Path, help="a full run directory (default: the newest full run)")
     ap.add_argument("--guard", default="", help="comma-separated datasets that must not get worse, without weight")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
+    ap.add_argument("--recall-tolerance", type=float, default=100 * mutation.RECALL_TOLERANCE,
+                    help="recall points a dataset may lose when its score does not fall (default %(default).1f)")
     args = ap.parse_args(argv)
     try:
         manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
@@ -35,7 +38,7 @@ def main(argv: list[str]) -> int:
         if unknown:
             raise BenchError(f"--guard names datasets not in the baseline: {', '.join(sorted(unknown))}")
         muts = [mutation.load(p) for p in args.mutations]
-        results = mutate.evaluate(muts, samples, det, roles, args.jobs)
+        results = mutate.evaluate(muts, samples, det, roles, args.jobs, args.recall_tolerance / 100)
     except (BenchError, ValueError) as exc:
         print(f"mutate: {exc}", file=sys.stderr)
         return 1
@@ -43,7 +46,7 @@ def main(argv: list[str]) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "results.json").write_text(json.dumps({"baseline": str(base_dir), "roles": roles, "results": results},
                                                  indent=2, default=str) + "\n", encoding="utf-8")
-    text = mutate.report(results, base_dir)
+    text = mutate.report(results, base_dir, args.recall_tolerance / 100)
     (out / "report.md").write_text(text, encoding="utf-8")
     print(text.split("\n## ")[0])
     print(f"report: {out / 'report.md'}")
