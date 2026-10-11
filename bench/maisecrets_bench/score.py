@@ -61,6 +61,23 @@ _TYPE_KEYS = ("tp", "fp", "found", "fn")
 _RULE_KEYS = ("hits", "tp", "fp")
 
 
+def classify(s: Sample, d: Detection, unlabelled_negative: bool, judged: frozenset | None = None) -> str:
+    """What one detection is: tp, fp, unjudged, neutral (out-of-scope positive or uncertain) or unreviewed. The rules
+    of score_sample, for the error export."""
+    def on(gold: str, in_scope: bool | None = None) -> bool:
+        return any(sp.gold == gold and (in_scope is None or (sp.maisecrets_type != OUT_OF_SCOPE) == in_scope)
+                   and _overlaps(d.start, d.end, sp.start, sp.end) for sp in s.spans)
+    if on("pos", True):
+        return "tp"
+    if judged is not None and d.type not in judged:
+        return "unjudged"
+    if on("pos", False) or on("uncertain"):
+        return "neutral"
+    if unlabelled_negative or on("neg"):
+        return "fp"
+    return "unreviewed"
+
+
 def score_sample(s: Sample, detections: list[Detection], unlabelled_negative: bool,
                  judged: frozenset | None = None) -> Counts:
     """Counts of one sample. `unlabelled_negative`: text that no span labels is negative (every dataset but CredData,

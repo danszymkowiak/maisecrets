@@ -91,6 +91,27 @@ class OutcomeTests(unittest.TestCase):
         self.assertEqual(c.by_type["PHONE"], {"tp": 0, "fp": 1, "found": 0, "fn": 0})
 
 
+class ClassifyAgreesTests(unittest.TestCase):
+    def test_classify_gives_the_same_counts_as_score_sample(self):
+        import random
+        rnd = random.Random(7)
+        golds, types = ("pos", "neg", "uncertain"), ("SECRET", "EMAIL", OOS)
+        for _ in range(500):
+            spans = []
+            for _ in range(rnd.randint(0, 4)):
+                a = rnd.randint(0, 90)
+                spans.append(Span(a, a + rnd.randint(1, 10), "l", rnd.choice(types), rnd.choice(golds)))
+            dets = []
+            for _ in range(rnd.randint(0, 4)):
+                a = rnd.randint(0, 90)
+                dets.append(_d(a, a + rnd.randint(1, 10), rnd.choice(("SECRET", "EMAIL", "PHONE"))))
+            neg, judged = rnd.random() < 0.5, rnd.choice((None, frozenset({"SECRET"})))
+            c = score.score_sample(_s(spans), dets, neg, judged)
+            kinds = [score.classify(_s(spans), d, neg, judged) for d in dets]
+            self.assertEqual((c.tp, c.fp, c.unreviewed, c.unjudged),
+                             (kinds.count("tp"), kinds.count("fp"), kinds.count("unreviewed"), kinds.count("unjudged")))
+
+
 class MetricTests(unittest.TestCase):
     def test_precision_recall_f1(self):
         m = score.metrics(score.Counts(tp=8, fp=2, found=6, fn=4))

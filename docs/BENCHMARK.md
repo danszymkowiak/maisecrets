@@ -169,10 +169,19 @@ A change written by a person is judged on all of the data. The split is determin
 
 ## Error export
 
-The misses and false alarms of a run go to a local file for review: rule, type, dataset, split and
-a masked context (the shape of the value: letters as `a`/`A`, digits as `9`; the label words before
-it). Never a value: the report and the export are what may be shared. A test checks that no gold
-value appears in either.
+`bench/errors.py` writes the false positives and misses of a run (dev split by default: an agent reads
+dev errors only) with rule, type, dataset, language, the shape of the value (letters as `a`/`A` in any
+script, digits as `9`) and the words before it. Masking, each rule found by checking an export against
+every gold value of the split:
+
+- a token with a capital letter, a digit or a non-ASCII letter is a shape;
+- a word inside a gold span of its sample is a shape, however plain (a password can be a word);
+- a first word the 40-character window cut is dropped (its tail showed part of a place name);
+- a lowercase word stays readable only when the contexts of at least 5 different sources hold it
+  (`routing`, `password:`); a rarer one, such as a value repeated on an unlabelled line, is a shape.
+
+After these rules, a gold value of 6 or more characters can equal a context word only when it is a word
+5 sources use. The export holds no source id.
 
 ## Hygiene
 

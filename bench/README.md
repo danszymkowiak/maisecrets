@@ -54,3 +54,12 @@ the bench only. Each is judged against the newest full run: accepted when no dat
 precision or clean samples, ranked by the change of the mean score of the scored datasets. A `--guard` dataset
 must not get worse but has no weight. A mutation that only disables rules re-runs just the samples where they
 fired (seconds); any other re-runs everything (minutes).
+
+## Reviewing the errors
+
+```bash
+uv run --project bench python bench/errors.py              # dev split of the newest run
+```
+
+Writes `errors-dev.jsonl` and `errors-dev.md` into the run: false positives by rule and misses by type, with
+shapes and the common words before them. Values, names and rare words are masked (docs/BENCHMARK.md).
