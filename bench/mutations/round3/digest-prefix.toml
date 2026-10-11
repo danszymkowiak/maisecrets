@@ -1,0 +1,32 @@
+name = "Generic rules: skip digest prefix"
+why = "TASK-11.20. A sha1-/sha256:/sha512-/h1: prefixed digest or integrity string."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:digest_prefix"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:digest_prefix"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:digest_prefix"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:digest_prefix"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:digest_prefix"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:digest_prefix"

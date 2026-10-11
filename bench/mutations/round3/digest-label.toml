@@ -1,0 +1,32 @@
+name = "Generic rules: skip digest label"
+why = "TASK-11.20. Hex of a digest length (32/40/56/64/96/128) behind a digest label (hash, sha, checksum, etag, commit, ...) and no secret word."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:digest_label"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:digest_label"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:digest_label"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:digest_label"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:digest_label"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:digest_label"

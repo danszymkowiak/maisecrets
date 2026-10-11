@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-11 17:44'
+updated_date: '2026-10-11 21:05'
 labels:
   - inbox
 dependencies: []
@@ -34,5 +34,10 @@ Tolerance (TASK-11.16): 'score not lower on every dataset' rejects changes over 
 created: 2026-10-11 17:44
 ---
 TASK-11.17 family C: about 1,300 of ai4privacy's dev false alarms (email 1,005, ip 318, phone 20) are values at offset 0 of a continuation record (ids ...B, ...C) that ai4privacy's own chunking left unlabelled; another ~2,300 are values its generator wrote outside the injected slots. Options: (a) the scorer leaves a detection at offset 0 of a continuation record uncounted (neutral) and reports state that ai4privacy precision is a lower bound; (b) only the lower-bound note; (c) nothing. I recommend (a): the first group is a provable gap of the dataset; the second cannot be split from real false alarms without reading text.
+---
+
+created: 2026-10-11 21:05
+---
+TASK-11.32: the digest filter of TASK-11.20 passed strictly (no find lost, 7 false alarms removed, mean +0.01). Options: (a) port it to detect.py with a can-fail belief; (b) leave it in the bench and close TASK-11.32. I recommend (b): the gain is 7 false alarms over four datasets, and every new exception in detect.py has to be maintained.
 ---
 <!-- COMMENTS:END -->

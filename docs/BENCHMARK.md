@@ -157,6 +157,14 @@ an environment name, a grep hit) and four base64 docker `auth` values. The two f
 ObjectIds and `integrity` strings drew no other false alarm: in tool output of this shape they are
 not the precision problem TASK-11.20 set out to fix.
 
+**Digest filters (TASK-11.20, `bench/mutations/round3/`).** On CredData, hex values of a digest length
+behind `generic-api-key` and the `ds-*` keyword rules are mostly real secrets (2,591 TP against 87 FP).
+So "drop unless a strong label" would lose about 2,100 finds. The filters in `filters.py` drop only what
+the text names as a digest: a digest label (`digest_label`), a `sha256:`/`sha512-`/`h1:` prefix
+(`digest_prefix`), or `ObjectId(...)`/`_id` (`object_id`). Every one is accepted strictly on dev and
+check, with no find lost. The combined filter removes 7 false alarms (CredData 6, synthetic 1); the
+mean rises by 0.01 points.
+
 ## Perturbation
 
 `bench/perturb.py` rewrites every in-scope positive of a fixed pick of samples per dataset (400 by
