@@ -1,0 +1,13 @@
+# TAB (ECHR court texts): entity_type -> maisecrets type. None of them has a shape maisecrets claims: names,
+# organisations, places, dates, demographics, amounts and case or application numbers are out of scope (only
+# terms.txt covers them). TAB is scored for precision, and for out-of-scope coverage (docs/BENCHMARK.md, TAB).
+
+[labels]
+PERSON = "OUT_OF_SCOPE"
+ORG = "OUT_OF_SCOPE"
+LOC = "OUT_OF_SCOPE"
+DATETIME = "OUT_OF_SCOPE"
+DEM = "OUT_OF_SCOPE"
+MISC = "OUT_OF_SCOPE"
+QUANTITY = "OUT_OF_SCOPE"
+CODE = "OUT_OF_SCOPE"

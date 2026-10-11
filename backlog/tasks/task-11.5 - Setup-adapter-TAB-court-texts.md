@@ -1,10 +1,10 @@
 ---
 id: TASK-11.5
 title: 'Setup adapter: TAB court texts'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 10:20'
-updated_date: '2026-10-11 10:20'
+updated_date: '2026-10-11 11:36'
 labels:
   - benchmark
   - dataset
@@ -23,6 +23,12 @@ ordinal: 19000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Span offsets verified against the text
-- [ ] #2 Annotator merge rule documented and tested
+- [x] #1 Span offsets verified against the text
+- [x] #2 Annotator merge rule documented and tested
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bench/maisecrets_bench/adapters/tab.py: one sample per document from echr_{train,dev,test}.json (1,268 docs, 9.6 M chars); mentions with equal offsets merged over annotators, pos if any marked DIRECT/QUASI, neg if all NO_MASK; offsets checked against span_text (all match); bench/labels/tab.toml maps all 8 types to OUT_OF_SCOPE (precision-only dataset). TAB's own train/dev/test split is not kept: the bench split by doc_id applies. 37 bench tests OK, ruff, scan_tree green.
+<!-- SECTION:FINAL_SUMMARY:END -->
