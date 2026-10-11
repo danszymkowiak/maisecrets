@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 12:23'
+updated_date: '2026-10-11 12:29'
 labels:
   - inbox
 dependencies: []
@@ -39,5 +39,10 @@ TASK-11.15 (your question: are the datasets even useful?). Full run 2026-10-11, 
 - tab: 0 in-scope positives, 99.7% of 1,268 documents without a false alarm (4 FPs in 9.6 M chars), 3 rules fire, 2 of 30 probes move it. DROP CANDIDATE: saturated and out of scope; it can only show a regression in legal prose.
 - Overlap: creddata/gretel move the same way on 16.7% of probes: not redundant.
 Options: (a) drop TAB from the score, keep it as a regression guard (a change must not lower its clean rate; it gets no weight in the mean); (b) drop it entirely; (c) keep it with equal weight. I recommend (a) because it costs 1 s per run and catches false alarms in long prose, which neither other dataset has, but with equal weight its 99.7% would dilute every real improvement to a third. ai4privacy is still parked on its licence (TASK-11.6).
+---
+
+created: 2026-10-11 12:29
+---
+TASK-11.10 result for you to weigh (bench/mutations/*.toml, judged 2026-10-11 with TAB as guard): your rule 'equal or better on every dataset' accepts only 'drop uk-postcode' (+0.39 on Gretel). 'Drop us-bank' is the big trade-off: Gretel false alarms 7,260 -> 3,218 (precision 75.1% -> 87.1%) but 215 fewer finds (recall 63.13% -> 62.52%), because us-bank also hits real routing/card numbers; mean score +2.09. Options: (a) keep the strict rule, and look for a combined change that recovers those 215 finds (for example drop us-bank and tighten the routing-number rule); (b) allow a small recall loss when precision gains much more (a tolerance, e.g. F1 must rise and recall may fall by at most 0.5 points). I recommend (a) first: the agent loop (TASK-11.13) can search for such pairs, and a tolerance can still come later.
 ---
 <!-- COMMENTS:END -->

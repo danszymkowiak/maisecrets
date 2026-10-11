@@ -1,0 +1,10 @@
+name = "Drop the US passport rules"
+why = "Probe: +0.23 on Gretel."
+
+[[change]]
+op = "disable"
+rule = "us-passport#0"
+
+[[change]]
+op = "disable"
+rule = "us-passport#1"

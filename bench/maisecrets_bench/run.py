@@ -32,8 +32,9 @@ JUDGED = {"creddata": frozenset({"SECRET"})}
 _detect = None
 
 
-def _init_worker(regions: list[str], locale: str) -> None:
-    """A fresh home with the test store and the group's regions; the locale fixed. Runs before maisecrets loads."""
+def _init_worker(regions: list[str], locale: str, mutation=None) -> None:
+    """A fresh home with the test store and the group's regions; the locale fixed; the rules mutated when a mutation
+    is given (bench only, the plugin is not edited). Runs before maisecrets loads."""
     global _detect
     home = Path(tempfile.mkdtemp(prefix="maisecrets-bench-run-"))
     (home / "config.json").write_text(json.dumps({"backend": "jsonfile", "allow_plaintext_store": True,
@@ -42,6 +43,9 @@ def _init_worker(regions: list[str], locale: str) -> None:
     os.environ["MAISECRETS_LOCALE"] = locale
     from . import detector
     _detect = detector.detect
+    if mutation is not None:
+        from .mutation import apply
+        _detect._RULES = apply(mutation, _detect.rules())
 
 
 def _detections(text: str) -> list[score.Detection]:
@@ -52,9 +56,9 @@ def _detect_chunk(chunk: list[Sample]) -> list[tuple[str, str, list[score.Detect
     return [(s.dataset, s.sample_id, _detections(s.text)) for s in chunk]
 
 
-def _active(regions: list[str], locale: str) -> dict:
+def _active(regions: list[str], locale: str, mutation=None) -> dict:
     """The rules, regions and label languages a group runs with, from a worker of its own."""
-    with ProcessPoolExecutor(1, initializer=_init_worker, initargs=(regions, locale)) as ex:
+    with ProcessPoolExecutor(1, initializer=_init_worker, initargs=(regions, locale, mutation)) as ex:
         return ex.submit(_describe).result()
 
 
@@ -64,7 +68,7 @@ def _describe() -> dict:
             "rules": sorted({r.id for r in _detect.rules()})}
 
 
-def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50) -> tuple[dict, dict]:
+def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50, mutation=None) -> tuple[dict, dict]:
     """((dataset, sample_id) -> detections, language -> what it ran with)."""
     by_lang: dict[str, list[Sample]] = {}
     for s in samples:
@@ -73,10 +77,10 @@ def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50) -> tuple[d
     groups = {}
     for lang, group in sorted(by_lang.items()):
         regions, locale = LANGUAGES[lang]
-        groups[lang] = {**_active(regions, locale), "samples": len(group)}
+        groups[lang] = {**_active(regions, locale, mutation), "samples": len(group)}
         group.sort(key=lambda s: -len(s.text))      # the long files first: no straggler at the end
         chunks = [group[i:i + chunk] for i in range(0, len(group), chunk)]
-        with ProcessPoolExecutor(jobs, initializer=_init_worker, initargs=(regions, locale)) as ex:
+        with ProcessPoolExecutor(jobs, initializer=_init_worker, initargs=(regions, locale, mutation)) as ex:
             for part in ex.map(_detect_chunk, chunks):
                 for dataset, sample_id, ds in part:
                     det[(dataset, sample_id)] = ds

@@ -1,0 +1,6 @@
+name = "Drop us-bank"
+why = "Probe: 4,117 false alarms on Gretel, raises its score by 4.2 points, fires nowhere else."
+
+[[change]]
+op = "disable"
+rule = "us-bank"

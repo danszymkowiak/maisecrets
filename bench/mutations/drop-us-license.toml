@@ -1,0 +1,10 @@
+name = "Drop the US driving licence rules"
+why = "Probe: +0.24 on Gretel, +0.24 on TAB."
+
+[[change]]
+op = "disable"
+rule = "us-license#0"
+
+[[change]]
+op = "disable"
+rule = "us-license#1"

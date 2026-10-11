@@ -68,6 +68,16 @@ class RunTests(unittest.TestCase):
         self.assertIn(("toy", "a"), det)
         self.assertEqual(run.score_all(_samples(), det)["toy"]["dev"].found, 1)
 
+    def test_a_mutation_that_loses_a_find_is_rejected_and_reruns_only_where_the_rule_fired(self):
+        from maisecrets_bench import mutate
+        from maisecrets_bench.mutation import Mutation
+        samples, det, names = mutate.baseline(self.out, self.out.parent)
+        m = Mutation("no email", "", [{"op": "disable", "rule": "email"}])
+        (r,) = mutate.evaluate([m], samples, det, {}, jobs=2)
+        self.assertFalse(r["accepted"])
+        self.assertEqual(r["rerun_samples"], 1, "only sample a had an e-mail hit")
+        self.assertIn("toy: recall", " ".join(r["reasons"]))
+
     def test_the_report_names_the_overall_score(self):
         self.assertIn("Overall score", (self.out / "report.md").read_text(encoding="utf-8"))
 

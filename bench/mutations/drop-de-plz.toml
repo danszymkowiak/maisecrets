@@ -1,0 +1,6 @@
+name = "Drop de-plz"
+why = "Probe: +0.38 on Gretel; a German postcode alone identifies no one."
+
+[[change]]
+op = "disable"
+rule = "de-plz"

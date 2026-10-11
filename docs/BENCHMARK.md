@@ -146,6 +146,10 @@ the bench, never by editing the project, and scored against the baseline on the 
 - **Inclusion:** on every dataset, precision and recall are each equal to or better than the
   baseline. The counts are exact, so there is no noise to allow for.
 - **Ranking:** accepted mutations are ordered by the change of the overall score (equal weights).
+- **Roles:** a dataset is *scored* (in the mean) or a *guard* (it must not get worse, but has no weight);
+  a saturated dataset can serve as a guard (TASK-11.15).
+- A mutation that only disables rules is re-run on the samples where those rules fired in the baseline:
+  elsewhere they matched nothing, so nothing can change. Any other mutation re-runs every sample.
 - A rule that never fires is flagged, not removed: removal is a mutation like any other.
 
 ## Dev and check: no folds

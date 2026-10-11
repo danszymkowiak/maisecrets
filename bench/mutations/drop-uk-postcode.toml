@@ -1,0 +1,6 @@
+name = "Drop uk-postcode"
+why = "Probe: +0.39 on Gretel; a UK postcode is an address part, out of scope for every dataset."
+
+[[change]]
+op = "disable"
+rule = "uk-postcode"

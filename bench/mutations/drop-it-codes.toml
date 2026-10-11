@@ -1,0 +1,10 @@
+name = "Drop the Italian fiscal and VAT code rules"
+why = "Probe: +0.21 and +0.18 on Gretel."
+
+[[change]]
+op = "disable"
+rule = "it-fiscal-code"
+
+[[change]]
+op = "disable"
+rule = "it-vat-code"

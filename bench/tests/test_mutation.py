@@ -1,0 +1,103 @@
+"""Rule mutations (docs/BENCHMARK.md, Judging a change): a TOML file that disables, changes or adds rules, applied to
+the detector's rule list inside the bench, never to the plugin; and the judgement against the baseline.
+
+Run: uv run --project bench python -m unittest discover -s bench/tests
+"""
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from maisecrets_bench import detector, mutation
+from maisecrets_bench.paths import BenchError
+from maisecrets_bench.score import Counts
+
+D = detector.detect
+MAIL = "zq.tester@example-mail.org"
+
+
+def _load(text: str) -> mutation.Mutation:
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "m.toml"
+        p.write_text(text, encoding="utf-8")
+        return mutation.load(p)
+
+
+class ApplyTests(unittest.TestCase):
+    def setUp(self):
+        self.base = list(D.rules())
+
+    def scan_with(self, m: mutation.Mutation, text: str) -> list:
+        rules = mutation.apply(m, self.base)
+        old = D._RULES
+        D._RULES = rules
+        try:
+            return [(x.kind, x.type) for x in D.scan(text)]
+        finally:
+            D._RULES = old
+
+    def test_disable_removes_the_rule(self):
+        m = _load('name = "no email"\n[[change]]\nop = "disable"\nrule = "email"\n')
+        self.assertIn(("email", "EMAIL"), self.scan_with(mutation.Mutation("none", "", []), f"to {MAIL}"))
+        self.assertNotIn(("email", "EMAIL"), self.scan_with(m, f"to {MAIL}"))
+
+    def test_add_puts_a_new_rule_in(self):
+        m = _load('name = "zz"\n[[change]]\nop = "add"\nid = "zz-token"\ntype = "SECRET"\nregex = "ZZTOK[0-9]{6}"\n')
+        self.assertIn(("zz-token", "SECRET"), self.scan_with(m, "value ZZTOK123456 here"))
+
+    def test_set_changes_a_field_of_a_rule(self):
+        m = _load('name = "narrow"\n[[change]]\nop = "set"\nrule = "email"\nregex = "nomatch@nowhere\\\\.invalid"\n')
+        self.assertNotIn(("email", "EMAIL"), self.scan_with(m, f"to {MAIL}"))
+
+    def test_the_plugin_rules_stay_untouched(self):
+        before = [r.id for r in self.base]
+        mutation.apply(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n'), self.base)
+        self.assertEqual([r.id for r in self.base], before)
+
+    def test_an_unknown_rule_is_named(self):
+        with self.assertRaisesRegex(BenchError, "'no-such-rule'"):
+            mutation.apply(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'), self.base)
+
+    def test_an_unknown_field_is_named(self):
+        with self.assertRaisesRegex(BenchError, "'colour'"):
+            mutation.apply(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\ncolour = "red"\n'), self.base)
+
+    def test_a_disable_only_mutation_says_so(self):
+        self.assertTrue(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n').disable_only)
+        self.assertFalse(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\nentropy = 3.0\n').disable_only)
+
+
+class JudgeTests(unittest.TestCase):
+    BASE = {"a": Counts(tp=80, fp=20, found=60, fn=40, samples=100, clean=90),
+            "b": Counts(tp=50, fp=50, found=50, fn=50, samples=100, clean=60),
+            "g": Counts(fp=4, samples=1000, clean=996)}
+
+    def test_better_everywhere_is_accepted_and_ranked_by_the_mean_of_the_scored(self):
+        mut = dict(self.BASE, b=Counts(tp=50, fp=10, found=50, fn=50, samples=100, clean=90))
+        j = mutation.judge(self.BASE, mut, {"g": "guard"})
+        self.assertTrue(j["accepted"])
+        self.assertGreater(j["overall_delta"], 0)
+        self.assertEqual(set(j["datasets"]), {"a", "b", "g"})
+
+    def test_a_loss_of_recall_anywhere_rejects(self):
+        mut = dict(self.BASE, a=Counts(tp=80, fp=0, found=59, fn=41, samples=100, clean=100))
+        j = mutation.judge(self.BASE, mut, {})
+        self.assertFalse(j["accepted"])
+        self.assertIn("a: recall", " ".join(j["reasons"]))
+
+    def test_a_guard_dataset_rejects_when_it_gets_worse_but_has_no_weight(self):
+        worse_guard = dict(self.BASE, g=Counts(fp=9, samples=1000, clean=991))
+        j = mutation.judge(self.BASE, worse_guard, {"g": "guard"})
+        self.assertFalse(j["accepted"])
+        self.assertIn("g: clean samples", " ".join(j["reasons"]))
+        self.assertEqual(j["overall_delta"], 0.0, "the guard does not enter the mean")
+
+    def test_no_change_is_accepted_with_zero_delta(self):
+        j = mutation.judge(self.BASE, dict(self.BASE), {})
+        self.assertTrue(j["accepted"])
+        self.assertEqual(j["overall_delta"], 0.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
