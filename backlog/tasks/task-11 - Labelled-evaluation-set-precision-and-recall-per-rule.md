@@ -4,10 +4,12 @@ title: 'Labelled evaluation set: precision and recall per rule'
 status: To Do
 assignee: []
 created_date: '2026-10-11 08:05'
+updated_date: '2026-10-11 08:27'
 labels:
   - detection
   - measurement
-dependencies: []
+dependencies:
+  - TASK-13
 priority: low
 ordinal: 11000
 ---

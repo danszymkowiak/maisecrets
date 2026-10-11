@@ -456,7 +456,9 @@ PRIMER = (
     "manages the stored values and the settings. When the user asks for the value in a file or a command, "
     "put the placeholder there as they asked. In test data, write values that name themselves (testpass, "
     "my-test-token), addresses at example.com and placeholders such as <your-token>: maisecrets leaves them "
-    "alone, and a password in a test file is taken for a fixture."
+    "alone, and a password in a test file is taken for a fixture. A Read of a PDF or an image asks the user "
+    "first, because it reaches you unredacted; if they deny it, read the text locally instead: "
+    "pdftotext -layout file.pdf - for a PDF, tesseract image.png - -l pol+eng for an image."
 )
 
 
@@ -2957,6 +2959,32 @@ def _pre_powershell(payload: dict, tool_input: dict, cfg: dict | None = None) ->
     return {}
 
 
+_DOCUMENT_EXT = (".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".tif", ".tiff")
+_PDF_ROUTE = "pdftotext -layout file.pdf -"
+_OCR_ROUTE = "tesseract image.png - -l pol+eng"
+
+
+def _is_document(path: str) -> bool:
+    return path.lower().endswith(_DOCUMENT_EXT)
+
+
+def _document_read(payload: dict, path: str) -> dict:
+    """A Read of a PDF or an image hands the model the document itself, which PostToolUse cannot redact
+    (docs/TERMS.md, "PDF and image reads"). Claude Code: the person decides, in auto mode too. Codex has
+    no ask here: a deny that names the local route, whose text output passes the redactor."""
+    route = _PDF_ROUTE if path.lower().endswith(".pdf") else _OCR_ROUTE
+    if client_of(payload) == "codex":
+        return _deny(f"maisecrets: a Read of {path} would send the document to the model unredacted. Nothing was "
+                     f"read. Extract its text locally instead, for example `{route}` (with the real path); that "
+                     "output is redacted.")
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
+                                   "permissionDecisionReason":
+                                       f"maisecrets: approve sends {path} to the model as it is, unredacted "
+                                       "(maisecrets cannot redact a document or an image). Deny, and the agent "
+                                       "can extract its text locally; that text is redacted before the model "
+                                       "sees it."}}
+
+
 def pre_tool(payload: dict) -> dict:
     cfg = load_config()
     tool = payload.get("tool_name", "")
@@ -2969,6 +2997,8 @@ def pre_tool(payload: dict) -> dict:
         refused = _store_path_refusal(tool, tool_input, str(payload.get("cwd") or ""))
         if refused:
             return refused
+        if tool == "Read" and _is_document(str(tool_input.get("file_path") or "")):
+            return _document_read(payload, str(tool_input.get("file_path")))
         if tool in _READ_TOOLS or tool in _MCP_RESOURCE_TOOLS:
             return {}
     if tool in _FILE_TOOLS or tool == "apply_patch":
