@@ -11,12 +11,12 @@ from pathlib import Path
 
 from maisecrets_bench import schema
 from maisecrets_bench.paths import BenchError
-from maisecrets_bench.schema import Line, Sample, Span
+from maisecrets_bench.schema import Sample, Span
 
 
 def _sample(**kw) -> Sample:
     base = dict(dataset="toy", sample_id="s1", group_id="g1", language="en", text="mail a@example.com now",
-                spans=[Span(5, 18, "EMAIL_ADDR", "EMAIL", "pos")], lines=[], split="dev")
+                spans=[Span(5, 18, "EMAIL_ADDR", "EMAIL", "pos")], split="dev")
     base.update(kw)
     return Sample(**base)
 
@@ -44,10 +44,6 @@ class ValidateTests(unittest.TestCase):
     def test_out_of_scope_is_a_type(self):
         schema.validate(_sample(spans=[Span(0, 4, "VERB", "OUT_OF_SCOPE", "neg")]))
 
-    def test_a_line_number_below_one_is_refused(self):
-        with self.assertRaisesRegex(BenchError, "line 0"):
-            schema.validate(_sample(lines=[Line(0, "pos", "SECRET")]))
-
     def test_a_split_other_than_dev_or_check_is_refused(self):
         with self.assertRaisesRegex(BenchError, "split 'train'"):
             schema.validate(_sample(split="train"))
@@ -60,8 +56,8 @@ class ValidateTests(unittest.TestCase):
 
 class ParquetTests(unittest.TestCase):
     def test_samples_read_back_the_same(self):
-        rows = [_sample(), _sample(sample_id="s2", group_id="g2", text="line one\nkey here", spans=[],
-                                   lines=[Line(2, "pos", "SECRET"), Line(1, "neg", "SECRET")], split="check")]
+        rows = [_sample(), _sample(sample_id="s2", group_id="g2", text="line one\nkey here", spans=[Span(9, 17, "Token", "SECRET", "pos")],
+                                   split="check")]
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "toy.parquet"
             schema.write(rows, path)

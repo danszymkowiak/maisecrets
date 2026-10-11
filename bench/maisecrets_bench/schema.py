@@ -24,13 +24,6 @@ class Span:
     gold: str               # pos, neg or uncertain
 
 
-@dataclass(frozen=True)
-class Line:                 # CredData: the gold of one line of a file (1-based)
-    line: int
-    gold: str
-    maisecrets_type: str
-
-
 @dataclass
 class Sample:
     dataset: str
@@ -39,7 +32,6 @@ class Sample:
     language: str
     text: str
     spans: list = field(default_factory=list)
-    lines: list = field(default_factory=list)
     split: str = "dev"
 
 
@@ -48,7 +40,6 @@ ARROW = pa.schema([
     ("text", pa.large_string()),
     ("spans", pa.list_(pa.struct([("start", pa.int32()), ("end", pa.int32()), ("label", pa.string()),
                                   ("maisecrets_type", pa.string()), ("gold", pa.string())]))),
-    ("lines", pa.list_(pa.struct([("line", pa.int32()), ("gold", pa.string()), ("maisecrets_type", pa.string())]))),
     ("split", pa.string()),
 ])
 
@@ -73,11 +64,6 @@ def validate(s: Sample) -> None:
                              f"(length {len(s.text)}) or empty")
         _check_gold(s, sp.gold)
         _check_type(s, sp.maisecrets_type)
-    for ln in s.lines:
-        if ln.line < 1:
-            raise BenchError(f"{s.dataset}/{s.sample_id}: line {ln.line} is below 1")
-        _check_gold(s, ln.gold)
-        _check_type(s, ln.maisecrets_type)
 
 
 def write(samples: list[Sample], path: Path) -> None:
@@ -91,6 +77,5 @@ def read(path: Path) -> list[Sample]:
     out = []
     for r in pq.read_table(path, schema=ARROW).to_pylist():
         r["spans"] = [Span(**x) for x in r["spans"]]
-        r["lines"] = [Line(**x) for x in r["lines"]]
         out.append(Sample(**r))
     return out

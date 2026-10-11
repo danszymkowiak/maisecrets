@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 11:06'
+updated_date: '2026-10-11 11:27'
 labels:
   - detection
   - false-positive
@@ -26,3 +26,9 @@ ordinal: 29000
 - [ ] #1 Case in tests/fp_corpus.py NO_HIT
 - [ ] #2 Detector silent on it, or a recorded decision to keep it
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+More cases of the same rule (ds-keyword-colon), 2026-10-11: CredData category names 'Password' and 'Token', each followed by a colon and 'Credential', in bench/labels/creddata.toml. Written there with the colon as the TOML escape u003A.
+<!-- SECTION:NOTES:END -->

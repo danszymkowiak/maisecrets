@@ -28,7 +28,7 @@ The detector runs in a temp maisecrets home (`MAISECRETS_HOME`), never the real 
 
 | dataset | unit | gold | role |
 |---|---|---|---|
-| Samsung CredData | a file; gold per line (`meta/*.csv`: `GroundTruth` T/F/X, value span) | 15,753 T, 48,061 F, 4,082 X lines | precision and recall for secrets; values obfuscated with their shape kept |
+| Samsung CredData | a file (or a window of a large one); a gold span per meta row (`meta/*.csv`: `GroundTruth` T/F/X) | 15,753 T, 48,061 F, 4,082 X rows | precision and recall for secrets; values obfuscated with their shape kept |
 | TAB (ECHR court texts) | a document; spans from two annotators | `DIRECT`/`QUASI`/`NO_MASK` per mention | precision on legal prose; out-of-scope coverage |
 | ai4privacy `pii-masking-300k` | a record; `privacy_mask` spans | PII labels, six languages | PII: precision and recall |
 | Gretel `synthetic_pii_finance_multilingual` | a document; `pii_spans` | finance PII and credentials, several languages | PII and secrets in finance text |
@@ -47,7 +47,6 @@ One parquet file per dataset, one row per sample:
 | `language` | str | ISO 639-1, or `und` |
 | `text` | str | the full text the detector scans |
 | `spans` | list of struct | gold spans: `start`, `end` (characters), `label` (the dataset's own), `maisecrets_type` (a type, or `OUT_OF_SCOPE`), `gold` (`pos`, `neg`, `uncertain`) |
-| `lines` | list of struct, CredData only | per labelled line: `line` (1-based), `gold`, `maisecrets_type` |
 | `split` | str | `dev` or `check` (below) |
 
 The label table of each dataset is explicit (`bench/labels/<dataset>.toml`). A label that is not in
@@ -63,7 +62,7 @@ it stops the setup: every new label is a decision, never a default.
 - **False negative:** an in-scope `pos` span that no detection overlaps.
 - **False positive:** a detection that overlaps no gold span with `pos` at all, in scope or not.
   Redacting a name that maisecrets does not claim is no error.
-- `uncertain` spans and CredData `X` lines are left out of every count.
+- `uncertain` spans and CredData `X` rows are left out of every count.
 - The headline is *redacted or not*. A type mismatch (a `SECRET` hit on a span the gold calls an
   e-mail) is a true positive and is listed in a confusion table beside it.
 - **Out-of-scope coverage** (how many out-of-scope `pos` spans a detection overlaps) is reported
@@ -71,13 +70,19 @@ it stops the setup: every new label is a decision, never a default.
 
 ### CredData
 
-The whole file is scanned, so a rule that looks across lines (the AWS secret within a few lines
-of its `AKIA…` id, a `password =` label) sees what it sees in real use. Each detection is placed
-by its line: on a `T` line it is a true positive, on an `F` line a false positive, on an `X` line
-nothing. A detection on a line with no label counts as **unreviewed**, reported as hits per 1,000
-lines (the measure of `scripts/measure_false_alarms.py`) and not in precision: the dataset never
-said those lines are clean. A `T` line no detection touches is a false negative. CredData's `F`
-lines are near misses chosen by detectors, so its precision is pessimistic by design.
+Each meta row is one gold span: its value (`ValueStart`/`ValueEnd` on a single line) or, when it
+names no value, its lines. `T` is `pos`, `F` `neg`, `X` `uncertain`; so a credential counts once,
+however many lines it covers (a PEM key spans dozens). The whole file is scanned, so a rule that
+looks across lines (the AWS secret within a few lines of its `AKIA…` id, a `password =` label)
+sees what it sees in real use. A file above 1 MiB (167 of 11,030 files, 745 of 969 MB) is cut into
+windows of 50 lines on each side of its labelled lines, merged where they overlap.
+
+A detection that overlaps a `pos` span is a true positive; one that overlaps no `pos` span but an
+`F` span is a false positive. A detection that overlaps no labelled span counts as **unreviewed**,
+reported as hits per 1,000 lines scanned (the measure of `scripts/measure_false_alarms.py`) and not
+in precision: CredData never said the rest of a file is clean. This is the one difference from the
+other datasets, where unlabelled text is negative. CredData's `F` rows are near misses chosen by
+detectors, so its precision is pessimistic by design.
 
 The values are obfuscated with their shape kept; a checksum or entropy rule can behave a little
 differently than on the real value. The report says so.
