@@ -1,9 +1,10 @@
 ---
 id: TASK-10
 title: 'CLAUDE.md: describe the fork''s own setup'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 07:56'
+updated_date: '2026-10-11 09:33'
 labels:
   - docs
 dependencies: []
@@ -19,7 +20,13 @@ origin is the personal GitHub fork; the GitLab pipeline, the release/mirror jobs
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CLAUDE.md says which remote is origin and that the GitLab CI and release flow do not run for the fork
-- [ ] #2 The check list in CLAUDE.md names only checks that can run here
-- [ ] #3 CLAUDE.md tells to run scripts/install-hooks.sh after cloning
+- [x] #1 CLAUDE.md says which remote is origin and that the GitLab CI and release flow do not run for the fork
+- [x] #2 The check list in CLAUDE.md names only checks that can run here
+- [x] #3 CLAUDE.md tells to run scripts/install-hooks.sh after cloning
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CLAUDE.md now describes the fork: origin is the user's public GitHub fork of Mcpgate-de/maisecrets (no handle in the file: the repo is public), upstream's GitLab pipeline, release and mirror never run here, keep .gitlab-ci.yml and the release scripts, upstream changes go as a GitHub PR after asking, run scripts/install-hooks.sh after a clone. Versions: the fork does not release. Push rule: only when the user says so; a push to main starts .github ci.yml (Windows + macOS; Actions enabled on the fork, no run yet). Check list: every check runs here (uvx ruff, claude plugin test added). Read-first now says C1 to C25. Checks: lint_plugin, derived_counts, scan_tree green; full suite runs in the pre-commit hook.
+<!-- SECTION:FINAL_SUMMARY:END -->

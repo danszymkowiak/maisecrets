@@ -7,7 +7,8 @@ output. `README.md` says what it does for users; `docs/` holds the design.
 
 ## Read first
 
-- `docs/THREAT-MODEL.md`: the controls C1 to C23, what each one blocks and where it ends.
+- `docs/THREAT-MODEL.md`: the controls C1 to C25, what each one blocks and where it ends (C25,
+  personal terms, is this fork's; `docs/TERMS.md` holds its design).
 - `docs/REPO-STANDARDS.md`: layout, git hooks, CI, versions and releases, remotes, directory rules.
 - `docs/TESTING.md`: the test layers and how to run them.
 - `docs/PROTOCOL.md` and `docs/CLIENTS.md`: the hook payloads of each client.
@@ -19,22 +20,26 @@ output. `README.md` says what it does for users; `docs/` holds the design.
   (`tests/_isolate.py` does this). Never read `~/.maisecrets`, a keychain or a Credential Locker.
 - **Never read session transcripts** to find test data. Use synthetic values.
 - **No personal names, private hosts or real email addresses** in the repository. It is public.
-- **Versions:** a release moves only the last number (`scripts/release.py`). A minor or major bump
-  needs the maintainer's approval (`MAISECRETS_RELEASE_BUMP`).
+- **Versions:** this fork does not release. Leave the version in the manifests alone; upstream's
+  release job (`scripts/release.py`) sets it there.
 - **Commit subjects** follow `type(scope): text`; `feat fix perf security deps` become the
   changelog line, so write them for the user.
-- **Commit often, push rarely.** Each push runs the GitLab pipeline and two GitHub runners. Collect
-  commits and push them together.
+- **Commit often, push only when the user says so.** A push to `main` of the fork starts
+  `.github/workflows/ci.yml` (a Windows and a macOS runner); collect commits and push them together.
 
 ## Where the code lives
 
-- GitLab (`gitlab.com/Sprinterli/maisecrets`) is the primary repository and runs the CI. A merge
-  to `main` there releases: the release job tags it, and the mirror job pushes `main`, the tag and a
-  `release` branch (runtime files only, `scripts/build_release_tree.py`) to GitHub.
-- GitHub (`Mcpgate-de/maisecrets`) is the public mirror, the install marketplace and the issue
-  tracker. Never merge on GitHub: the next mirror push would fail as not a fast-forward. Take a
-  GitHub pull request into GitLab (`git fetch <github> pull/<n>/head:pr-<n>`, merge request there);
-  a commit with `Fixes Mcpgate-de/maisecrets#<n>` closes the issue when the mirror pushes it.
+- This clone is a personal fork. `origin` is the user's own public GitHub fork of
+  `Mcpgate-de/maisecrets` (`git remote -v` names it). There is no `upstream` remote; add one only to read it.
+- Upstream's own flow does not run for the fork: its primary repository is on GitLab
+  (`gitlab.com/Sprinterli/maisecrets`), whose pipeline (`.gitlab-ci.yml`) tests, tags, releases and
+  mirrors `main` and a `release` branch to `Mcpgate-de/maisecrets`, the install marketplace. None of
+  that runs on a push here, and nothing here is published to the marketplace. Keep `.gitlab-ci.yml`
+  and the release scripts: they are upstream's, and a change offered upstream must still pass them.
+- A change for upstream goes as a pull request from this fork to `Mcpgate-de/maisecrets` (upstream
+  takes it into GitLab; never expect a merge on GitHub). Ask the user before opening one.
+- After a fresh clone run `scripts/install-hooks.sh` once: it installs the commit and push hooks
+  that run the checks below (this clone had none until 2026-10-11).
 
 ## Checks before a push
 
@@ -44,13 +49,15 @@ python3 scripts/replay_can_fail.py             # each belief's test must go red 
 python3 scripts/scan_tree.py                   # no secret shape in the tree, test literals included
 python3 scripts/derived_counts.py              # the numbers stated in the docs
 python3 scripts/lint_plugin.py                 # frontmatter YAML, manifests, hook paths, command names
-ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills
+uvx ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills
 python3 harness/run.py                         # the real claude client against a fake upstream
+claude plugin test .                           # the mod's own tests (tests/mod.test.ts)
 ```
 
-The git hooks (`scripts/install-hooks.sh`) run these on commit and push. CI runs as root in
-`python:3.12-slim`: a test that depends on file permissions must allow for
-root.
+All of them run on this machine (`ruff` through `uvx`, the harness with the installed `claude`).
+The git hooks (`scripts/install-hooks.sh`) run them on commit and push. Upstream's CI runs as root
+in `python:3.12-slim`: a test that depends on file permissions must allow for root, or the change
+fails there when it is offered upstream.
 
 ## Known traps
 
