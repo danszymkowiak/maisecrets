@@ -21,8 +21,9 @@ FREE = f"Call {PHONE} please."
 
 def _samples():
     m = TEXT.index(MAIL)
-    return [Sample("toy", "a", "g1", "en", TEXT, [Span(m, m + len(MAIL), "EMAIL", "EMAIL", "pos")], "dev"),
-            Sample("toy", "b", "g2", "de", FREE, [], "check"),
+    return [Sample("toy", "a", "g1", "en", TEXT, [Span(m, m + len(MAIL), "EMAIL", "EMAIL", "pos")], "dev",
+                   ["format:unstructured"]),
+            Sample("toy", "b", "g2", "de", FREE, [], "check", ["format:structured"]),
             Sample("toy", "c", "g3", "en", "no secrets in this line", [Span(0, 2, "X", "EMAIL", "pos")], "dev")]
 
 
@@ -46,6 +47,15 @@ class RunTests(unittest.TestCase):
         self.assertGreaterEqual(a["fp"], 1, "the phone number in unlabelled text is a false positive")
         self.assertIn("dev", self.summary["datasets"]["toy"])
         self.assertIn("check", self.summary["datasets"]["toy"])
+
+    def test_scores_per_tag(self):
+        tags = self.summary["datasets"]["toy"]["tags"]
+        self.assertEqual(sorted(tags), ["format:structured", "format:unstructured"])
+        self.assertEqual((tags["format:unstructured"]["tp"], tags["format:unstructured"]["samples"]), (1, 1))
+        self.assertEqual(tags["format:structured"]["tp"], 0)
+        self.assertGreaterEqual(tags["format:structured"]["fp"], 1)
+        report = (self.out / "report.md").read_text(encoding="utf-8")
+        self.assertIn("| format:structured |", report)
 
     def test_each_language_ran_with_its_own_regions(self):
         groups = self.summary["groups"]

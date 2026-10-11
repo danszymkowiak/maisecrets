@@ -17,9 +17,10 @@ TEXT = "Contact jo@example.com or call +49 30 1234567 about the account."
 TABLE = LabelTable("gretel", {"email": "EMAIL", "phone_number": "PHONE", "company": "OUT_OF_SCOPE"})
 
 
-def _rec(i, spans, text=TEXT, language="German", split="train"):
+def _rec(i, spans, text=TEXT, language="German", split="train", quality=90, document_type="Email"):
     return {"index": i, "level_0": i, "language": language, "generated_text": text,
-            "pii_spans": json.dumps(spans), "_split": split}
+            "pii_spans": json.dumps(spans), "_split": split, "quality_score": quality,
+            "document_type": document_type}
 
 
 class GretelTests(unittest.TestCase):
@@ -52,6 +53,21 @@ class GretelTests(unittest.TestCase):
     def test_an_unknown_label_stops_with_its_name(self):
         with self.assertRaisesRegex(BenchError, "'shoe_size'"):
             list(gretel.samples([_rec(1, [{"start": 0, "end": 7, "label": "shoe_size"}])], TABLE, gretel.Stats()))
+
+    def test_a_record_below_quality_90_is_dropped_and_counted(self):
+        stats = gretel.Stats()
+        out = list(gretel.samples([_rec(1, [], quality=89), _rec(2, [], quality=90), _rec(3, [], quality=95)],
+                                  TABLE, stats))
+        self.assertEqual([s.sample_id for s in out], ["train:2", "train:3"])
+        self.assertEqual(stats.low_quality, 1)
+
+    def test_structured_formats_are_tagged_apart(self):
+        for doc, fmt in (("MT940", "structured"), ("CSV", "structured"), ("SWIFT Message", "structured"),
+                         ("FIX Protocol", "structured"), ("Email", "unstructured"), ("Tax Return", "unstructured")):
+            (s,) = list(gretel.samples([_rec(1, [], document_type=doc)], TABLE, gretel.Stats()))
+            self.assertEqual(s.tags, [f"format:{fmt}"], doc)
+        self.assertEqual(gretel.STRUCTURED, {"CSV", "EDI", "SWIFT Message", "FIX Protocol", "BAI Format", "XBRL",
+                                             "FpML", "MT940"})
 
     def test_train_and_test_records_with_the_same_index_stay_apart(self):
         out = list(gretel.samples([_rec(1, []), _rec(1, [], split="test")], TABLE, gretel.Stats()))

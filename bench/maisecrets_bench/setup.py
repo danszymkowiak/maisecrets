@@ -91,11 +91,11 @@ def gretel_source(cache: Path) -> Source:
 
     def version() -> str:
         from huggingface_hub import HfApi
-        return HfApi().dataset_info(gretel.HF_ID).sha
+        return f"{HfApi().dataset_info(gretel.HF_ID).sha}:{gretel.REVISION}"
 
     return Source("gretel", version,
                   lambda: gretel.samples(gretel.records(str(cache / "hf")), load_table("gretel"), stats),
-                  lambda: {"dropped": stats.dropped})
+                  lambda: {"dropped": stats.dropped, "below_quality_90": stats.low_quality})
 
 
 def synthetic_source() -> Source:

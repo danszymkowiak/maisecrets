@@ -1,6 +1,10 @@
 """Gretel synthetic_pii_finance_multilingual (docs/BENCHMARK.md): one sample per generated finance document. Its
 pii_spans are the gold; unlabelled text is negative. A span whose offsets fall outside the text or are empty is
-dropped and counted (the dataset has a few hundred); every other problem stops the setup."""
+dropped and counted (the dataset has a few hundred); every other problem stops the setup.
+
+A record below quality 90 (Gretel's own quality_score, 80 to 97) is dropped and counted, as a study that used the
+dataset did (TASK-11.33). The rigidly structured formats that study dropped (CSV, EDI, SWIFT, FIX, BAI, XBRL, FpML,
+MT940) stay, tagged format:structured, because bank and tax exports look like them; the report scores them apart."""
 from __future__ import annotations
 
 import json
@@ -14,6 +18,9 @@ from ..split import split_of
 
 DATASET = "gretel"
 HF_ID = "gretelai/synthetic_pii_finance_multilingual"
+MIN_QUALITY = 90
+STRUCTURED = {"CSV", "EDI", "SWIFT Message", "FIX Protocol", "BAI Format", "XBRL", "FpML", "MT940"}
+REVISION = "q90-format-tags"    # part of the version: a change here builds the parquet again
 # the dataset's language names; it writes "France" for French
 LANGUAGES = {"English": "en", "German": "de", "France": "fr", "French": "fr", "Spanish": "es", "Italian": "it",
              "Dutch": "nl", "Swedish": "sv"}
@@ -22,11 +29,15 @@ LANGUAGES = {"English": "en", "German": "de", "France": "fr", "French": "fr", "S
 @dataclass
 class Stats:
     dropped: int = 0
+    low_quality: int = 0
 
 
 def samples(records: Iterable[dict], table: LabelTable, stats: Stats) -> Iterator[Sample]:
     for r in records:
         sid = f"{r['_split']}:{r['index']}"
+        if r["quality_score"] < MIN_QUALITY:
+            stats.low_quality += 1
+            continue
         try:
             language = LANGUAGES[r["language"]]
         except KeyError:
@@ -40,7 +51,8 @@ def samples(records: Iterable[dict], table: LabelTable, stats: Stats) -> Iterato
                 continue
             spans.append(Span(m["start"], m["end"], m["label"], t, "pos"))
         spans.sort(key=lambda s: (s.start, s.end))
-        yield Sample(DATASET, sid, sid, language, text, spans, split_of(DATASET, sid))
+        fmt = "structured" if r["document_type"] in STRUCTURED else "unstructured"
+        yield Sample(DATASET, sid, sid, language, text, spans, split_of(DATASET, sid), [f"format:{fmt}"])
 
 
 def records(cache_dir: str) -> Iterator[dict]:

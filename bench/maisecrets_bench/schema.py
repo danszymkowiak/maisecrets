@@ -33,6 +33,7 @@ class Sample:
     text: str
     spans: list = field(default_factory=list)
     split: str = "dev"
+    tags: list = field(default_factory=list)     # facets the report scores apart: format:structured, locale:us
 
 
 ARROW = pa.schema([
@@ -41,6 +42,7 @@ ARROW = pa.schema([
     ("spans", pa.list_(pa.struct([("start", pa.int32()), ("end", pa.int32()), ("label", pa.string()),
                                   ("maisecrets_type", pa.string()), ("gold", pa.string())]))),
     ("split", pa.string()),
+    ("tags", pa.list_(pa.string())),
 ])
 
 
@@ -74,8 +76,11 @@ def write(samples: list[Sample], path: Path) -> None:
 
 
 def read(path: Path) -> list[Sample]:
+    """The samples of a file; one written before tags existed reads with none."""
+    names = pq.read_schema(path).names
+    arrow = ARROW if "tags" in names else pa.schema([f for f in ARROW if f.name != "tags"])
     out = []
-    for r in pq.read_table(path, schema=ARROW).to_pylist():
+    for r in pq.read_table(path, schema=arrow).to_pylist():
         r["spans"] = [Span(**x) for x in r["spans"]]
         out.append(Sample(**r))
     return out

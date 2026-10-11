@@ -105,6 +105,27 @@ when both marked it `NO_MASK`. The union keeps a detection on something one anno
 hidden from counting as a false alarm. TAB has no in-scope `pos` spans, so it is scored by the
 share of documents with no false alarm, and for out-of-scope coverage.
 
+### Gretel
+
+**Quality filter and formats, 2026-10-12 (TASK-11.33).** A record below Gretel's own
+`quality_score` of 90 is dropped (14,008 of 55,940; 41,932 stay), as a study that used the dataset
+did. That study also dropped the rigidly structured formats (CSV, EDI, SWIFT, FIX, BAI, XBRL, FpML,
+MT940); here they stay, tagged `format:structured`, because bank and tax exports look like them, and
+every report scores them apart (`tags` in `metrics.json`). The filter barely moves the score (run
+20261012-005108 against 20261011-220740: F1 68.6% to 68.7%, precision 75.1% to 74.7%, recall 63.1% to
+63.5%). The formats differ a lot:
+
+| Gretel | samples | TP | FP | FN | precision | recall | F1 |
+|---|---|---|---|---|---|---|---|
+| structured | 10,240 | 2,364 | 3,233 | 2,385 | 42.2% | 49.9% | 45.7% |
+| unstructured | 31,692 | 14,084 | 2,327 | 7,116 | 85.8% | 66.6% | 75.0% |
+
+Structured documents are a quarter of the records and 58% of the false alarms; `us-bank` alone
+raises 2,663 of their 3,233. Recall is lower there for e-mail (57% against 85%), IP (67% against 93%)
+and secrets (21% against 40%); the likely cause, not yet checked sample by sample, is values in
+delimited fields (FIX `|`, CSV `;`, XML tags) that the rules' boundaries do not expect. Gretel's
+values are weakly diverse (the same few names and domains), so its type-level recall moves in steps.
+
 ### Regions
 
 The PII rules depend on the configured regions (`maisecrets/regions.py`). Each sample runs with

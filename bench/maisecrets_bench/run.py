@@ -151,12 +151,28 @@ def _counts_json(c: score.Counts) -> dict:
             "confusion": [{"gold": g, "detected": d, "n": n} for (g, d), n in sorted(c.confusion.items())]}
 
 
-def summarise(results: dict, groups: dict) -> dict:
+def score_tags(samples: list[Sample], det: dict) -> dict:
+    """dataset -> tag -> Counts, for the samples that carry tags."""
+    out: dict[str, dict[str, score.Counts]] = {}
+    for s in samples:
+        if not s.tags:
+            continue
+        c = score.score_sample(s, det.get((s.dataset, s.sample_id), []), UNLABELLED_NEGATIVE.get(s.dataset, True),
+                               JUDGED.get(s.dataset))
+        per = out.setdefault(s.dataset, {})
+        for t in s.tags:
+            per[t] = per.get(t, score.Counts()) + c
+    return out
+
+
+def summarise(results: dict, groups: dict, tags: dict | None = None) -> dict:
     datasets = {}
     all_rules: dict[str, dict] = {}
     for name, per_split in sorted(results.items()):
         total = sum(per_split.values(), score.Counts())
         datasets[name] = {"all": _counts_json(total), **{sp: _counts_json(c) for sp, c in sorted(per_split.items())}}
+        if (tags or {}).get(name):
+            datasets[name]["tags"] = {t: _counts_json(c) for t, c in sorted(tags[name].items())}
         for rule, v in total.rules.items():
             agg = all_rules.setdefault(rule, {"hits": 0, "tp": 0, "fp": 0, "by_dataset": {}})
             for k in ("hits", "tp", "fp"):
@@ -197,6 +213,12 @@ def report(summary: dict, manifest: dict, seconds: float) -> str:
         for t, v in d["all"]["by_type"].items():
             out.append(f"| {t} | {v['tp']} | {v['fp']} | {v['found']} | {v['fn']} | {_pct(v['precision'])} | "
                        f"{_pct(v['recall'])} |")
+        if d.get("tags"):
+            out += ["", "| tag | samples | TP | FP | FN | precision | recall | score |",
+                    "|---|---|---|---|---|---|---|---|"]
+            for t, v in d["tags"].items():
+                out.append(f"| {t} | {v['samples']} | {v['tp']} | {v['fp']} | {v['fn']} | {_pct(v['precision'])} | "
+                           f"{_pct(v['recall'])} | {_pct(v['score'])} |")
         splits = [sp for sp in ("dev", "check") if sp in d]
         out += ["", "split: " + ", ".join(f"{sp} score {_pct(d[sp]['score'])}" for sp in splits)]
         if d["all"]["confusion"]:
@@ -225,7 +247,7 @@ def run(parquet: Path, datasets: list[str], out: Path, jobs: int, limit: int | N
         samples += rows
     t0 = time.time()
     det, groups = detect_samples(samples, jobs)
-    summary = summarise(score_all(samples, det), groups)
+    summary = summarise(score_all(samples, det), groups, score_tags(samples, det))
     seconds = time.time() - t0
     manifest = json.loads((parquet / "manifest.json").read_text(encoding="utf-8"))
     out.mkdir(parents=True, exist_ok=True)

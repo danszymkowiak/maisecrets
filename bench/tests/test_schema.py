@@ -63,6 +63,19 @@ class ParquetTests(unittest.TestCase):
             schema.write(rows, path)
             self.assertEqual(schema.read(path), rows)
 
+    def test_tags_read_back_and_a_file_without_them_reads_as_none(self):
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        rows = [_sample(tags=["format:structured", "locale:us"])]
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "toy.parquet"
+            schema.write(rows, path)
+            self.assertEqual(schema.read(path)[0].tags, ["format:structured", "locale:us"])
+            old = pa.schema([f for f in schema.ARROW if f.name != "tags"])
+            pq.write_table(pa.Table.from_pylist([{k: v for k, v in r.items() if k != "tags"}
+                                                 for r in pq.read_table(path).to_pylist()], schema=old), path)
+            self.assertEqual(schema.read(path)[0].tags, [])
+
     def test_write_validates_every_row(self):
         with tempfile.TemporaryDirectory() as d, self.assertRaises(BenchError):
             schema.write([_sample(split="nope")], Path(d) / "toy.parquet")
