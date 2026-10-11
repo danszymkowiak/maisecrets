@@ -59,7 +59,10 @@ builds it.
 ## A rule change
 
 A mutation is a TOML file (format in `maisecrets_bench/mutation.py`): disable a rule, set fields of one (regex,
-keywords, entropy, score, context), or add one. It is applied to a copy of the rule list inside the bench; the
+keywords, entropy, score, context, validator), or add one. Three fields try an idea the plugin does not have yet:
+`validator = "bench:aba"` (a checksum in `maisecrets_bench/validators.py`), `allow = [regex]` (skip a value that
+matches) and `filter = "bench:name"` (a function in `maisecrets_bench/filters.py` that also sees the text around
+the value). It is applied to a copy of the rule list inside the bench; the
 plugin is not edited. A mutation that only disables rules re-runs just the samples where those rules fired, in
 seconds; any other re-runs everything. `bench/mutations/` holds the first candidates, from the probes.
 

@@ -10,7 +10,8 @@
     [[change]]
     op = "set"              # set fields: regex, keywords, entropy, score, context, require_context, stopwords,
                             # validator (the detector's, or one of maisecrets_bench/validators.py: "bench:aba"),
-                            # allow (regexes on the value that skip a hit, added to the rule's own)
+                            # allow (regexes on the value that skip a hit, added to the rule's own),
+                            # filter (a function of maisecrets_bench/filters.py that sees the text around the value)
     rule = "phone"
     regex = "..."
 
@@ -30,11 +31,11 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import score, validators
+from . import filters, score, validators
 from .paths import BenchError
 
 SETTABLE = {"regex", "keywords", "entropy", "score", "context", "require_context", "stopwords", "secret_group",
-            "validator", "allow"}
+            "validator", "allow", "filter"}
 EPS = 1e-12
 RECALL_TOLERANCE = 0.005    # half a point of recall (docs/BENCHMARK.md, Judging a change)
 VERDICT_ORDER = {"strict": 0, "tolerance": 1, "rejected": 2}
@@ -76,6 +77,11 @@ def _fields(c: dict, where: str) -> dict:
             raise BenchError(f"{where}: field {k!r} cannot be set (settable: {', '.join(sorted(SETTABLE))})")
         if k == "validator" and v not in detect.VALIDATORS and v not in validators.BENCH:
             raise BenchError(f"{where}: validator {v!r} is not the detector's nor in validators.py")
+        if k == "filter":
+            if v not in filters.FILTERS:
+                raise BenchError(f"{where}: filter {v!r} is not in maisecrets_bench/filters.py")
+            out[k] = v
+            continue
         if k == "allow":
             out[k] = tuple((re.compile(rx), "secret") for rx in v)
             continue
@@ -100,6 +106,8 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
     this list does not hold is skipped: the rules differ by region, and us-bank is not in the German group."""
     from .detector import detect
     detect.VALIDATORS.update(validators.BENCH)
+    filters.install(detect)
+    filters.ACTIVE.clear()
     out = list(rules)
     ids = {r.id for r in out}
     for n, c in enumerate(m.changes, 1):
@@ -113,12 +121,16 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
         elif c["op"] == "set":
             fields = _fields(c, where)
             allow = fields.pop("allow", ())
+            if "filter" in fields:
+                filters.ACTIVE[c["rule"]] = fields.pop("filter")
             out = [dataclasses.replace(r, **fields, allow_regexes=r.allow_regexes + allow) if r.id == c["rule"] else r
                    for r in out]
         else:
             if c.get("id") in ids:
                 raise BenchError(f"{where}: rule {c.get('id')!r} exists already; use op = \"set\"")
             fields = _fields(c, where)
+            if "filter" in fields:
+                filters.ACTIVE[c["id"]] = fields.pop("filter")
             new = detect.Rule(id=c["id"], type=c["type"], allow_regexes=fields.pop("allow", ()), **fields)
             at = next((i + 1 for i, r in enumerate(out) if r.id == c.get("after")), len(out))
             out.insert(at, new)

@@ -169,6 +169,14 @@ the bench, never by editing the project, and scored against the baseline on the 
   overall score (equal weights).
 - **Roles:** a dataset is *scored* (in the mean) or a *guard* (it must not get worse, but has no weight);
   a saturated dataset can serve as a guard (TASK-11.15).
+- **What a mutation can change:** disable a rule, add one, or set its regex, keywords, entropy, score,
+  context, stopwords or validator. Three fields exist only in the bench, so an idea can be judged
+  before the plugin has it: `validator = "bench:aba"` (a checksum of `maisecrets_bench/validators.py`),
+  `allow = [regex]` (a value that matches is skipped, on top of the rule's own allowlist) and
+  `filter = "bench:name"` (a function of `maisecrets_bench/filters.py` that gets the value, the text
+  and the value's offsets, so it can read the label before the value). A filter runs after the rule's
+  validator, entropy, context and allowlist and before the hit claims its span: a dropped hit leaves
+  the span to the next rule, as a failed validator does.
 - A mutation that only disables rules is re-run on the samples where those rules fired in the baseline:
   elsewhere they matched nothing, so nothing can change. Any other mutation re-runs every sample.
 - A rule that never fires is flagged, not removed: removal is a mutation like any other.
