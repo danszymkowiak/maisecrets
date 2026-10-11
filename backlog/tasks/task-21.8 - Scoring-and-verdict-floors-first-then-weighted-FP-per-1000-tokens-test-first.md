@@ -6,12 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-11 21:54'
+updated_date: '2026-10-11 23:43'
 labels:
   - benchmark
   - tdd
 dependencies:
-  - TASK-21.1
   - TASK-21.6
   - TASK-21.7
 parent_task_id: TASK-21

@@ -4,7 +4,7 @@ title: 'Design note: recall floors, tiers and false positives per 1,000 tokens'
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:47'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-11 23:43'
 labels:
   - benchmark
   - design
@@ -14,6 +14,7 @@ dependencies:
   - TASK-11.34
   - TASK-11.35
   - TASK-11.37
+  - TASK-17
 parent_task_id: TASK-21
 priority: high
 ordinal: 68000
@@ -34,6 +35,12 @@ Rewrite "Metrics" and "Judging a change" in docs/BENCHMARK.md for the epic's rul
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 docs/BENCHMARK.md states the floors, tiers, the below-floor rule, the sample-size rule, the weighted objective and the new verdict, with the user decisions dated
+- [x] #1 docs/BENCHMARK.md states the floors, tiers, the below-floor rule, the sample-size rule, the weighted objective and the new verdict, with the user decisions dated
 - [ ] #2 The weight for Gretel and the tax templates is confirmed by the user and recorded
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12: AC 1 done (docs/BENCHMARK.md, Judging a change, 'Recall floors first, then false positives'). AC 2 waits for the user's confirmation of the 2.0 weight and the SECRET split (inbox TASK-17, comment of 2026-10-12). TASK-21.8 no longer waits on this task: the weight is a value in bench/floors.toml, not code.
+<!-- SECTION:NOTES:END -->

@@ -1,6 +1,6 @@
 """Build the benchmark data (docs/BENCHMARK.md): each source becomes <out>/<dataset>.parquet and an entry in
-<out>/manifest.json with its version and counts. A source whose version is already in the manifest, with its file
-present, is not built again."""
+<out>/manifest.json with its version and counts. Gold of a checksummed type is checked on the way (validgold.py); a
+source whose version and gold revision are already in the manifest, with its file present, is not built again."""
 from __future__ import annotations
 
 import json
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterator
 
-from . import schema, split
+from . import schema, split, validgold
 from .labels import load as load_table
 from .paths import BenchError, data_dir
 from .schema import Sample
@@ -37,18 +37,19 @@ def run(sources: list[Source], out: Path, log: Callable[[str], None] = lambda s:
         version = src.version()
         known = manifest["datasets"].get(src.name, {})
         target = out / f"{src.name}.parquet"
-        if known.get("version") == version and target.exists():
+        if known.get("version") == version and known.get("gold") == validgold.REVISION and target.exists():
             log(f"{src.name}: up to date ({version})")
             continue
         log(f"{src.name}: building ({version})")
-        rows = list(src.build())
+        rows, gold = validgold.mark(list(src.build()))
         tmp = target.with_suffix(".parquet.tmp")
         schema.write(rows, tmp)
         os.replace(tmp, target)
         spans = Counter(sp.gold for s in rows for sp in s.spans)
         manifest["datasets"][src.name] = {
             "version": version, "samples": len(rows), "spans": dict(sorted(spans.items())),
-            "split": dict(sorted(Counter(s.split for s in rows).items())), **src.stats()}
+            "split": dict(sorted(Counter(s.split for s in rows).items())), **src.stats(),
+            "gold": validgold.REVISION, "gold_check": gold.get(src.name, {})}
         log(f"{src.name}: {len(rows)} samples, spans {dict(spans)}")
     manifest["split_salt"] = split.SALT
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")

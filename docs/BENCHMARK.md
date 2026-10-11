@@ -185,6 +185,35 @@ Per dataset, per type, per split, and per rule:
   is n/a. The relaxed run lets a candidate take a span another rule would have claimed, so the curves are
   approximate, and a true positive there is any overlap with an in-scope positive, whatever its type.
 
+### Valid gold
+
+**2026-10-12 (TASK-21.6, `maisecrets_bench/validgold.py`; baseline run 20261012-013837).** Setup
+checks every gold positive of a checksummed type with the detector's validator (IBAN mod 97, card
+Luhn, the German IDs) or the bench's own where the detector has none (ABA checksum, the SSN shape
+rules: no area 000, 666 or 9xx, no group 00, no serial 0000). A failing span becomes *uncertain*; a
+span with a label or a card block (holder, expiry, CVC) around a valid value is trimmed to the value.
+
+| dataset | type | gold | valid | invalid | trimmed | recall on valid gold |
+|---|---|---|---|---|---|---|
+| Gretel | IBAN | 1,527 | 1,184 | 312 | 31 | 96.0% |
+| Gretel | CARD | 1,009 | 500 | 438 | 71 | 32.0% |
+| Gretel | US_SSN | 1,117 | 714 | 255 | 148 | 63.5% |
+| Gretel | ABA_ROUTING_NUMBER | 1,175 | 129 | 1,046 | 0 | 34.1% |
+| Nemotron | CARD | 12,867 | 1,525 | 8,381 | 2,961 | 32.8% |
+| Nemotron | US_SSN | 6,062 | 6,043 | 18 | 1 | 100.0% |
+| Nemotron | ABA_ROUTING_NUMBER | 8,354 | 843 | 7,511 | 0 | 98.9% |
+| Mendeley | CARD | 42,527 | 0 | 3,116 | 39,411 | 80.5% |
+| Mendeley | US_SSN | 51,283 | 51,283 | 0 | 0 | 100.0% |
+| findocs | IBAN, CARD, US_SSN, ABA | 5,999 | 5,999 | 0 | 0 | see above |
+
+Gretel's IBAN recall on valid gold is 96.0%; the 97.8% of the epic was measured on the 55,940
+records before the quality filter. Generated ABA numbers mostly fail their checksum (Gretel 89%,
+Nemotron 90%): the `aba-routing` rule has no validator and is gated by context instead, so a
+validator would cost no valid find. Cards stay a gap after the check: 32% on Gretel and Nemotron.
+Every Mendeley card span is a block and is trimmed to its number. CredData, ai4privacy and the
+synthetic tool output have no checksummed in-scope gold. The equal-weight mean rises from 79.8% to
+80.5% because invalid gold no longer counts as missed.
+
 ## Synthetic tool output
 
 The file and prose corpora hold no terminal output: no `printenv`, `git diff`, `grep -n`, `cat -n`,
@@ -276,6 +305,57 @@ setup and runs leave it out by default. CredData and Gretel stay: each has rules
 
 A mutation (add, disable or replace a rule, change a threshold or a word list) is applied inside
 the bench, never by editing the project, and scored against the baseline on the same data.
+
+### Recall floors first, then false positives (TASK-21, decided 2026-10-11)
+
+The blended score let a change trade a leaked IBAN for three fewer over-redactions. The verdict is a
+constrained optimisation instead: every type keeps a recall floor, and among the changes that keep
+every floor, the one with the fewest false positives per 1,000 tokens wins. The cost of each error
+type stays visible.
+
+- **Scoring types.** A floor attaches to the type a gold span is scored as: its maisecrets type, with
+  SECRET split in two (`SECRET_PREFIXED`, a token with a vendor's fixed shape; `SECRET_GENERIC`,
+  keyword passwords and generic keys; `bench/floors.toml`, `[secret]`). Recall is pooled over every
+  dataset that labels the type, and shown per dataset as a check.
+- **Tiers** (`bench/floors.toml`, user 2026-10-11): *critical*, recall at least 0.999: IBAN, CARD,
+  US_SSN, US_BANK_NUMBER, SECRET_PREFIXED (CH_AHV joins with TASK-20). *High*, at least 0.99: EMAIL,
+  PHONE, IP, ABA_ROUTING_NUMBER and the German (later Swiss) tax and ID numbers. *Default*, no
+  regression: SECRET_GENERIC and every type no tier lists. *None*: names, which maisecrets does not
+  detect (only the terms file, C25).
+- **Valid gold.** Recall counts only gold that passes its type's checksum (TASK-21.6): a span that
+  fails becomes *uncertain* and counts neither as a miss nor as a false alarm; a span with a label
+  around a valid value is trimmed to the value. The manifest reports valid, invalid and trimmed per
+  dataset and type.
+- **Sample size.** A floor is enforced through the one-sided 95% Wilson lower bound of recall
+  (z = 1.645). At 0.999 that needs about 3,000 positives with no miss (the rule of three; the bound
+  of 3,000 of 3,000 is 0.9991). A type's status is *clears* (the bound reaches the floor), *gap* (the
+  measured recall is below the floor) or *too few* (the recall reaches the floor but the bound does
+  not).
+- **Below the floor.** Almost every type starts as a gap (baseline 2026-10-11: Gretel CARD 19.5%,
+  US_SSN 48.2%, PHONE 45.6%). A gap must not get worse; it is listed with its distance to the floor,
+  and a change that narrows it counts in its favour. A *too few* or *default* type must not get worse
+  either (no regression: no find lost).
+- **The objective.** False positives per 1,000 whitespace tokens, per dataset, combined as a weighted
+  mean. Gretel and findocs weigh 2.0, every other scored dataset 1.0 (proposal of TASK-21.1; the
+  user confirms the number). findocs is scored, not a guard (user, 2026-10-11), with the caveat that
+  it is tuned to our own generator. A guard dataset weighs nothing but must not get worse.
+- **What counts as a false positive.** A detection on no in-scope positive, in text the dataset labels
+  as negative. A detection on an out-of-scope positive (a name), on uncertain gold, or of a type a
+  dataset does not judge (CredData judges SECRET only) counts as neither. CredData's unlabelled lines
+  are *unreviewed*, reported per 1,000 lines, and kept out of the objective.
+- **The verdict** (TASK-21.8). *Rejected*: a type that cleared its floor no longer does, a gap gets
+  worse, or a no-regression type loses a find; the report names the type and the dataset that
+  decided. *Accepted*: none of that, and either the weighted false positives per 1,000 tokens fall
+  or a gap narrows; the change of both is shown. *Neutral*: no effect, or more false positives with
+  no gap narrowed (a trade the owner decides). Accepted changes rank by the change of the weighted
+  objective.
+- **Critical misses.** At 0.999 the misses of a critical type are few enough to read one by one: the
+  report lists each (dataset, sample, type, masked context; `errors.py`).
+
+The verdicts below (strict, within tolerance) came first. They stay in the reports as a comparison
+column until TASK-21.10 has re-judged the mutations accepted under them.
+
+### The earlier verdicts (for comparison)
 
 - **Inclusion, strict (*accepted*):** on every dataset, precision, recall and the share of clean
   samples are each equal to or better than the baseline. The counts are exact, so there is no

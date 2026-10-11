@@ -1,10 +1,10 @@
 ---
 id: TASK-21.6
 title: 'Valid gold: checksum-failing gold values become uncertain'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-11 23:54'
 labels:
   - benchmark
   - dataset
@@ -26,7 +26,13 @@ Datasets carry gold values that are not valid for their type: Gretel has 408 of 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Each checksummed type has its gold checked with the detector validator; failing spans become uncertain
-- [ ] #2 A table per dataset and type: gold positives, valid, invalid, trimmed
-- [ ] #3 The baseline re-run shows recall on valid gold (Gretel IBAN expected near 97.8%)
+- [x] #1 Each checksummed type has its gold checked with the detector validator; failing spans become uncertain
+- [x] #2 A table per dataset and type: gold positives, valid, invalid, trimmed
+- [x] #3 The baseline re-run shows recall on valid gold (Gretel IBAN expected near 97.8%)
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+maisecrets_bench/validgold.py: gold of IBAN, CARD, US_SSN, ABA and the German IDs is checked in setup with the detector's validator (the bench's for ABA and the SSN shape); failing spans become uncertain, spans with a label or card block around a valid value are trimmed. Manifest: gold revision and gold_check counts; an entry without the revision rebuilds. All datasets rebuilt; baseline 20261012-013837. Table in docs/BENCHMARK.md, Valid gold: Gretel IBAN 96.0% on valid gold (the epic's 97.8% was before the quality filter); generated ABA numbers fail their checksum ~90%; cards stay a gap at 32% (Gretel, Nemotron). Equal-weight mean 79.8% -> 80.5%.
+<!-- SECTION:FINAL_SUMMARY:END -->
