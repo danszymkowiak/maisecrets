@@ -4,13 +4,12 @@ title: 'bench/setup.py: one command fetches, normalises and folds every dataset'
 status: To Do
 assignee: []
 created_date: '2026-10-11 10:20'
-updated_date: '2026-10-11 11:06'
+updated_date: '2026-10-11 11:45'
 labels:
   - benchmark
 dependencies:
   - TASK-11.4
   - TASK-11.5
-  - TASK-11.6
   - TASK-11.7
 parent_task_id: TASK-11
 priority: medium
