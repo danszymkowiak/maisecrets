@@ -313,6 +313,23 @@ def cmd_settings(args: list[str]) -> int:
     return 1 if rest else 0
 
 
+def _terms_line() -> str:
+    """The personal terms (docs/TERMS.md): how many entities and their labels, never a variant. A refused file
+    shows the loader's message, which names the file or a line number only."""
+    try:
+        from . import terms
+    except ImportError:
+        return "terms: none"
+    try:
+        ents = terms.load()
+    except terms.TermsError as exc:
+        return f"terms: unusable ({exc}); every hook refuses until it is fixed"
+    if not ents:
+        return "terms: none"
+    noun = "entity" if len(ents) == 1 else "entities"
+    return f"terms: {len(ents)} {noun} ({', '.join(sorted(e.label for e in ents))})"
+
+
 def cmd_status(_: list[str]) -> int:
     """What support needs first: version, where the plugin runs from, which Python, which
     store, which settings come from a policy, and what the logs counted."""
@@ -350,6 +367,7 @@ def cmd_status(_: list[str]) -> int:
         return (detect.RULES_DIR / f"{name}_VERSION").read_text(encoding="utf-8").strip()
     print(f"rules: {len(detect.rules())} (gitleaks {version('GITLEAKS')}, presidio {version('PRESIDIO')}, "
           f"detect-secrets {version('DETECT_SECRETS')})")
+    print(_terms_line())
     active = detect.active_regions()
     print(f"regions: {', '.join(active.regions)} ({active.source}); "
           f"label languages: {', '.join(active.languages)}")
