@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 13:02'
+updated_date: '2026-10-11 13:06'
 labels:
   - inbox
 dependencies: []
@@ -54,5 +54,10 @@ TASK-11.14: what should the owner receive? The bench writes four markdown files 
 created: 2026-10-11 13:02
 ---
 TASK-14 (flaky test): not reproduced in 7 full runs (4 suites in parallel; 3 runs of the real pre-commit hook in parallel with a bench run as load). The pre-commit and pre-push hooks now keep the test output in .git/maisecrets-pre-commit-tests.log / maisecrets-pre-push-tests.log and print the FAIL lines on failure. Options: (a) leave TASK-14 open and waiting; when a hook fails again, the log names the test and I fix it then; (b) close it as not reproducible. I recommend (a): two failures in one day are real, and the next one now costs nothing to diagnose. Mark this inbox Done to let it run again, or tell me to close it.
+---
+
+created: 2026-10-11 13:06
+---
+TASK-8: the draft feature request for upstream (personal terms + PDF/image ask) is in TASK-8's notes. Options: (a) approve it as is, and I file it with /maisecrets:report feature (it prints a prefilled GitHub link; you open it and submit); (b) edit it first; (c) wait until the benchmark recommendations are ready and send both together. I recommend (c) because one contact with two concrete, tested contributions is likelier to get an answer than two separate requests; filing stays your click either way.
 ---
 <!-- COMMENTS:END -->
