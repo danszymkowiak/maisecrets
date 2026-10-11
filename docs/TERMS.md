@@ -116,9 +116,4 @@ redacted. Therefore:
 
 ## Threat-model entry (C25)
 
-The row below joins the table in `docs/THREAT-MODEL.md` when the code and its belief exist
-(TASK-7); a control there must have a test that goes red without it.
-
-| # | control | defends against | ends where |
-|---|---|---|---|
-| C25 | personal terms (fork): `terms.txt` (0600, in the home, under C8) lists entities and their variants; the detector replaces a matched run by the entity's placeholder (key `LABEL_c0`) in prompts, tool results and transcripts, through the paths of C1 to C3; a placeholder resolves to the entity's first plain variant under C4, C7, C9 and C16; a Read of a PDF or an image asks first (Codex: deny) and names a local extraction that passes C2 | A1 seeing a name, an address or a case number that has no shape | a spelling the file does not list (a typo, a nickname, a transliteration such as `Kowalsky`, a declined form of a standalone variant); a term split by a hyphen or markup (`Kowal-<br>ski`); a term inside a span that a shape claimed first goes with that shape's display; a PDF or image Read the person approves, which reaches the model unredacted; a tool result above 50K characters that Claude Code writes to a file (as for C2); a document read by a tool other than Read (an MCP server that returns an image or a document); the label, which the model sees; the inflection of a resolved placeholder |
+C25 is in the table of `docs/THREAT-MODEL.md`, with its beliefs in `beliefs/c25-*.toml`.

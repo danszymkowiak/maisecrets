@@ -276,7 +276,7 @@ claude --plugin-dir /path/to/maisecrets                 # one session, straight 
 python3 -m unittest discover -s tests -v               # about 30 seconds
 python3 harness/run.py                                 # 31 scenarios against a fake upstream (3 for the PowerShell tool of Windows)
 python3 harness/codex.py [--real]                      # 8 scenarios through codex exec (four need --real)
-python3 scripts/replay_can_fail.py                     # 103 proofs: each control's test, and each path of the five invariants, goes red without its guard
+python3 scripts/replay_can_fail.py                     # 108 proofs: each control's test, and each path of the five invariants, goes red without its guard
 python3 scripts/derived_counts.py                      # the numbers in the docs, measured again
 python3 scripts/lint_plugin.py                         # frontmatter YAML, manifests, hook paths (pre-commit, CI)
 scripts/install-hooks.sh                               # git pre-commit / pre-push
@@ -1138,6 +1138,56 @@ shape low, and a 16-digit number passes Luhn one time in ten.
 Measure what the rules would catch on your own recordings, values never
 printed: `scripts/replay_sessions.py --claude --codex`.
 
+## Personal terms (this fork)
+
+A name, an address or a case number has no shape, so no rule above finds it. List the ones you
+want kept from the model in `terms.txt` in the maisecrets home (`~/.maisecrets/terms.txt`, or
+`$MAISECRETS_HOME/terms.txt`). The design is in `docs/TERMS.md`; the control is C25 in the threat
+model.
+
+```
+# label      variants, separated by |
+PERSON_A     Jan Kowalski | Kowalsk* | Jan
+ADDRESS_A    ul. Przykladowa 12 | Przykladow*
+CASE_A       *sygn-0042*
+```
+
+```bash
+chmod 600 ~/.maisecrets/terms.txt    # a file others can read stops every hook until you fix it
+```
+
+- **Label:** capital letters and `_` (no digits), unique, not a type the detector already uses
+  (`EMAIL`, `SECRET`, …). The model sees the label, so write `PERSON_A`, not the name.
+- **Variants and the `*` modes** (case-insensitive, Polish letters included, any whitespace
+  inside a variant matches any run of whitespace):
+
+  | variant | matches | does not match |
+  |---|---|---|
+  | `Jan` | the word on its own | `January`, `Janek` |
+  | `Kowalsk*` | a word that starts so: `Kowalski`, `Kowalskiego` | `Nowakowalski` |
+  | `*kowalski` | a run that ends so: `JanKowalski` | `Kowalskiego` |
+  | `*sygn-0042*` | anywhere, also inside a file name (at least 4 characters between the stars) | — |
+
+  The longest variant wins: `Jan Kowalski` is one match, not two.
+- **Placeholder:** each entity has one, with the key `PERSON_A_c0`, the same in every document and
+  every session. A tool call that uses it gets the first variant without a `*` back (`Jan
+  Kowalski`), under the same gates as a stored secret, and only in a session that saw the term. An
+  entity whose variants all carry a `*` cannot be put back, and its placeholder is refused. The term
+  is never copied into the store; it is read from `terms.txt` at the call.
+- **A bad file fails closed.** A wrong line or a wrong mode stops every hook; the message names the
+  file and the line number, never the text of the line. `/maisecrets:status` shows
+  `terms: N entities (labels)` or the reason the file is unusable, never a variant.
+- **PDFs and images.** Claude Code reads a PDF or an image as a document, which no hook can redact.
+  A Read of `.pdf`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.tif` or `.tiff` therefore asks you
+  first, in auto mode too. Approve, and the file goes to the model unredacted. Deny, and the agent
+  extracts the text on your computer (`pdftotext -layout file.pdf -`, `tesseract image.png - -l
+  pol+eng`; on Debian or Ubuntu `apt install poppler-utils tesseract-ocr tesseract-ocr-pol`), and that
+  text is redacted like any tool output. Codex refuses the Read and names the same commands. A
+  headless run (`claude -p`) refuses every ask, so it refuses a PDF Read.
+- **Not caught:** a spelling the file does not list (a typo, a nickname, a declined form of a
+  standalone variant), a term split by a hyphen or markup, a document an MCP server returns.
+- No `terms.txt`: maisecrets behaves exactly as upstream.
+
 ## Known gaps (measured or documented)
 
 What the plugin does not protect. Each item is a limit of the mechanism, not
@@ -1170,7 +1220,8 @@ a to-do.
   and is not rewritten.
 - **`@file` mentions** inline a file outside the hook pipeline. The prompt
   hook blocks them when the path exists; ask Claude to read the file instead.
-- **Names are not detected.** Regex only, by design.
+- **Names are not detected.** Regex only, by design; list the names you need kept out in
+  `terms.txt` ("Personal terms (this fork)").
 - **A transformed value can pass.** For a value this session resolved, the
   output is checked as a substring in plain, base64, hex, URL-encoded and
   JSON-escaped form, and a resolving command may not encode it in the first

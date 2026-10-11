@@ -1,0 +1,10 @@
+# c25-a-term-is-never-stored: the test owns the rule; this file names it and the mutation that must turn it red.
+belief = "c25-a-term-is-never-stored"
+control = "C25"
+statement = "The store keeps only metadata for a term: the matched text is never written to the store, the index or the audit; a resolve reads terms.txt at the call."
+runner = ["tests/test_terms_hooks.py::TermHookTests::test_the_term_is_never_copied_into_the_store_or_the_index"]
+
+[proof]
+file = "maisecrets/vault.py"
+find = "            if kind == \"term\":\n                out.append(self._put_term(type_, session))"
+replace = "            if False:\n                out.append(self._put_term(type_, session))"

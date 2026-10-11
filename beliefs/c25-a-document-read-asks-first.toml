@@ -1,0 +1,10 @@
+# c25-a-document-read-asks-first: the test owns the rule; this file names it and the mutation that must turn it red.
+belief = "c25-a-document-read-asks-first"
+control = "C25"
+statement = "A Read of a PDF or an image, which no hook can redact, asks the person first in Claude Code (auto mode too); other files are unchanged."
+runner = ["tests/test_document_read.py::DocumentReadTests::test_a_pdf_or_an_image_asks_the_person_first"]
+
+[proof]
+file = "maisecrets/hooks.py"
+find = "        if tool == \"Read\" and _is_document("
+replace = "        if False and _is_document("

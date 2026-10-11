@@ -1,0 +1,10 @@
+# c25-a-term-becomes-its-entity-placeholder: the test owns the rule; this file names it and the mutation that must turn it red.
+belief = "c25-a-term-becomes-its-entity-placeholder"
+control = "C25"
+statement = "A personal term in a tool result is replaced by its entity's placeholder, LABEL_c0, in every spelling the file lists (docs/TERMS.md)."
+runner = ["tests/test_terms_hooks.py::TermHookTests::test_a_term_in_a_tool_result_becomes_its_entity_placeholder"]
+
+[proof]
+file = "maisecrets/detect.py"
+find = "    for start, end, ent in _term_matcher().find(text):"
+replace = "    for start, end, ent in []:"
