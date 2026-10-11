@@ -3,9 +3,10 @@ id: TASK-12
 title: >-
   Harness: plugin_folder_moved_guarded fails on a machine with an account but no
   synced copy
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 08:06'
+updated_date: '2026-10-11 09:13'
 labels:
   - harness
   - guard
@@ -22,6 +23,12 @@ Found 2026-10-11 during TASK-4; fails on main too (Claude Code 2.1.296). harness
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Scenario passes on a dev machine with ~/.claude.json and no synced copy
-- [ ] #2 Scenario still fails when the guard is removed (proof it can fail)
+- [x] #1 Scenario passes on a dev machine with ~/.claude.json and no synced copy
+- [x] #2 Scenario still fails when the guard is removed (proof it can fail)
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Cause confirmed: an account in ~/.claude.json, no synced maisecrets copy, nothing recently trashed, so guard.expected() is False and the guard stands aside under guard.json {expect: synced}. Not a guard regression. harness/run.py now writes expect=synced only when the account has a synced copy (by the guard's own _synced_copies), otherwise expect=always with a printed note, as it did without an account file. plugin_folder_moved_guarded and bash_rehydrate_guarded pass here; with guard.decide() mutated to return {} the scenario fails again (ran.txt, no deny text). Full harness: failures 0 (GAPs #97847, #97278 as before). Watch list in CLAUDE.md updated for 2.1.296.
+<!-- SECTION:FINAL_SUMMARY:END -->

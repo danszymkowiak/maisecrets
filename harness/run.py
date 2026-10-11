@@ -519,10 +519,15 @@ def run_scenario(name: str, sc: dict, update_golden: bool) -> list[str]:
             account = f"{acc['organizationUuid']}_{acc['accountUuid']}"
         except (OSError, ValueError, KeyError, TypeError):
             account = ""
-        (home / "guard.json").write_text(json.dumps({"expect": "synced", "accounts": [account]} if account
+        # the rule expects maisecrets only while the account has a synced copy (or one was just trashed); a
+        # machine with an account and no synced copy (a marketplace or a local install) would test a guard
+        # that stands aside, and the scenario failed there although the guard works (2026-10-11)
+        synced = bool(account) and bool(_synced_copies(account))
+        (home / "guard.json").write_text(json.dumps({"expect": "synced", "accounts": [account]} if synced
                                                     else {"expect": "always"}))
-        if not account:
-            print(f"     ~ {name}: no account file, the guard runs with expect=always")
+        if not synced:
+            why = "no synced copy for this account" if account else "no account file"
+            print(f"     ~ {name}: {why}, the guard runs with expect=always")
     else:
         # a guard the developer installed (~/.claude settings) also runs here. It expects maisecrets for an
         # account with a synced copy, and it cannot see the --settings flag that turns that copy off, so it
@@ -757,6 +762,15 @@ def run_scenario(name: str, sc: dict, update_golden: bool) -> list[str]:
     for f in fails:
         print("     -", f)
     return fails
+
+
+def _synced_copies(account: str) -> list:
+    """The synced maisecrets copies of this account, by the guard's own lookup (hooks/guard.py)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("maisecrets_guard", ROOT / "hooks" / "guard.py")
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    return guard._synced_copies(guard._claude_dir(), account)
 
 
 def _installed_guard() -> bool:
