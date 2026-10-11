@@ -69,8 +69,13 @@ def validate(s: Sample) -> None:
 
 
 def write(samples: list[Sample], path: Path) -> None:
+    seen = set()
     for s in samples:
         validate(s)
+        key = (s.dataset, s.sample_id)
+        if key in seen:
+            raise BenchError(f"{s.dataset}/{s.sample_id}: sample id twice; detections are keyed by it")
+        seen.add(key)
     rows = [{**asdict(s)} for s in samples]
     pq.write_table(pa.Table.from_pylist(rows, schema=ARROW), path)
 

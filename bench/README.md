@@ -19,7 +19,7 @@ From the repository root:
 
 ```bash
 uv run --project bench python -m unittest discover -s bench/tests   # the bench's own tests, a few seconds
-uv run --project bench python bench/setup.py                         # Gretel; CredData needs --creddata <path>
+uv run --project bench python bench/setup.py                         # all but CredData, which needs --creddata <path>
 uv run --project bench python bench/run.py                           # the baseline, about 4 minutes on 16 cores
 uv run --project bench python bench/usefulness.py                    # is each dataset worth keeping
 uv run --project bench python bench/mutate.py bench/mutations/*.toml --guard tab
@@ -32,7 +32,10 @@ uv run --project bench python bench/errors.py                        # false pos
 |---|---|---|---|
 | CredData (Samsung) | 11,030 source files, 15,753 credentials and 48,061 near misses, values obfuscated | Apache-2.0 tooling, each file its project's licence | you clone `https://github.com/Samsung/CredData` and run its `download_data.py --data_dir data` (hours), then `--creddata <path>` |
 | TAB | 1,268 ECHR court decisions, identifiers marked by two annotators | MIT | cloned into the data directory, or `--tab <path>` |
-| Gretel synthetic_pii_finance_multilingual | 55,940 finance documents in 7 languages | Apache-2.0 | downloaded from Hugging Face |
+| Gretel synthetic_pii_finance_multilingual | 41,932 finance documents in 7 languages (records below quality 90 left out); structured formats scored apart | Apache-2.0 | downloaded from Hugging Face |
+| NVIDIA Nemotron-PII | 100,000 English documents of 50+ industries (test split), us and intl locale, structured and unstructured | CC BY 4.0 (attribution: NVIDIA) | downloaded from Hugging Face |
+| Mendeley synthetic financial documents (doi 10.17632/tzrjx692jy.1) | 45,030 auditor reports, tax filings and transaction confirmations | CC BY 4.0 (attribution: the dataset's authors on Mendeley Data) | downloaded through Mendeley's public API, checked against its sha256 |
+| findocs (generated) | 3,300 Swiss salary certificates and tax returns (de, fr), bank statements, MT940 and CSV exports, QR-bills, US W-2 and 1099 forms, invoices | ours | generated from a fixed seed; nothing downloaded |
 | synthetic tool output | 3,000 generated terminal outputs (printenv, git diff, kubectl, lockfiles, ...); a guard, not in the mean | ours | generated from a fixed seed; nothing downloaded |
 | ai4privacy pii-masking-300k | 225,405 records in 6 languages | **academic and non-commercial use only** (AI4Privacy licence) | opt-in: `--with-ai4privacy`, for your own local measurement |
 

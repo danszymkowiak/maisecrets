@@ -57,6 +57,13 @@ class RunTests(unittest.TestCase):
         report = (self.out / "report.md").read_text(encoding="utf-8")
         self.assertIn("| format:structured |", report)
 
+    def test_a_cc_by_dataset_is_attributed_and_a_local_one_is_flagged(self):
+        notes = "\n".join(run.licence_notes(["nemotron", "mendeley", "ai4privacy", "gretel"]))
+        self.assertIn("Nemotron-PII", notes)
+        self.assertIn("10.17632/tzrjx692jy", notes)
+        self.assertIn("non-commercial", notes)
+        self.assertEqual(run.licence_notes(["gretel"]), [])
+
     def test_each_language_ran_with_its_own_regions(self):
         groups = self.summary["groups"]
         self.assertIn("de", groups["de"]["regions"])

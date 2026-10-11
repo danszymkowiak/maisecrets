@@ -1,0 +1,68 @@
+# nvidia/Nemotron-PII: span label -> maisecrets type (docs/BENCHMARK.md, What counts). In scope where maisecrets
+# claims the type. Decisions (TASK-11.34, 2026-10-12):
+# - fax_number is a phone number in shape: PHONE.
+# - account_number: US_BANK_NUMBER (the us-bank rule); the intl locale's account numbers are scored apart by tag.
+# - ssn: US_SSN; the intl locale's national numbers carry the label national_id, which no one type covers.
+# - tax_id mixes SSN, ITIN and EIN shapes (and 123-45-6789 placeholders): out of scope, so a US_SSN hit on one is
+#   neither a find nor a false alarm.
+# - http_cookie is mostly a preference or analytics cookie (gdpr_consent=allowed); a session cookie would be a
+#   secret, but the label does not tell them apart: out of scope.
+# - pin, cvv, swift_bic, customer and employee ids, licence and record numbers have no shape maisecrets claims
+#   (as for Gretel): out of scope.
+
+[labels]
+email = "EMAIL"
+phone_number = "PHONE"
+fax_number = "PHONE"
+ipv4 = "IP"
+ipv6 = "IP"
+credit_debit_card = "CARD"
+password = "SECRET"
+api_key = "SECRET"
+ssn = "US_SSN"
+bank_routing_number = "ABA_ROUTING_NUMBER"
+account_number = "US_BANK_NUMBER"
+tax_id = "OUT_OF_SCOPE"
+http_cookie = "OUT_OF_SCOPE"
+national_id = "OUT_OF_SCOPE"
+pin = "OUT_OF_SCOPE"
+cvv = "OUT_OF_SCOPE"
+swift_bic = "OUT_OF_SCOPE"
+customer_id = "OUT_OF_SCOPE"
+employee_id = "OUT_OF_SCOPE"
+unique_id = "OUT_OF_SCOPE"
+health_plan_beneficiary_number = "OUT_OF_SCOPE"
+medical_record_number = "OUT_OF_SCOPE"
+certificate_license_number = "OUT_OF_SCOPE"
+license_plate = "OUT_OF_SCOPE"
+vehicle_identifier = "OUT_OF_SCOPE"
+device_identifier = "OUT_OF_SCOPE"
+mac_address = "OUT_OF_SCOPE"
+biometric_identifier = "OUT_OF_SCOPE"
+user_name = "OUT_OF_SCOPE"
+url = "OUT_OF_SCOPE"
+coordinate = "OUT_OF_SCOPE"
+first_name = "OUT_OF_SCOPE"
+last_name = "OUT_OF_SCOPE"
+company_name = "OUT_OF_SCOPE"
+street_address = "OUT_OF_SCOPE"
+city = "OUT_OF_SCOPE"
+county = "OUT_OF_SCOPE"
+state = "OUT_OF_SCOPE"
+country = "OUT_OF_SCOPE"
+postcode = "OUT_OF_SCOPE"
+date = "OUT_OF_SCOPE"
+date_of_birth = "OUT_OF_SCOPE"
+date_time = "OUT_OF_SCOPE"
+time = "OUT_OF_SCOPE"
+age = "OUT_OF_SCOPE"
+gender = "OUT_OF_SCOPE"
+blood_type = "OUT_OF_SCOPE"
+race_ethnicity = "OUT_OF_SCOPE"
+religious_belief = "OUT_OF_SCOPE"
+political_view = "OUT_OF_SCOPE"
+sexuality = "OUT_OF_SCOPE"
+language = "OUT_OF_SCOPE"
+education_level = "OUT_OF_SCOPE"
+employment_status = "OUT_OF_SCOPE"
+occupation = "OUT_OF_SCOPE"

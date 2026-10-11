@@ -46,8 +46,14 @@ def default_datasets(manifest: dict) -> list[str]:
     return sorted(set(manifest.get("datasets", {})) - DROPPED)
 
 
+# a CC BY dataset: its attribution goes into every report that includes it
+ATTRIBUTION = {"nemotron": "nemotron: NVIDIA, Nemotron-PII (huggingface.co/datasets/nvidia/Nemotron-PII), CC BY 4.0.",
+               "mendeley": "mendeley: Synthetic Dataset for PII Detection and Anonymization in Financial Documents, "
+                           "Mendeley Data, doi 10.17632/tzrjx692jy.1, CC BY 4.0."}
+
+
 def licence_notes(names) -> list[str]:
-    return [f"> {LOCAL_ONLY[n]}" for n in sorted(names) if n in LOCAL_ONLY]
+    return [f"> {LOCAL_ONLY.get(n) or ATTRIBUTION[n]}" for n in sorted(names) if n in LOCAL_ONLY or n in ATTRIBUTION]
 # the detected types a dataset annotates; a detection of another type there is neither right nor wrong. CredData
 # labels credentials only; the others label personal data broadly and judge every type
 JUDGED = {"creddata": frozenset({"SECRET"})}

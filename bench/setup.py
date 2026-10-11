@@ -18,9 +18,10 @@ from pathlib import Path
 from maisecrets_bench import setup
 from maisecrets_bench.paths import BenchError, data_dir
 
-DATASETS = ("creddata", "gretel", "synthetic", "tab", "ai4privacy")
-# TAB was dropped (saturated, out of scope); ai4privacy is opt-in (licence); synthetic is generated, nothing fetched
-DEFAULT = ("creddata", "gretel", "synthetic")
+DATASETS = ("creddata", "gretel", "synthetic", "nemotron", "mendeley", "findocs", "tab", "ai4privacy")
+# TAB was dropped (saturated, out of scope); ai4privacy is opt-in (licence); synthetic and findocs are generated,
+# nothing fetched
+DEFAULT = ("creddata", "gretel", "synthetic", "nemotron", "mendeley", "findocs")
 
 
 def main(argv: list[str]) -> int:
@@ -51,6 +52,12 @@ def main(argv: list[str]) -> int:
             sources.append(setup.gretel_source(cache))
         if "synthetic" in wanted:
             sources.append(setup.synthetic_source())
+        if "nemotron" in wanted:
+            sources.append(setup.nemotron_source(cache))
+        if "mendeley" in wanted:
+            sources.append(setup.mendeley_source(cache))
+        if "findocs" in wanted:
+            sources.append(setup.findocs_source())
         if "ai4privacy" in wanted:
             from maisecrets_bench.adapters.ai4privacy import LICENCE_NOTE
             print(LICENCE_NOTE)

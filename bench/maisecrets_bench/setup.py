@@ -104,6 +104,47 @@ def synthetic_source() -> Source:
     return Source("synthetic", synthetic.version, lambda: synthetic.samples(load_table("synthetic")), lambda: {})
 
 
+def nemotron_source(cache: Path) -> Source:
+    """nvidia/Nemotron-PII, CC-BY-4.0 (maisecrets_bench/adapters/nemotron.py): the test split, pinned to a revision."""
+    from .adapters import nemotron
+    stats = nemotron.Stats()
+    sha: dict = {}
+
+    def version() -> str:
+        from huggingface_hub import HfApi
+        sha["v"] = HfApi().dataset_info(nemotron.HF_ID).sha
+        return f"{sha['v']}:{nemotron.REVISION}"
+
+    return Source("nemotron", version,
+                  lambda: nemotron.samples(nemotron.records(str(cache / "hf"), sha.get("v")), load_table("nemotron"),
+                                           stats),
+                  lambda: {"dropped": stats.dropped, "licence": "CC-BY-4.0, NVIDIA"})
+
+
+def mendeley_source(cache: Path) -> Source:
+    """Mendeley's synthetic financial documents, CC BY 4.0 (maisecrets_bench/adapters/mendeley.py): both
+    spreadsheets, downloaded once and checked against the sha256 the API gives; the version is those hashes."""
+    from .adapters import mendeley
+    stats = mendeley.Stats()
+    listing: list = []
+
+    def version() -> str:
+        listing[:] = mendeley.files()
+        return ":".join([f["sha256"][:12] for f in sorted(listing, key=lambda f: f["name"])] + [mendeley.REVISION])
+
+    def build() -> Iterator[Sample]:
+        for path in mendeley.download(listing, cache / "mendeley"):
+            yield from mendeley.samples(mendeley.read_xlsx(path), load_table("mendeley"), stats)
+
+    return Source("mendeley", version, build, lambda: {"dropped": stats.dropped, "licence": "CC BY 4.0"})
+
+
+def findocs_source() -> Source:
+    """Generated tax and financial documents from a fixed seed (maisecrets_bench/adapters/findocs.py), scored."""
+    from .adapters import findocs
+    return Source("findocs", findocs.version, lambda: findocs.samples(load_table("findocs")), lambda: {})
+
+
 def ai4privacy_source(cache: Path) -> Source:
     """Opt-in and local: academic and non-commercial use only (maisecrets_bench/adapters/ai4privacy.py)."""
     from .adapters import ai4privacy

@@ -1,0 +1,15 @@
+# Mendeley synthetic financial documents (doi 10.17632/tzrjx692jy.1): True Predictions label -> maisecrets type
+# (docs/BENCHMARK.md, What counts). A credit_card span covers the whole injected block (brand, holder, number, expiry,
+# CVC); a CARD hit on the number inside it counts as the find. Names, addresses, companies and URLs are out of scope.
+# Every e-mail address of the data is at example.com, .net or .org (run 20261012-011327: 34,637 of 34,637), which
+# the plugin leaves alone on purpose (RFC 2606: no person's mailbox is there): out of scope, not a miss.
+
+[labels]
+email = "OUT_OF_SCOPE"
+phone = "PHONE"
+ssn = "US_SSN"
+credit_card = "CARD"
+name = "OUT_OF_SCOPE"
+address = "OUT_OF_SCOPE"
+company = "OUT_OF_SCOPE"
+url = "OUT_OF_SCOPE"

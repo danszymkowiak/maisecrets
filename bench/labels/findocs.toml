@@ -1,0 +1,20 @@
+# The generated tax and financial documents (maisecrets_bench/adapters/findocs.py): the injected values and the
+# look-alike negatives. AHV/AVS numbers and CHE UIDs are positives the detector does not claim yet: out of scope until
+# TASK-20 adds the Swiss types (then they map to them). An EIN has no type either.
+
+[labels]
+IBAN = "IBAN"
+CARD = "CARD"
+SSN = "US_SSN"
+ABA = "ABA_ROUTING_NUMBER"
+ACCOUNT = "US_BANK_NUMBER"
+EMAIL = "EMAIL"
+PHONE = "PHONE"
+AHV = "OUT_OF_SCOPE"
+CHE_UID = "OUT_OF_SCOPE"
+EIN = "OUT_OF_SCOPE"
+AMOUNT = "OUT_OF_SCOPE"
+DATE = "OUT_OF_SCOPE"
+REF = "OUT_OF_SCOPE"
+POSTCODE = "OUT_OF_SCOPE"
+QR_REF = "OUT_OF_SCOPE"

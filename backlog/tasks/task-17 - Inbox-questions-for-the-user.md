@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-11 21:05'
+updated_date: '2026-10-11 23:32'
 labels:
   - inbox
 dependencies: []
@@ -39,5 +39,10 @@ TASK-11.17 family C: about 1,300 of ai4privacy's dev false alarms (email 1,005, 
 created: 2026-10-11 21:05
 ---
 TASK-11.32: the digest filter of TASK-11.20 passed strictly (no find lost, 7 false alarms removed, mean +0.01). Options: (a) port it to detect.py with a can-fail belief; (b) leave it in the bench and close TASK-11.32. I recommend (b): the gain is 7 false alarms over four datasets, and every new exception in detect.py has to be maintained.
+---
+
+created: 2026-10-11 23:32
+---
+TASK-11.34/11.35/11.37: the usefulness check (run 20261012-011327) says keep for Nemotron-PII, Mendeley and findocs; all three now run as scored datasets, and the equal-weight mean moved from 71.5% to 79.8% because of them (Mendeley 95.0%, findocs 91.6%, Nemotron 77.4%). Options: (a) keep all three scored; (b) make Mendeley a guard (its in-scope types are only SSN, phone and card, at 100% precision, and it moves on 5 of 30 probes); (c) other. I recommend (a): TASK-21 replaces the equal-weight mean anyway, and under recall floors per type Mendeley's 51,283 SSNs and 42,527 cards give the critical tiers the sample size they need.
 ---
 <!-- COMMENTS:END -->

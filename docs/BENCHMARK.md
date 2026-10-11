@@ -33,9 +33,14 @@ The detector runs in a temp maisecrets home (`MAISECRETS_HOME`), never the real 
 | ai4privacy `pii-masking-300k` | a record; `privacy_mask` spans | PII labels, six languages | PII: precision and recall |
 | Gretel `synthetic_pii_finance_multilingual` | a document; `pii_spans` | finance PII and credentials, several languages | PII and secrets in finance text |
 | synthetic tool output (generated) | one filled template | injected values `pos`, digests and ids `neg` | guard: terminal output an agent sees |
+| NVIDIA Nemotron-PII | a document of the test split, us or intl locale | 55 PII labels as spans | PII in English documents of 50+ industries; locale and format scored apart |
+| Mendeley synthetic financial documents | a spreadsheet row | `True Predictions` spans: name, card, e-mail, URL, phone, address, company, SSN | US-style financial documents |
+| findocs (generated) | one filled template | injected values with valid checksums `pos`, look-alikes `neg` | Swiss and US tax and bank documents |
 
 Licences: CredData's tooling is Apache-2.0 and each file keeps its source project's licence
-(CredData kept permissive ones); TAB is MIT; Gretel is Apache-2.0. ai4privacy allows academic and
+(CredData kept permissive ones); TAB is MIT; Gretel is Apache-2.0; Nemotron-PII and the Mendeley
+dataset are CC BY 4.0, which holds for anyone who runs the bench (the reports name their sources).
+findocs and the synthetic tool output are ours. ai4privacy allows academic and
 non-commercial use only and needs a written licence for derivative works. **Decision, 2026-10-11
 (user):** it is opt-in and local: the setup builds it only with `--with-ai4privacy`, for the user's
 own non-commercial measurement. A report that goes upstream leaves it out, and the bench README tells
@@ -125,6 +130,33 @@ raises 2,663 of their 3,233. Recall is lower there for e-mail (57% against 85%),
 and secrets (21% against 40%); the likely cause, not yet checked sample by sample, is values in
 delimited fields (FIX `|`, CSV `;`, XML tags) that the rules' boundaries do not expect. Gretel's
 values are weakly diverse (the same few names and domains), so its type-level recall moves in steps.
+
+### Nemotron-PII, Mendeley and findocs
+
+**Added 2026-10-12 (TASK-11.34, 11.35, 11.37); baseline run 20261012-012544.**
+
+- **Nemotron-PII** (test split, 100,000 documents). Every uid has a us and an intl record with
+  different text; the sample id is `locale:uid` and the uid decides the split (a first run keyed both
+  by uid and scored each text with the other's detections, 63.5% precision; `schema.write` now refuses
+  a repeated sample id). Precision 99.1%, recall 63.5%, F1 77.4%. E-mail (99.3%), SSN (99.7%) and ABA
+  (98.0%) are found; cards (11.7%, 11,363 missed), phones (23.1%) and secrets (21.5%) are the gaps.
+  The intl locale has higher recall (69.8%) than us (56.8%).
+- **Mendeley synthetic financial documents** (45,030 rows). The texts carry mojibake that shifted
+  8% of the offsets; the adapter repairs it and every span lands. Every e-mail address is at
+  example.com, .net or .org, which the plugin leaves alone on purpose, so e-mail is out of scope there.
+  Precision 100.0%, recall 90.6%, F1 95.0%: SSN 100%, phone 93.9%, card 75.7%.
+- **findocs** (3,300 generated documents, ours). Precision 100.0%, recall 84.4%, F1 91.6%. The
+  misses are three gaps: an IBAN after an MT940 `?31` subfield (594, TASK-22), a US phone written
+  `(494) 360-7563` (600, TASK-23), and a card number after the German word `Karte` (300, TASK-24).
+  AHV and UID numbers are labelled but out of scope until TASK-20 adds the Swiss types.
+
+**Usefulness (run 20261012-011327, before the Mendeley e-mail fix).** Each new dataset is in scope,
+not saturated and moved by probes (Nemotron 22 of 30, findocs 8, Mendeley 5): keep, all three scored.
+The highest overlaps are Gretel / Nemotron (61.5% of probes move both the same way) and findocs /
+Mendeley (62.5%), below the 95% that would make one redundant. The synthetic tool output stays a guard
+although saturated (99.2%). findocs is scored by the user's decision of 2026-10-11, with the caveat
+that it is tuned to our own generator; its weight in the objective is set in TASK-21.1. The overall
+equal-weight mean of the scored datasets is 79.8%.
 
 ### Regions
 

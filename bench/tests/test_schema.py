@@ -76,6 +76,11 @@ class ParquetTests(unittest.TestCase):
                                                  for r in pq.read_table(path).to_pylist()], schema=old), path)
             self.assertEqual(schema.read(path)[0].tags, [])
 
+    def test_a_sample_id_twice_in_one_dataset_is_refused(self):
+        # detections are keyed by (dataset, sample id): a repeat scores one text with another's detections
+        with tempfile.TemporaryDirectory() as d, self.assertRaisesRegex(BenchError, "s1"):
+            schema.write([_sample(), _sample(text="other mail b@example.com", spans=[])], Path(d) / "toy.parquet")
+
     def test_write_validates_every_row(self):
         with tempfile.TemporaryDirectory() as d, self.assertRaises(BenchError):
             schema.write([_sample(split="nope")], Path(d) / "toy.parquet")
