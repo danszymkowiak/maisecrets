@@ -1,23 +1,23 @@
 ---
 id: TASK-11
-title: 'Labelled evaluation set: precision and recall per rule'
+title: 'Epic: benchmark harness for the detection rules (precision/recall per dataset)'
 status: To Do
 assignee: []
 created_date: '2026-10-11 08:05'
-updated_date: '2026-10-11 08:27'
+updated_date: '2026-10-11 10:20'
 labels:
+  - benchmark
   - detection
-  - measurement
-dependencies:
-  - TASK-13
-priority: low
+  - epic
+dependencies: []
+priority: medium
 ordinal: 11000
 ---
 
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Asked by the user 2026-10-11. tests/fp_corpus.py has 591 NO_HIT and 23 HIT: a gate, not a measure, and no recall. Idea: scripts/score_detector.py <dataset> prints precision/recall per rule (counts only, never values), run by hand outside the repo against external labelled sets (secrets: Samsung CredData, SecretBench/FPSecretBench; PII: ai4privacy, Presidio synthetic; i2b2/n2c2 needs a DUA). Real leaked values never enter the tree. Map each dataset's labels onto our policy (e.g. test fixtures are NO_HIT here). Every miss/false alarm found becomes a synthetic §-split case in fp_corpus.py. NEEDS USER: which datasets, licences, whether terms.txt gets its own labelled set.
+User request 2026-10-11 (chat + upstream issue comment). Measure the rules against public labelled datasets, outside the project code: a setup script fetches and normalises the datasets into one schema (parquet, outside the repo); a runner scores the current rules or proposed rule mutations (precision, recall, F1; ROC/AUC where a score exists) per dataset and fold. Later an agent proposes rules from the false positives/negatives. Inclusion: a rule change is accepted only if it is equal or better on every dataset; rules that never trigger are flagged for removal; the rest are ranked by score change with every dataset weighted equally (different use cases). Folds: many grouped folds plus a held-out test set. Datasets: Samsung CredData (../CredData, values obfuscated), TAB court text (../text-anonymization-benchmark), ai4privacy/pii-masking-300k, gretelai/synthetic_pii_finance_multilingual. Everything (harness + recommendations) must be runnable by the project owner.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
@@ -25,4 +25,7 @@ Asked by the user 2026-10-11. tests/fp_corpus.py has 591 NO_HIT and 23 HIT: a ga
 - [ ] #1 Dataset choice and label mapping agreed with the user
 - [ ] #2 Scorecard script prints per-rule precision/recall without printing any value
 - [ ] #3 Findings land as synthetic cases in tests/fp_corpus.py
+- [ ] #4 Every subtask done
+- [ ] #5 The owner can run setup and the benchmark from bench/README.md on a clean machine
+- [ ] #6 A recommendations report ranks rule changes by equal-weight score change and lists never-triggered rules
 <!-- AC:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-7
 title: Docs and full check suite for the fork
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 07:01'
-updated_date: '2026-10-11 09:16'
+updated_date: '2026-10-11 10:18'
 labels:
   - docs
 dependencies:
@@ -20,7 +20,7 @@ ordinal: 7000
 <!-- AC:BEGIN -->
 - [x] #1 README fork section: how to write terms.txt (synthetic example), chmod 600, the * modes, the PDF prompt
 - [x] #2 All checks in CLAUDE.md 'Checks before a push' pass, incl. /usr/bin/python3 3.9 and harness/run.py
-- [ ] #3 Pushed to origin only after the user approves
+- [x] #3 Pushed to origin only after the user approves
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -32,3 +32,9 @@ TASK-1: move the draft C25 row from docs/TERMS.md into docs/THREAT-MODEL.md once
 
 2026-10-11: TASK-12 done (cf4e21f); full harness failures 0. AC2 met. Only AC3 (push, inbox TASK-13) remains.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+README fork section, C25 in the threat model with five beliefs, all checks green (1110 tests on 3.12 and 3.9, harness 0 failures after TASK-12). Pushed with the user's approval: 6383e8e..450742c on origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->

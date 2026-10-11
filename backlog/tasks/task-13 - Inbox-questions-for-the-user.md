@@ -1,10 +1,10 @@
 ---
 id: TASK-13
 title: 'Inbox: questions for the user'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 08:27'
-updated_date: '2026-10-11 09:37'
+updated_date: '2026-10-11 10:20'
 labels:
   - inbox
 dependencies: []
@@ -35,4 +35,15 @@ created: 2026-10-11 09:37
 ---
 Update to the TASK-7 push question: TASK-12 is fixed (harness failures 0), so option (b) is satisfied. 14 commits are now ahead of origin/main, including TASK-9 (Python floor 3.12) and TASK-10 (CLAUDE.md fork notes). origin is the GitHub fork; a push to main starts .github/workflows/ci.yml (Windows + macOS). Just answer yes or no to the push.
 ---
+
+created: 2026-10-11 10:18
+---
+Answered by the user in chat 2026-10-11: push approved; pushed 6383e8e..450742c to origin/main. TASK-11: the user picked the datasets (CredData, ai4privacy pii-masking-300k, Gretel synthetic_pii_finance_multilingual, TAB) and turned TASK-11 into an epic (see its subtasks).
+---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Both questions answered in chat on 2026-10-11: push approved and done; datasets chosen, TASK-11 became the benchmark epic (TASK-11.1 to 11.14).
+<!-- SECTION:FINAL_SUMMARY:END -->
