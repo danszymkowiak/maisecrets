@@ -4,6 +4,7 @@ title: 'Epic: leave-one-out review of every rule'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:53'
+updated_date: '2026-10-11 21:31'
 labels:
   - epic
   - benchmark
@@ -24,3 +25,12 @@ Requested by the user 2026-10-11: remove each rule on its own and judge the effe
 - [ ] #2 A ranked report: strict and within-tolerance removals with per-dataset deltas, and the rules whose removal hurts most (the ones that earn their place)
 - [ ] #3 Removal candidates become plugin tasks with a real-use note, waiting for the user's approval
 <!-- AC:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-10-11 21:31
+---
+Paused 2026-10-11 (user): the move from gitleaks to Betterleaks (TASK-19) runs first, so leave-one-out runs once, on the new rule set. TASK-19.7 re-baselines and restarts it.
+---
+<!-- COMMENTS:END -->

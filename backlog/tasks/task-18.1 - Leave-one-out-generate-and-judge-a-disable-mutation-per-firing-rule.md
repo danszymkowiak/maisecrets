@@ -4,7 +4,7 @@ title: 'Leave-one-out: generate and judge a disable mutation per firing rule'
 status: In Progress
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-11 20:41'
+updated_date: '2026-10-11 21:31'
 labels:
   - benchmark
 dependencies: []
@@ -24,3 +24,12 @@ From the newest full run's rule table (metrics.json rules, hits > 0), write one 
 - [x] #1 A script or mutate.py option generates the per-rule mutations from a run; a test covers it
 - [ ] #2 All firing rules judged; results.json and report.md in the data directory
 <!-- AC:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-10-11 21:31
+---
+Paused 2026-10-11 (user): the move from gitleaks to Betterleaks (TASK-19) runs first, so leave-one-out runs once, on the new rule set. TASK-19.7 re-baselines and restarts it.
+---
+<!-- COMMENTS:END -->

@@ -4,11 +4,12 @@ title: 'Leave-one-out: ranked report and removal candidates'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-11 17:53'
+updated_date: '2026-10-11 21:31'
 labels:
   - benchmark
 dependencies:
   - TASK-18.1
+  - TASK-19.7
 parent_task_id: TASK-18
 priority: high
 ordinal: 51000
