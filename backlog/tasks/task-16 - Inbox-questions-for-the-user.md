@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 12:50'
+updated_date: '2026-10-11 13:02'
 labels:
   - inbox
 dependencies: []
@@ -49,5 +49,10 @@ TASK-11.10 result for you to weigh (bench/mutations/*.toml, judged 2026-10-11 wi
 created: 2026-10-11 12:50
 ---
 TASK-11.14: what should the owner receive? The bench writes four markdown files that hold counts, rule ids, shapes and common words only: report.md (baseline per dataset/type/rule), usefulness.md (keep/drop per dataset), mutations report.md (each rule change accepted/rejected, ranked), errors-dev.md (FPs by rule, misses by type). Options: (a) one combined 'recommendations' markdown per round (accepted mutations with their per-dataset deltas and a few example shapes, never-fired rules, dataset verdicts), ready to paste into a GitHub issue; (b) send the four files as they are; (c) a pull request with the accepted rule changes plus the report. I recommend (a) for the first contact, because one page with the result and how to reproduce it is easier to act on than four files, and (c) once you and the owner agree on a change. The fresh-clone check passed (tests, setup of TAB from GitHub, run, usefulness, mutate, errors in a temp dir).
+---
+
+created: 2026-10-11 13:02
+---
+TASK-14 (flaky test): not reproduced in 7 full runs (4 suites in parallel; 3 runs of the real pre-commit hook in parallel with a bench run as load). The pre-commit and pre-push hooks now keep the test output in .git/maisecrets-pre-commit-tests.log / maisecrets-pre-push-tests.log and print the FAIL lines on failure. Options: (a) leave TASK-14 open and waiting; when a hook fails again, the log names the test and I fix it then; (b) close it as not reproducible. I recommend (a): two failures in one day are real, and the next one now costs nothing to diagnose. Mark this inbox Done to let it run again, or tell me to close it.
 ---
 <!-- COMMENTS:END -->
