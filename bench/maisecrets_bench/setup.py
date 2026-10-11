@@ -1,0 +1,102 @@
+"""Build the benchmark data (docs/BENCHMARK.md): each source becomes <out>/<dataset>.parquet and an entry in
+<out>/manifest.json with its version and counts. A source whose version is already in the manifest, with its file
+present, is not built again."""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+from collections import Counter
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable, Iterator
+
+from . import schema, split
+from .labels import load as load_table
+from .paths import BenchError, data_dir
+from .schema import Sample
+
+
+@dataclass
+class Source:
+    name: str
+    version: Callable[[], str]
+    build: Callable[[], Iterator[Sample]]
+    stats: Callable[[], dict]
+
+
+def _manifest(out: Path) -> dict:
+    p = out / "manifest.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"datasets": {}}
+
+
+def run(sources: list[Source], out: Path, log: Callable[[str], None] = lambda s: None) -> dict:
+    out.mkdir(parents=True, exist_ok=True)
+    manifest = _manifest(out)
+    for src in sources:
+        version = src.version()
+        known = manifest["datasets"].get(src.name, {})
+        target = out / f"{src.name}.parquet"
+        if known.get("version") == version and target.exists():
+            log(f"{src.name}: up to date ({version})")
+            continue
+        log(f"{src.name}: building ({version})")
+        rows = list(src.build())
+        tmp = target.with_suffix(".parquet.tmp")
+        schema.write(rows, tmp)
+        os.replace(tmp, target)
+        spans = Counter(sp.gold for s in rows for sp in s.spans)
+        manifest["datasets"][src.name] = {
+            "version": version, "samples": len(rows), "spans": dict(sorted(spans.items())),
+            "split": dict(sorted(Counter(s.split for s in rows).items())), **src.stats()}
+        log(f"{src.name}: {len(rows)} samples, spans {dict(spans)}")
+    manifest["split_salt"] = split.SALT
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
+
+
+def _git_rev(path: Path) -> str:
+    try:
+        return subprocess.run(["git", "-C", str(path), "rev-parse", "HEAD"], capture_output=True, text=True,
+                              check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        raise BenchError(f"{path}: not a git checkout; give the path of a clone") from None
+
+
+def creddata_source(path: Path) -> Source:
+    from .adapters import creddata
+    if not (path / "meta").is_dir():
+        raise BenchError(f"{path}: no CredData checkout there. Clone https://github.com/Samsung/CredData, run "
+                         "`python download_data.py --data_dir data` in it (it fetches the source repositories and "
+                         "takes a while), then pass --creddata <path>")
+    return Source("creddata", lambda: _git_rev(path), lambda: creddata.samples(path, load_table("creddata")),
+                  lambda: {})
+
+
+TAB_URL = "https://github.com/NorskRegnesentral/text-anonymization-benchmark.git"
+
+
+def tab_source(path: Path | None, cache: Path) -> Source:
+    from .adapters import tab
+    if path is None:
+        path = cache / "text-anonymization-benchmark"
+        if not path.exists():
+            subprocess.run(["git", "clone", "--depth", "1", TAB_URL, str(path)], check=True)
+    return Source("tab", lambda: _git_rev(path), lambda: tab.samples(path, load_table("tab")), lambda: {})
+
+
+def gretel_source(cache: Path) -> Source:
+    from .adapters import gretel
+    stats = gretel.Stats()
+
+    def version() -> str:
+        from huggingface_hub import HfApi
+        return HfApi().dataset_info(gretel.HF_ID).sha
+
+    return Source("gretel", version,
+                  lambda: gretel.samples(gretel.records(str(cache / "hf")), load_table("gretel"), stats),
+                  lambda: {"dropped": stats.dropped})
+
+
+def default_out() -> Path:
+    return data_dir() / "parquet"
