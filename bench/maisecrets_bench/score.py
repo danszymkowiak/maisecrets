@@ -23,6 +23,7 @@ class Counts:
     found: int = 0          # in-scope positives with at least one detection
     fn: int = 0             # in-scope positives with none
     unreviewed: int = 0     # CredData: detections on text no row labels
+    unjudged: int = 0       # detections of a type the dataset does not annotate (CredData: all but SECRET)
     lines: int = 0          # lines scanned (for the unreviewed rate)
     oos_found: int = 0      # out-of-scope positives a detection touches anyway
     oos_total: int = 0
@@ -41,7 +42,8 @@ class Counts:
                     tgt[kk] = tgt.get(kk, 0) + n
             return out
         return Counts(self.tp + o.tp, self.fp + o.fp, self.found + o.found, self.fn + o.fn,
-                      self.unreviewed + o.unreviewed, self.lines + o.lines, self.oos_found + o.oos_found,
+                      self.unreviewed + o.unreviewed, self.unjudged + o.unjudged, self.lines + o.lines,
+                      self.oos_found + o.oos_found,
                       self.oos_total + o.oos_total, self.samples + o.samples, self.clean + o.clean,
                       merge(self.by_type, o.by_type), merge(self.rules, o.rules),
                       dict(Counter(self.confusion) + Counter(o.confusion)))
@@ -59,9 +61,11 @@ _TYPE_KEYS = ("tp", "fp", "found", "fn")
 _RULE_KEYS = ("hits", "tp", "fp")
 
 
-def score_sample(s: Sample, detections: list[Detection], unlabelled_negative: bool) -> Counts:
+def score_sample(s: Sample, detections: list[Detection], unlabelled_negative: bool,
+                 judged: frozenset | None = None) -> Counts:
     """Counts of one sample. `unlabelled_negative`: text that no span labels is negative (every dataset but CredData,
-    where a detection there counts as unreviewed)."""
+    where a detection there counts as unreviewed). `judged`: the detected types the dataset annotates (None: all); a
+    detection of another type is no error unless it lands on a positive."""
     pos_in = [sp for sp in s.spans if sp.gold == "pos" and sp.maisecrets_type != OUT_OF_SCOPE]
     pos_oos = [sp for sp in s.spans if sp.gold == "pos" and sp.maisecrets_type == OUT_OF_SCOPE]
     neg = [sp for sp in s.spans if sp.gold == "neg"]
@@ -82,6 +86,8 @@ def score_sample(s: Sample, detections: list[Detection], unlabelled_negative: bo
             _bump(c.rules, d.rule, "tp", _RULE_KEYS)
             if gold_type != d.type:
                 confusion[(gold_type, d.type)] += 1
+        elif judged is not None and d.type not in judged:
+            c.unjudged += 1         # CredData says nothing about an e-mail address: neither right nor wrong
         elif hit(pos_oos, d) or hit(unc, d):
             pass                    # a name maisecrets does not claim, or a row CredData left open: no error
         elif unlabelled_negative or hit(neg, d):

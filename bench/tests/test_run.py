@@ -58,10 +58,15 @@ class RunTests(unittest.TestCase):
         self.assertNotIn("email", self.summary["never_fired"])
 
     def test_the_report_and_the_metrics_hold_no_value(self):
-        for name in ("report.md", "metrics.json"):
-            text = (self.out / name).read_text(encoding="utf-8")
+        for name in ("report.md", "metrics.json", "detections.parquet"):
+            text = (self.out / name).read_bytes().decode("utf-8", errors="replace")
             for value in (MAIL, "zq.tester", PHONE, "9876 5432"):
                 self.assertNotIn(value, text, name)
+
+    def test_the_detections_are_saved_and_reload_the_same(self):
+        det = run.load_detections(self.out / "detections.parquet")
+        self.assertIn(("toy", "a"), det)
+        self.assertEqual(run.score_all(_samples(), det)["toy"]["dev"].found, 1)
 
     def test_the_report_names_the_overall_score(self):
         self.assertIn("Overall score", (self.out / "report.md").read_text(encoding="utf-8"))

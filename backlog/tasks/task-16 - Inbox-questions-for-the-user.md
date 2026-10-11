@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 11:41'
+updated_date: '2026-10-11 12:23'
 labels:
   - inbox
 dependencies: []
@@ -29,5 +29,15 @@ TASK-11.1: please review docs/BENCHMARK.md (the decisions from the brainstorm: n
 created: 2026-10-11 11:41
 ---
 TASK-11.6: ai4privacy pii-masking-300k is licensed for academic and non-commercial use only (LICENSE.md: 'Access ... exclusively for academic research and non-commercial purposes'; redistribution or derivative works need a written licence from licensing@ai4privacy.com; the data is watermarked). maisecrets is published by a company (mcpgate.de), so tuning its rules with this data, and the parquet conversion, may fall outside the licence. Options: (a) drop ai4privacy and rely on Gretel (Apache-2.0, finance PII, 6 languages) for PII; (b) keep it for your own local, non-commercial measurement only, never in recommendations sent upstream; (c) ask AI4Privacy for a licence first. I recommend (a) because Gretel covers the same in-scope types (email, phone, IP, password, IBAN, card) under a clear licence, and the owner must be able to run the bench without a licence question. Found so far (40k records, no values read): in scope would be EMAIL, TEL->PHONE, IP, PASS->SECRET; the ID-like labels are random digit/letter runs, so out of scope.
+---
+
+created: 2026-10-11 12:23
+---
+TASK-11.15 (your question: are the datasets even useful?). Full run 2026-10-11, 30 probes (drop each of the 30 most-firing rules, rescore):
+- creddata: 15,753 in-scope positives (100%), score 70.4% (P 78.6, R 63.8), 34 rules fire (21 only here), 11 of 30 probes move it. KEEP.
+- gretel: 34,919 in-scope positives (9.6% of its labels), score 68.6% (P 75.1, R 63.1), 55 rules fire (40 only here), 26 of 30 probes move it. KEEP.
+- tab: 0 in-scope positives, 99.7% of 1,268 documents without a false alarm (4 FPs in 9.6 M chars), 3 rules fire, 2 of 30 probes move it. DROP CANDIDATE: saturated and out of scope; it can only show a regression in legal prose.
+- Overlap: creddata/gretel move the same way on 16.7% of probes: not redundant.
+Options: (a) drop TAB from the score, keep it as a regression guard (a change must not lower its clean rate; it gets no weight in the mean); (b) drop it entirely; (c) keep it with equal weight. I recommend (a) because it costs 1 s per run and catches false alarms in long prose, which neither other dataset has, but with equal weight its 99.7% would dilute every real improvement to a third. ai4privacy is still parked on its licence (TASK-11.6).
 ---
 <!-- COMMENTS:END -->

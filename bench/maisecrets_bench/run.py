@@ -10,6 +10,9 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
+
 from . import schema, score
 from .schema import Sample
 
@@ -22,6 +25,9 @@ LANGUAGES = {
 SKIP_TYPES = {"HIDDEN"}     # removal of invisible characters: no detection to score
 # where text no span labels is negative; CredData labels candidate lines only (docs/BENCHMARK.md, CredData)
 UNLABELLED_NEGATIVE = {"creddata": False}
+# the detected types a dataset annotates; a detection of another type there is neither right nor wrong. CredData
+# labels credentials only; the others label personal data broadly and judge every type
+JUDGED = {"creddata": frozenset({"SECRET"})}
 
 _detect = None
 
@@ -42,12 +48,8 @@ def _detections(text: str) -> list[score.Detection]:
     return [score.Detection(m.start, m.end, m.type, m.kind) for m in _detect.scan(text) if m.type not in SKIP_TYPES]
 
 
-def _score_chunk(chunk: list[Sample]) -> list[tuple[str, str, score.Counts]]:
-    out = []
-    for s in chunk:
-        c = score.score_sample(s, _detections(s.text), UNLABELLED_NEGATIVE.get(s.dataset, True))
-        out.append((s.dataset, s.split, c))
-    return out
+def _detect_chunk(chunk: list[Sample]) -> list[tuple[str, str, list[score.Detection]]]:
+    return [(s.dataset, s.sample_id, _detections(s.text)) for s in chunk]
 
 
 def _active(regions: list[str], locale: str) -> dict:
@@ -62,12 +64,12 @@ def _describe() -> dict:
             "rules": sorted({r.id for r in _detect.rules()})}
 
 
-def score_samples(samples: list[Sample], jobs: int, chunk: int = 50) -> tuple[dict, dict]:
-    """(dataset -> split -> Counts, language -> what it ran with)."""
+def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50) -> tuple[dict, dict]:
+    """((dataset, sample_id) -> detections, language -> what it ran with)."""
     by_lang: dict[str, list[Sample]] = {}
     for s in samples:
         by_lang.setdefault(s.language, []).append(s)
-    results: dict[str, dict[str, score.Counts]] = {}
+    det: dict[tuple[str, str], list[score.Detection]] = {}
     groups = {}
     for lang, group in sorted(by_lang.items()):
         regions, locale = LANGUAGES[lang]
@@ -75,15 +77,45 @@ def score_samples(samples: list[Sample], jobs: int, chunk: int = 50) -> tuple[di
         group.sort(key=lambda s: -len(s.text))      # the long files first: no straggler at the end
         chunks = [group[i:i + chunk] for i in range(0, len(group), chunk)]
         with ProcessPoolExecutor(jobs, initializer=_init_worker, initargs=(regions, locale)) as ex:
-            for part in ex.map(_score_chunk, chunks):
-                for dataset, split, c in part:
-                    per = results.setdefault(dataset, {})
-                    per[split] = per.get(split, score.Counts()) + c
-    return results, groups
+            for part in ex.map(_detect_chunk, chunks):
+                for dataset, sample_id, ds in part:
+                    det[(dataset, sample_id)] = ds
+    return det, groups
+
+
+def score_all(samples: list[Sample], det: dict) -> dict:
+    """dataset -> split -> Counts."""
+    results: dict[str, dict[str, score.Counts]] = {}
+    for s in samples:
+        c = score.score_sample(s, det.get((s.dataset, s.sample_id), []), UNLABELLED_NEGATIVE.get(s.dataset, True),
+                               JUDGED.get(s.dataset))
+        per = results.setdefault(s.dataset, {})
+        per[s.split] = per.get(s.split, score.Counts()) + c
+    return results
+
+
+DETECTIONS = pa.schema([("dataset", pa.string()), ("sample_id", pa.string()), ("start", pa.int32()),
+                        ("end", pa.int32()), ("type", pa.string()), ("rule", pa.string())])
+
+
+def save_detections(det: dict, path: Path) -> None:
+    """Positions, types and rule ids: what rescoring needs, and no value."""
+    rows = [{"dataset": k[0], "sample_id": k[1], "start": d.start, "end": d.end, "type": d.type, "rule": d.rule}
+            for k, ds in det.items() for d in ds]
+    pq.write_table(pa.Table.from_pylist(rows, schema=DETECTIONS), path)
+
+
+def load_detections(path: Path) -> dict:
+    det: dict[tuple[str, str], list[score.Detection]] = {}
+    for r in pq.read_table(path, schema=DETECTIONS).to_pylist():
+        det.setdefault((r["dataset"], r["sample_id"]), []).append(score.Detection(r["start"], r["end"], r["type"],
+                                                                                    r["rule"]))
+    return det
 
 
 def _counts_json(c: score.Counts) -> dict:
-    return {"tp": c.tp, "fp": c.fp, "found": c.found, "fn": c.fn, "unreviewed": c.unreviewed, "lines": c.lines,
+    return {"tp": c.tp, "fp": c.fp, "found": c.found, "fn": c.fn, "unreviewed": c.unreviewed, "unjudged": c.unjudged,
+            "lines": c.lines,
             "oos_found": c.oos_found, "oos_total": c.oos_total, "samples": c.samples, "clean": c.clean,
             **score.metrics(c),
             "by_type": {t: {**v, **score.metrics(score.Counts(tp=v["tp"], fp=v["fp"], found=v["found"],
@@ -162,11 +194,13 @@ def run(parquet: Path, datasets: list[str], out: Path, jobs: int, limit: int | N
             rows = random.Random(f"bench-limit-{name}").sample(rows, limit)
         samples += rows
     t0 = time.time()
-    results, groups = score_samples(samples, jobs)
-    summary = summarise(results, groups)
+    det, groups = detect_samples(samples, jobs)
+    summary = summarise(score_all(samples, det), groups)
     seconds = time.time() - t0
     manifest = json.loads((parquet / "manifest.json").read_text(encoding="utf-8"))
     out.mkdir(parents=True, exist_ok=True)
+    save_detections(det, out / "detections.parquet")
+    (out / "datasets.json").write_text(json.dumps({"datasets": datasets, "limit": limit}) + "\n", encoding="utf-8")
     (out / "metrics.json").write_text(json.dumps({**summary, "seconds": seconds, "limit": limit,
                                                   "manifest": manifest}, indent=2) + "\n", encoding="utf-8")
     (out / "report.md").write_text(report(summary, manifest, seconds), encoding="utf-8")

@@ -66,6 +66,10 @@ it stops the setup: every new label is a decision, never a default.
 - **False positive:** a detection that overlaps no gold span with `pos` at all, in scope or not.
   Redacting a name that maisecrets does not claim is no error.
 - `uncertain` spans and CredData `X` rows are left out of every count.
+- **A dataset judges only the types it annotates.** CredData labels credentials, so a detection of
+  another type there (an e-mail address on a line it calls "not a credential") is neither right nor
+  wrong: it is counted as *unjudged*. Gretel and TAB label personal data broadly and judge every type.
+  (The probes found it: dropping the e-mail rule raised CredData's score.)
 - The headline is *redacted or not*. A type mismatch (a `SECRET` hit on a span the gold calls an
   e-mail) is a true positive and is listed in a confusion table beside it.
 - **Out-of-scope coverage** (how many out-of-scope `pos` spans a detection overlaps) is reported

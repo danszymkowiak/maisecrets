@@ -50,6 +50,19 @@ class OutcomeTests(unittest.TestCase):
                                unlabelled_negative=False)
         self.assertEqual((c.fp, c.unreviewed), (1, 1))
 
+    def test_a_type_the_dataset_does_not_judge_counts_nowhere(self):
+        # CredData labels credentials only: an e-mail address on a line it marked "not a credential" is no false
+        # alarm of maisecrets, which hides e-mail addresses on purpose (found by the probes, 2026-10-11)
+        spans = [Span(30, 60, "Password", "SECRET", "neg")]
+        c = score.score_sample(_s(spans), [_d(35, 50, "EMAIL"), _d(70, 80, "EMAIL"), _d(32, 40, "SECRET")],
+                               unlabelled_negative=False, judged=frozenset({"SECRET"}))
+        self.assertEqual((c.fp, c.unreviewed, c.unjudged), (1, 0, 2))
+
+    def test_a_judged_type_mismatch_on_a_positive_is_still_a_true_positive(self):
+        c = score.score_sample(_s([Span(10, 20, "pw", "SECRET", "pos")]), [_d(10, 20, "EMAIL")],
+                               unlabelled_negative=False, judged=frozenset({"SECRET"}))
+        self.assertEqual((c.tp, c.unjudged), (1, 0))
+
     def test_a_detection_on_an_uncertain_span_counts_nowhere(self):
         c = score.score_sample(_s([Span(30, 40, "Token", "SECRET", "uncertain")]), [_d(30, 40)],
                                unlabelled_negative=True)

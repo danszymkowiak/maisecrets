@@ -4,6 +4,7 @@ title: Find the flaky unit test that failed one pre-push run
 status: To Do
 assignee: []
 created_date: '2026-10-11 10:18'
+updated_date: '2026-10-11 12:14'
 labels:
   - tests
   - flaky
@@ -23,3 +24,9 @@ ordinal: 14000
 - [ ] #1 The flaky test is named, with its failure output
 - [ ] #2 Fixed, and 5 consecutive suite runs pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Second sighting 2026-10-11 ~14:10: a 'git commit' of bench files failed in the pre-commit hook and passed on an identical retry (output not captured). Both failures were under load (a 16-process bench run had just finished).
+<!-- SECTION:NOTES:END -->
