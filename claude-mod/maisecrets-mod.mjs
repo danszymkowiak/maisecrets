@@ -16,7 +16,7 @@ const PERSON = new Set(['composer', 'bridge', 'sdk'])
 // fixed text, no shell and no environment read (the directory review asks for one program by name with fixed
 // arguments). macOS and Linux have python3, Windows the py launcher or python; on Windows `python3` is often a
 // store stub that starts and exits 9009. A call that cannot start or exits with an error hands on to the next
-// (dispatch.py exits 3 on Python 3.6 to 3.8, and an older one cannot parse it); a timeout ends the search. All of them share one budget, so a
+// (dispatch.py exits 3 on Python 3.6 to 3.11, and an older one cannot parse it); a timeout ends the search. All of them share one budget, so a
 // prompt waits at most BUDGET_MS. When none answers, the settings hook blocks the prompt (README, "The mod")
 const BUDGET_MS = 8000
 

@@ -569,8 +569,31 @@ class ProtectionStatusTests(unittest.TestCase):
         self.assertNotIn("Traceback", r.stderr)
 
 
+class PythonFloorTests(unittest.TestCase):
+    """The floor is Python 3.12: the mod's entry and the skill's detector refuse an older one."""
+
+    def test_dispatch_tells_the_mod_to_try_its_next_python_below_3_12(self):
+        import runpy
+        # stdin empty: a dispatch that passed the check would read it and must not wait on the test's terminal
+        with mock.patch.object(sys, "argv", ["dispatch.py", "mod-prompt"]), \
+                mock.patch.object(sys, "stdin", io.StringIO("")), \
+                mock.patch.object(sys, "version_info", (3, 11, 9, "final", 0)):
+            with self.assertRaises(SystemExit) as cm:
+                runpy.run_path(str(ROOT / "hooks" / "dispatch.py"), run_name="not_main")
+        self.assertEqual(cm.exception.code, 3)
+
+    def test_the_skill_detector_refuses_a_python_older_than_3_12(self):
+        spec = importlib.util.spec_from_file_location("_detector_floor", SCRIPTS / "_detector.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with mock.patch.object(mod.sys, "version_info", (3, 11, 9, "final", 0)):
+            with self.assertRaises(SystemExit) as cm:
+                mod.load()
+        self.assertIn("3.12", str(cm.exception.code))
+
+
 class ProtectionStatusPythonTests(unittest.TestCase):
-    """With no Python 3.9+ for the hooks, an install blocks every prompt: nothing is offered."""
+    """With no Python 3.12+ for the hooks, an install blocks every prompt: nothing is offered."""
 
     def load(self):
         import importlib.util
@@ -581,7 +604,7 @@ class ProtectionStatusPythonTests(unittest.TestCase):
 
     def test_an_old_python_everywhere_is_cannot_protect_yet_and_offers_no_install(self):
         mod = self.load()
-        old = subprocess.CompletedProcess([], 0, stdout="3.8\n", stderr="")
+        old = subprocess.CompletedProcess([], 0, stdout="3.11\n", stderr="")
         with mock.patch.object(mod.shutil, "which", side_effect=lambda n: f"/fake/{n}"), \
                 mock.patch.object(mod.subprocess, "run", return_value=old), \
                 mock.patch.object(mod, "installed", return_value=False), \
@@ -597,7 +620,7 @@ class ProtectionStatusPythonTests(unittest.TestCase):
         run_sh = (ROOT / "hooks" / "run.sh").read_text(encoding="utf-8")
         for name in mod.PYTHONS:
             self.assertIn(name, run_sh, "the check must search what the launcher searches")
-        versions = {"python3": "3.8", "python": "3.12"}
+        versions = {"python3": "3.11", "python": "3.12"}
 
         def run(argv, **kw):
             return subprocess.CompletedProcess(argv, 0, stdout=versions.get(Path(argv[0]).name, "") + "\n", stderr="")

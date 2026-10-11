@@ -109,7 +109,7 @@ moves only the last number; a higher one needs the owner's approval. Vault backe
 | Linux | `encrypted-file` | `openssl` AES-256-CBC + PBKDF2 + HMAC tag, key file 0600 |
 | any | `jsonfile` | plaintext 0600, TEST MODE only |
 
-Hooks run through `hooks/run.sh` (bash), which looks for a Python 3.9+ as
+Hooks run through `hooks/run.sh` (bash), which looks for a Python 3.12+ as
 `python3`, `python`, `py -3`, a versioned name, or the Homebrew, `/usr/local`
 and python.org paths. Claude Code on Windows runs a hook command in Git Bash
 when Git for Windows is installed, and in PowerShell when it is not (pwsh 7,
@@ -119,7 +119,7 @@ in `hooks/hooks.json` is one text that both shells read: bash runs
 comment, runs `hooks/run.cmd`. Codex on Windows runs the `commandWindows`
 entry of each hook through `cmd.exe`, which starts `hooks/run.cmd` too. Both
 launchers run the same `dispatch.py`. Without a Python
-3.9+ the launcher blocks every prompt and every tool call and withholds every
+3.12+ the launcher blocks every prompt and every tool call and withholds every
 tool result, and its message names what to install: fail closed, with a cause.
 
 Proven with the harness on macOS (Claude Code 2.1.283) and on Debian 13
@@ -160,8 +160,8 @@ behind each mark are in `docs/CLIENTS.md`.
 
 ## Requirements
 
-Python 3.9 or newer on the PATH the client gives its hooks (`python3 --version`).
-The stock `python3` of macOS (3.9) is enough; nothing to install on a Mac.
+Python 3.12 or newer on the PATH the client gives its hooks (`python3 --version`).
+The stock `python3` of macOS (3.9) is too old: `brew install python` or python.org.
 Windows: install Python for all users, as an administrator:
 `winget install --id Python.Python.3.12 --exact --scope machine`. Codex on Windows
 runs commands as a sandbox user, and that user cannot start a Python installed for one
@@ -442,7 +442,7 @@ values that already leaked. The model loads it when a task fits; in Claude Code 
   only when a hook of the same agent ran for the call that started it. Otherwise the answer
   opens with an offer that names the source and the step the user must do, and the install
   commands run only after a yes. There is no offer in a web or mobile chat, and none without a
-  Python 3.9 for the hooks. This is how the skill, which a store can list alone, brings the
+  Python 3.12 for the hooks. This is how the skill, which a store can list alone, brings the
   hooks along.
 - **Check what the agents already received.** `audit_transcripts.py` reads the local Claude Code
   and Codex sessions and lists every secret that sat in a prompt, a tool result or a model answer,
@@ -646,7 +646,7 @@ the plugin points into that folder.
   `hooks/dispatch.py mod-prompt`, the same code the settings hooks run, in the
   plugin folder. Each call is fixed text, with no shell: `python3 hooks/dispatch.py
   mod-prompt`; when that cannot start or ends with an error (on Windows `python3`
-  is often a store stub, and `dispatch.py` refuses a Python older than 3.9),
+  is often a store stub, and `dispatch.py` refuses a Python older than 3.12),
   `py -3 …`, then `python …`. All tries share one limit of 8 seconds. It sets
   `PYTHONUTF8=1` for that process (over the environment it inherits), so that
   Windows reads the pipe as UTF-8. When no Python answers, the mod passes the

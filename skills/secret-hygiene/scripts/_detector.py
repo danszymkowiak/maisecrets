@@ -12,8 +12,8 @@ HERE = Path(__file__).resolve().parent
 
 
 def load():
-    if sys.version_info < (3, 9):
-        raise SystemExit("secret-hygiene needs Python 3.9 or newer.")
+    if sys.version_info < (3, 12):
+        raise SystemExit("secret-hygiene needs Python 3.12 or newer.")
     for base in (HERE, *list(HERE.parents)[:3]):
         if (base / "maisecrets" / "detect.py").is_file():
             if str(base) not in sys.path:

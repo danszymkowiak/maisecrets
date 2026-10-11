@@ -3,7 +3,7 @@ rem Hook launcher for Windows without Git Bash. Codex runs the commandWindows en
 rem hooks/hooks.json as   cmd.exe /C "<command>"   with the payload on stdin (codex-rs,
 rem hooks/src/engine/command_runner.rs, read 2026-09-26). A batch file hands stdin to its
 rem child untouched; a PowerShell launcher lost it (the host consumed the stream, measured
-rem in the Windows matrix job). Same job as run.sh: find a Python 3.9+, run dispatch.py.
+rem in the Windows matrix job). Same job as run.sh: find a Python 3.12+, run dispatch.py.
 rem Fails closed: without Python each hook event gets the JSON refusal of its client and exit 0,
 rem as from run.sh (exit 2 blocked in Claude Code only; Codex runs the tool on a failed hook).
 rem Usage: run.cmd <user-prompt|pre-tool|post-tool|session-start>
@@ -27,17 +27,17 @@ if "%MS_UP%"=="%HERE%" goto :profile_set
 for /f "tokens=1 delims=|" %%A in ("%MS_UP%") do set "USERPROFILE=%%A"
 :profile_set
 if not defined LOCALAPPDATA if defined USERPROFILE set "LOCALAPPDATA=%USERPROFILE%\AppData\Local"
-py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1
+py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>&1
 if not errorlevel 1 (
   py -3 "%HERE%dispatch.py" %*
   goto :done
 )
-python -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1
+python -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>&1
 if not errorlevel 1 (
   python "%HERE%dispatch.py" %*
   goto :done
 )
-python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1
+python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>&1
 if not errorlevel 1 (
   python3 "%HERE%dispatch.py" %*
   goto :done
@@ -47,7 +47,7 @@ rem open client keeps the PATH it started with (reported 2026-09-30: Python 3.12
 rem Look where that installer puts Python, for one user and for all users.
 for %%P in ("%LOCALAPPDATA%\Programs\Python\Launcher\py.exe" "%SystemRoot%\py.exe") do (
   if exist %%P (
-    %%P -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1
+    %%P -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>&1
     if not errorlevel 1 (
       %%P -3 "%HERE%dispatch.py" %*
       goto :done
@@ -56,14 +56,14 @@ for %%P in ("%LOCALAPPDATA%\Programs\Python\Launcher\py.exe" "%SystemRoot%\py.ex
 )
 for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python3*" "%ProgramFiles%\Python3*") do (
   if exist "%%~D\python.exe" (
-    "%%~D\python.exe" -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1
+    "%%~D\python.exe" -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>&1
     if not errorlevel 1 (
       "%%~D\python.exe" "%HERE%dispatch.py" %*
       goto :done
     )
   )
 )
->>"%HERE%last-start.txt" echo no Python 3.9 or newer found
+>>"%HERE%last-start.txt" echo no Python 3.12 or newer found
 rem JSON and exit 0 for every hook event, as run.sh answers: Codex runs the tool when a hook exits 2, so exit 2 was a
 rem block in Claude Code only (codex code review of the diagnostics work, 2026-10-09). One label per event: a
 rem parenthesis in a message would end an if block.
@@ -73,12 +73,12 @@ if "%~1"=="pre-tool" goto :np_pre_tool
 if "%~1"=="user-prompt" goto :np_user_prompt
 if "%~1"=="session-start" goto :np_session_start
 rem any other use of the launcher (a CLI command): fail closed with the reason on stderr
-echo maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt and command is blocked; the command did not run. 1>&2
+echo maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt and command is blocked; the command did not run. 1>&2
 call :mark
 exit /b 2
 :np_post_tool_failure
 rem the client shows a failed output as it is: there is nothing to withhold, only the reason to name
-echo {"systemMessage":"maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}
+echo {"systemMessage":"maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}
 call :mark
 exit /b 0
 :np_post_tool
@@ -86,23 +86,23 @@ rem one shape per client: Codex's strict schema drops an answer that carries Cla
 rem sends turn_id in its payload (the same test as run.sh)
 findstr /l /c:"\"turn_id\"" >nul 2>&1
 if not errorlevel 1 goto :np_post_tool_codex
-echo {"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"[maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Tool output withheld; the tool ran and finished, do not run it again.]"}}
+echo {"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"[maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Tool output withheld; the tool ran and finished, do not run it again.]"}}
 call :mark
 exit /b 0
 :np_post_tool_codex
-echo {"decision":"block","reason":"[maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Tool output withheld; the tool ran and finished, do not run it again.]"}
+echo {"decision":"block","reason":"[maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Tool output withheld; the tool ran and finished, do not run it again.]"}
 call :mark
 exit /b 0
 :np_pre_tool
-echo {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}}
+echo {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}}
 call :mark
 exit /b 0
 :np_user_prompt
-echo {"decision":"block","reason":"maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}
+echo {"decision":"block","reason":"maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}
 call :mark
 exit /b 0
 :np_session_start
-echo {"systemMessage":"maisecrets needs Python 3.9 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}
+echo {"systemMessage":"maisecrets needs Python 3.12 or newer. Install it for all users, as an administrator: winget install --id Python.Python.3.12 --exact --scope machine - a Python for one user only cannot run in the Codex sandbox. Then restart the client. Until then every prompt is blocked."}
 call :mark
 exit /b 0
 :done

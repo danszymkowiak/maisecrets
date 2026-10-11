@@ -39,7 +39,7 @@ output. `README.md` says what it does for users; `docs/` holds the design.
 ## Checks before a push
 
 ```bash
-python3 -m unittest discover -s tests          # also with /usr/bin/python3 (3.9, the oldest supported)
+python3 -m unittest discover -s tests          # with /usr/bin/python3 (3.12, the oldest supported)
 python3 scripts/replay_can_fail.py             # each belief's test must go red under its mutation
 python3 scripts/scan_tree.py                   # no secret shape in the tree, test literals included
 python3 scripts/derived_counts.py              # the numbers stated in the docs
@@ -49,7 +49,7 @@ python3 harness/run.py                         # the real claude client against 
 ```
 
 The git hooks (`scripts/install-hooks.sh`) run these on commit and push. CI runs as root in
-`python:3.12-slim` and `python:3.9-slim`: a test that depends on file permissions must allow for
+`python:3.12-slim`: a test that depends on file permissions must allow for
 root.
 
 ## Known traps

@@ -59,7 +59,7 @@ test('a launcher that cannot start leaves the prompt unchanged', async ($, on) =
 })
 
 test('output that is no JSON leaves the prompt unchanged', async ($, on) => {
-  common(on, () => ({ value: { exitCode: 0, stderr: '', stdout: 'maisecrets needs Python 3.9' } }))
+  common(on, () => ({ value: { exitCode: 0, stderr: '', stdout: 'maisecrets needs Python 3.12' } }))
   expect((await submit($)).text).toBe(TYPED)
 })
 
@@ -140,7 +140,7 @@ test('when no Python answers, all three are tried once and the prompt goes on un
   let runs = 0
   common(on, () => {
     runs += 1
-    return { value: { exitCode: 3, stderr: '', stdout: '' } }     // 3: dispatch.py on a Python older than 3.9
+    return { value: { exitCode: 3, stderr: '', stdout: '' } }     // 3: dispatch.py on a Python older than 3.12
   })
   expect((await submit($)).text).toBe(TYPED)
   expect(runs).toBe(3)

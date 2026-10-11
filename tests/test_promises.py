@@ -39,12 +39,12 @@ EVENTS = ("user-prompt", "pre-tool", "post-tool-failure", "post-tool", "session-
 ABSOLUTE_PYTHONS = ("/opt/homebrew/bin/python3", "/usr/local/bin/python3",
                     "/Library/Frameworks/Python.framework/Versions/Current/bin/python3")
 
-# a python3 that says it is 3.8: it fails the version probe, prints 3.8 for the version query,
+# a python3 that says it is 3.11: it fails the version probe, prints 3.11 for the version query,
 # and records any other call (a run of dispatch.py) in the tripwire
 _PY38 = """#!/bin/sh
 case "$2" in
-  *"version_info >= (3, 9)"*) exit 1 ;;
-  *"print('%d.%d'"*) echo 3.8; exit 0 ;;
+  *"version_info >= (3, 12)"*) exit 1 ;;
+  *"print('%d.%d'"*) echo 3.11; exit 0 ;;
 esac
 echo "python3 $*" >> "$MS_TEST_TRIPWIRE"
 exit 0
@@ -72,7 +72,7 @@ def assert_refuses(case: unittest.TestCase, event: str, r: subprocess.CompletedP
 
 @unittest.skipIf(BASH is None, "no bash")
 class LauncherFailsClosedTests(unittest.TestCase):
-    """README: maisecrets needs Python 3.9+. Without it every hook must refuse, never pass."""
+    """README: maisecrets needs Python 3.12+. Without it every hook must refuse, never pass."""
 
     def setUp(self):
         self.sb = Sandbox(JSONFILE, backend="jsonfile")
@@ -107,7 +107,7 @@ class LauncherFailsClosedTests(unittest.TestCase):
             with self.subTest(event):
                 r = self.launch(event)
                 self.assertNotIn("dispatch.py ran", r.stderr)
-                self.assertIn(f"maisecrets needs Python 3.9 or newer on the PATH of the client (found: {found})",
+                self.assertIn(f"maisecrets needs Python 3.12 or newer on the PATH of the client (found: {found})",
                               r.stdout + r.stderr)
                 if event == "post-tool":
                     # Claude Code ignores exit 2 after a tool: the JSON itself must withhold
@@ -151,7 +151,7 @@ class LauncherFailsClosedTests(unittest.TestCase):
         fake = self.tools / "python3"
         fake.write_text(_PY38, encoding="utf-8")
         fake.chmod(0o700)
-        self.check_all_events("python3 is 3.8")
+        self.check_all_events("python3 is 3.11")
 
 
 _NO_POSIX_SH = shutil.which("sh") is None or os.name == "nt"
@@ -514,7 +514,7 @@ class BrokenImportFailsClosedTests(unittest.TestCase):
 
 class RunCmdFailsClosedTests(unittest.TestCase):
     """run.cmd cannot run on this OS; its logic is read from the file: each interpreter runs
-    dispatch.py only after it passed the 3.9 probe, and without Python every hook event refuses in
+    dispatch.py only after it passed the 3.12 probe, and without Python every hook event refuses in
     JSON with exit 0; only a CLI use of the launcher ends in exit /b 2."""
 
     def setUp(self):
@@ -527,7 +527,7 @@ class RunCmdFailsClosedTests(unittest.TestCase):
             interp = self.lines[i].split('"%HERE%dispatch.py"')[0].strip()
             self.assertEqual(self.lines[i - 1], "if not errorlevel 1 (", self.lines[i])
             self.assertEqual(self.lines[i - 2],
-                             f'{interp} -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>&1')
+                             f'{interp} -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" >nul 2>&1')
             self.assertEqual(self.lines[i + 1], "goto :done")
 
     def branch(self, label: str) -> list[str]:
@@ -565,7 +565,7 @@ class RunCmdFailsClosedTests(unittest.TestCase):
         main = self.lines[:self.lines.index(":mark")]
         cli = main[main.index('if "%~1"=="session-start" goto :np_session_start') + 1:]
         cli = [ln for ln in cli if not ln.startswith("rem")]
-        self.assertTrue(cli[0].startswith("echo maisecrets needs Python 3.9") and cli[0].endswith("1>&2"), cli[0])
+        self.assertTrue(cli[0].startswith("echo maisecrets needs Python 3.12") and cli[0].endswith("1>&2"), cli[0])
         self.assertEqual(cli[1:3], ["call :mark", "exit /b 2"])
         exits = [ln for ln in main if ln.startswith("exit ")]
         self.assertEqual(sorted(set(exits)), ["exit /b %errorlevel%", "exit /b 0", "exit /b 2"], "no other way out")
