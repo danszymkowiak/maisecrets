@@ -83,6 +83,42 @@ def parse(text: str, reserved: frozenset[str] = frozenset()) -> list[Entity]:
     return entities
 
 
+_ALNUM = r"[^\W_]"               # a Unicode letter or digit
+_START = rf"(?<!{_ALNUM})"        # no letter or digit before
+_END = rf"(?!{_ALNUM})"           # no letter or digit after
+
+
+def _pattern(v: Variant) -> str:
+    body = r"\s+".join(re.escape(word) for word in v.text.split())
+    if v.mode == WORD:
+        return f"{_START}{body}{_END}"
+    if v.mode == STARTS:
+        return f"{_START}{body}{_ALNUM}*"
+    if v.mode == ENDS:
+        return f"{_START}{_ALNUM}*{body}{_END}"
+    return f"{_START}{_ALNUM}*{body}{_ALNUM}*"
+
+
+class Matcher:
+    """All variants of all entities in one alternation, longest variant first."""
+
+    def __init__(self, entities: list[Entity]):
+        pairs = sorted(((v, e) for e in entities for v in e.variants), key=lambda p: -len(p[0].text))
+        self._entity = {f"t{i}": e for i, (_, e) in enumerate(pairs)}
+        alternation = "|".join(f"(?P<t{i}>{_pattern(v)})" for i, (v, _) in enumerate(pairs))
+        self._re = re.compile(alternation, re.IGNORECASE) if pairs else None
+
+    def find(self, text: str) -> list[tuple[int, int, Entity]]:
+        """Each matched run: its start, its end and its entity, left to right, not overlapping."""
+        if self._re is None:
+            return []
+        return [(m.start(), m.end(), self._entity[m.lastgroup]) for m in self._re.finditer(text)]
+
+
+def compile_entities(entities: list[Entity]) -> Matcher:
+    return Matcher(entities)
+
+
 def default_path() -> Path:
     from . import vault
     return vault.HOME / "terms.txt"
