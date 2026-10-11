@@ -92,7 +92,8 @@ class CredDataTests(unittest.TestCase):
         _tree(self.root, {"data/r3/big.txt": "\n".join(lines)}, {"r3": [
             _row(1, "r3", "data/r3/big.txt", 40, 40, "T"), _row(2, "r3", "data/r3/big.txt", 44, 44, "F")]})
         (s,) = list(creddata.samples(self.root, TABLE, max_bytes=10, context=5))
-        self.assertEqual([(s.text[sp.start:sp.end], sp.gold) for sp in s.spans], [("line 40", "pos"), ("line 44", "neg")])
+        self.assertEqual([(s.text[sp.start:sp.end], sp.gold) for sp in s.spans],
+                         [("line 40", "pos"), ("line 44", "neg")])
 
     def test_an_empty_labelled_line_still_gets_a_span(self):
         _tree(self.root, {"data/r5/a.txt": "x\n\ny\n"}, {"r5": [_row(1, "r5", "data/r5/a.txt", 2, 2, "F")]})

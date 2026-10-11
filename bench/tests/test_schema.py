@@ -56,8 +56,8 @@ class ValidateTests(unittest.TestCase):
 
 class ParquetTests(unittest.TestCase):
     def test_samples_read_back_the_same(self):
-        rows = [_sample(), _sample(sample_id="s2", group_id="g2", text="line one\nkey here", spans=[Span(9, 17, "Token", "SECRET", "pos")],
-                                   split="check")]
+        rows = [_sample(), _sample(sample_id="s2", group_id="g2", text="line one\nkey here",
+                                   spans=[Span(9, 17, "Token", "SECRET", "pos")], split="check")]
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "toy.parquet"
             schema.write(rows, path)
