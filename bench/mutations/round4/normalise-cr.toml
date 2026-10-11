@@ -1,0 +1,6 @@
+name = "Normalise: cr"
+why = "TASK-11.25. The shape rules also scan the text after the cr stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["cr"]

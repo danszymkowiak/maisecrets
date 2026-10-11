@@ -74,6 +74,20 @@ class ApplyTests(unittest.TestCase):
         with self.assertRaisesRegex(BenchError, "'no-such-rule'"):
             mutation.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'))
 
+    def test_normalise_turns_the_normaliser_stages_on(self):
+        # TASK-11.25: a token split by an ANSI reset is found once the stage is on
+        self.addCleanup(setattr, D, "NORMALISE", ())
+        text = "use ghp_" + "A1b2C3d4E5f6G7h8I9" + "\x1b[0m" + "j0K1l2M3n4O5p6Q7r8"
+        self.assertEqual(self.scan_with(mutation.Mutation("none", "", []), text), [])
+        m = _load('name = "ansi"\n[[change]]\nop = "normalise"\nstages = ["ansi"]\n')
+        self.assertEqual([t for _, t in self.scan_with(m, text)], ["SECRET"])
+        self.assertFalse(m.disable_only)
+        mutation.validate(m)
+
+    def test_an_unknown_normaliser_stage_is_named(self):
+        with self.assertRaisesRegex(BenchError, "'rot13'"):
+            mutation.validate(_load('name = "x"\n[[change]]\nop = "normalise"\nstages = ["rot13"]\n'))
+
     def test_a_disable_only_mutation_says_so(self):
         self.assertTrue(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n').disable_only)
         self.assertFalse(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\nentropy = 3.0\n').disable_only)

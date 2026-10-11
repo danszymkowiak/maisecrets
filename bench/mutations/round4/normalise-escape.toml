@@ -1,0 +1,6 @@
+name = "Normalise: escape"
+why = "TASK-11.25. The shape rules also scan the text after the escape stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["escape"]

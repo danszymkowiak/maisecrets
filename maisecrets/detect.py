@@ -39,6 +39,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 RULES_DIR = Path(__file__).resolve().parent / "rules"
+# normaliser stages (maisecrets/normalise.py) whose cleaned copy the shape rules scan as well: off until the bench has
+# judged them (TASK-11.25)
+NORMALISE: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1122,7 +1125,7 @@ def _url_password_not_a_value(v: str) -> bool:
     return True
 
 
-def scan(text: str, enabled: set[str] | None = None) -> list[Match]:
+def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False) -> list[Match]:
     """Return non-overlapping matches, leftmost first; the first rule to claim a span wins."""
     if not text:
         return []
@@ -1276,6 +1279,23 @@ def scan(text: str, enabled: set[str] | None = None) -> list[Match]:
             i = bisect.bisect_left(taken_starts, start)
             taken_starts.insert(i, start)
             taken_ends.insert(i, end)
+    if NORMALISE and not _shapes_only:
+        from .normalise import normalise
+        norm = normalise(text, NORMALISE)
+        if norm.text is not text:
+            # a hit of the cleaned copy redacts the original range, hidden characters included; the raw text's own
+            # hits came first and keep their spans
+            for m in scan(norm.text, enabled, _shapes_only=True):
+                start, end = norm.span(m.start, m.end)
+                if overlaps(start, end):
+                    continue
+                found.append(Match(m.kind, m.type, text[start:end], start, end))
+                i = bisect.bisect_left(taken_starts, start)
+                taken_starts.insert(i, start)
+                taken_ends.insert(i, end)
+    if _shapes_only:
+        found.sort(key=lambda x: x.start)
+        return found
     # personal terms (docs/TERMS.md) last: a shape claims its span first, a term takes what is left
     for start, end, ent in _term_matcher().find(text):
         if overlaps(start, end) or text.rfind("⟦", 0, start) > text.rfind("⟧", 0, start):

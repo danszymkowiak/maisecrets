@@ -1,0 +1,6 @@
+name = "Normalise: fullwidth"
+why = "TASK-11.25. The shape rules also scan the text after the fullwidth stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["fullwidth"]

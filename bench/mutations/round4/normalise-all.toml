@@ -1,0 +1,6 @@
+name = "Normalise: all stages"
+why = "TASK-11.25. The shape rules also scan the text after every stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["ansi", "cr", "invisible", "gutter", "entity", "escape", "fullwidth"]

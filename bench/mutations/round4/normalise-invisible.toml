@@ -1,0 +1,6 @@
+name = "Normalise: invisible"
+why = "TASK-11.25. The shape rules also scan the text after the invisible stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["invisible"]

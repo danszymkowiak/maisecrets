@@ -1,0 +1,6 @@
+name = "Normalise: gutter"
+why = "TASK-11.25. The shape rules also scan the text after the gutter stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["gutter"]

@@ -1,0 +1,6 @@
+name = "Normalise: entity"
+why = "TASK-11.25. The shape rules also scan the text after the entity stage of maisecrets/normalise.py."
+
+[[change]]
+op = "normalise"
+stages = ["entity"]

@@ -21,6 +21,10 @@
     type = "SECRET"
     regex = "..."
 
+    [[change]]
+    op = "normalise"        # the shape rules also scan a cleaned copy (maisecrets/normalise.py, TASK-11.25)
+    stages = ["ansi", "invisible"]
+
 It is applied to a copy of the detector's rule list inside the bench; the plugin is never edited. judge() compares
 the scores of a mutated run with the baseline."""
 from __future__ import annotations
@@ -62,8 +66,8 @@ def load(path: Path) -> Mutation:
     if not changes:
         raise BenchError(f"{path}: no [[change]]")
     for c in changes:
-        if c.get("op") not in ("disable", "set", "add"):
-            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set or add")
+        if c.get("op") not in ("disable", "set", "add", "normalise"):
+            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add or normalise")
     return Mutation(data.get("name", Path(path).stem), data.get("why", ""), changes)
 
 
@@ -89,12 +93,26 @@ def _fields(c: dict, where: str) -> dict:
     return out
 
 
+def _stages(c: dict, where: str) -> tuple:
+    from . import detector  # noqa: F401  first: the temp home and the plugin on the path
+    from maisecrets import normalise
+    stages = tuple(c.get("stages", ()))
+    unknown = [s for s in stages if s not in normalise.STAGES]
+    if unknown or not stages:
+        raise BenchError(f"{where}: stage {unknown[0] if unknown else None!r} is not one of "
+                         f"{', '.join(normalise.STAGES)}")
+    return stages
+
+
 def validate(m: Mutation) -> None:
     """Every rule a change names exists in some region, and every field can be set. Run once, before the groups."""
     from .detector import rule_index
     known = rule_index()
     for n, c in enumerate(m.changes, 1):
         where = f"{m.name}, change {n}"
+        if c["op"] == "normalise":
+            _stages(c, where)
+            continue
         if c["op"] in ("disable", "set") and c.get("rule") not in known:
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector in any region")
         if c["op"] in ("set", "add"):
@@ -108,6 +126,7 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
     detect.VALIDATORS.update(validators.BENCH)
     filters.install(detect)
     filters.ACTIVE.clear()
+    detect.NORMALISE = ()
     out = list(rules)
     ids = {r.id for r in out}
     for n, c in enumerate(m.changes, 1):
@@ -116,7 +135,9 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
             if not strict:
                 continue
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector")
-        if c["op"] == "disable":
+        if c["op"] == "normalise":
+            detect.NORMALISE = _stages(c, where)
+        elif c["op"] == "disable":
             out = [r for r in out if r.id != c["rule"]]
         elif c["op"] == "set":
             fields = _fields(c, where)
