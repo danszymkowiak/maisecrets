@@ -4,12 +4,14 @@ title: Docs and full check suite for the fork
 status: To Do
 assignee: []
 created_date: '2026-10-11 07:01'
-updated_date: '2026-10-11 09:02'
+updated_date: '2026-10-11 09:05'
 labels:
   - docs
 dependencies:
   - TASK-5
   - TASK-6
+  - TASK-12
+  - TASK-13
 priority: medium
 ordinal: 7000
 ---
