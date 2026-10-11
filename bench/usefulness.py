@@ -49,7 +49,8 @@ def render(t: dict, same: dict, probes: list[str]) -> str:
     for name, d in t.items():
         b = d["baseline"]
         out.append(f"| {name} | {d['pos']} | {d['in_scope_pos']} ({_pct(d['in_scope_share'])}) | {_pct(b['score'])} | "
-                   f"{_pct(b['precision'])} | {_pct(b['recall'])} | {_pct(b['clean_rate'])} | {d['rules_firing']} | "
+                   f"{_pct(b['precision']) if b['recall'] is not None else 'n/a'} | {_pct(b['recall'])} | "
+                   f"{_pct(b['clean_rate'])} | {d['rules_firing']} | "
                    f"{len(d['rules_only_here'])} | {d['probes_moved']} of {len(probes)} | {v[name][0]} |")
     out += ["", "## Why", ""]
     out += [f"- **{name}**: {'; '.join(why) if why else 'in scope, not saturated, moved by probes'}"

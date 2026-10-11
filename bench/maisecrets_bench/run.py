@@ -161,7 +161,8 @@ def report(summary: dict, manifest: dict, seconds: float) -> str:
     for name, d in summary["datasets"].items():
         a = d["all"]
         ver = manifest.get("datasets", {}).get(name, {}).get("version", "?")[:10]
-        out.append(f"| {name} | {ver} | {a['tp']} | {a['fp']} | {a['found']} | {a['fn']} | {_pct(a['precision'])} | "
+        precision = _pct(a["precision"]) if a["recall"] is not None else "n/a"   # no positives: no precision
+        out.append(f"| {name} | {ver} | {a['tp']} | {a['fp']} | {a['found']} | {a['fn']} | {precision} | "
                    f"{_pct(a['recall'])} | {_pct(a['f1'])} | {_pct(a['clean_rate'])} | {_pct(a['score'])} | "
                    f"{a['unreviewed_per_1k_lines']:.2f} | "
                    f"{a['oos_found']} of {a['oos_total']} |")

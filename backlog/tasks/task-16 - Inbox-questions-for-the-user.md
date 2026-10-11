@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:06'
-updated_date: '2026-10-11 12:29'
+updated_date: '2026-10-11 12:50'
 labels:
   - inbox
 dependencies: []
@@ -44,5 +44,10 @@ Options: (a) drop TAB from the score, keep it as a regression guard (a change mu
 created: 2026-10-11 12:29
 ---
 TASK-11.10 result for you to weigh (bench/mutations/*.toml, judged 2026-10-11 with TAB as guard): your rule 'equal or better on every dataset' accepts only 'drop uk-postcode' (+0.39 on Gretel). 'Drop us-bank' is the big trade-off: Gretel false alarms 7,260 -> 3,218 (precision 75.1% -> 87.1%) but 215 fewer finds (recall 63.13% -> 62.52%), because us-bank also hits real routing/card numbers; mean score +2.09. Options: (a) keep the strict rule, and look for a combined change that recovers those 215 finds (for example drop us-bank and tighten the routing-number rule); (b) allow a small recall loss when precision gains much more (a tolerance, e.g. F1 must rise and recall may fall by at most 0.5 points). I recommend (a) first: the agent loop (TASK-11.13) can search for such pairs, and a tolerance can still come later.
+---
+
+created: 2026-10-11 12:50
+---
+TASK-11.14: what should the owner receive? The bench writes four markdown files that hold counts, rule ids, shapes and common words only: report.md (baseline per dataset/type/rule), usefulness.md (keep/drop per dataset), mutations report.md (each rule change accepted/rejected, ranked), errors-dev.md (FPs by rule, misses by type). Options: (a) one combined 'recommendations' markdown per round (accepted mutations with their per-dataset deltas and a few example shapes, never-fired rules, dataset verdicts), ready to paste into a GitHub issue; (b) send the four files as they are; (c) a pull request with the accepted rule changes plus the report. I recommend (a) for the first contact, because one page with the result and how to reproduce it is easier to act on than four files, and (c) once you and the owner agree on a change. The fresh-clone check passed (tests, setup of TAB from GitHub, run, usefulness, mutate, errors in a temp dir).
 ---
 <!-- COMMENTS:END -->
