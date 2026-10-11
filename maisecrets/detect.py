@@ -1261,8 +1261,43 @@ def scan(text: str, enabled: set[str] | None = None) -> list[Match]:
             i = bisect.bisect_left(taken_starts, start)
             taken_starts.insert(i, start)
             taken_ends.insert(i, end)
+    # personal terms (docs/TERMS.md) last: a shape claims its span first, a term takes what is left
+    for start, end, ent in _term_matcher().find(text):
+        if overlaps(start, end) or text.rfind("⟦", 0, start) > text.rfind("⟧", 0, start):
+            continue   # inside a span already taken, or inside one of our placeholders
+        found.append(Match("term", ent.label, text[start:end], start, end))
     found.sort(key=lambda x: x.start)
     return found
+
+
+class _NoTerms:
+    def find(self, text: str) -> list:
+        return []
+
+
+_TERMS = None
+
+
+def _term_matcher():
+    """The matcher of terms.txt, read once per process. A bad file raises terms.TermsError, a ConfigError: the hook
+    fails closed. The labels must not be a type the detector already uses."""
+    global _TERMS
+    if _TERMS is None:
+        try:
+            from . import terms
+            from .placeholder import ENTITY_OF_TYPE
+        except ImportError:   # the standalone skill ships detect.py alone (scripts/build_skill_zip.py): no terms
+            _TERMS = _NoTerms()
+            return _TERMS
+        reserved = frozenset({r.type for r in rules()} | set(ENTITY_OF_TYPE) | {"SECRET", "HIDDEN"})
+        _TERMS = terms.compile_entities(terms.load(reserved=reserved))
+    return _TERMS
+
+
+def reset_terms() -> None:
+    """Read terms.txt again on the next scan (tests; a long-lived process after an edit)."""
+    global _TERMS
+    _TERMS = None
 
 
 def contains_secret(text: str) -> bool:

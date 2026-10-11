@@ -510,6 +510,8 @@ class Entry:
     sessions: list = field(default_factory=list)  # sessions allowed to resolve the entry (see Vault.get)
     # a word that only a label rule found (letters only): replaced where it was found, never hunted in other texts
     weak: bool = False
+    # a personal term (docs/TERMS.md): key LABEL_c0, no value in the store, resolved from terms.txt at the call
+    term: bool = False
     # no purged_at field: from_meta drops it, so the proof below can remove the filter and
     # the owning test sees the TypeError of the field report again
 
@@ -1005,7 +1007,7 @@ class Vault:
         """fingerprint -> key for every entry whose value is still stored and may be hunted in any text. A weak entry
         is not: `DB_PASSWORD=postgres` stored `postgres`, and every later text with the word was redacted and every
         prompt with it blocked, in every session, for a day (review, 2026-09-29)."""
-        return {m["fingerprint"]: k for k, m in self._index["entries"].items()
+        return {m["fingerprint"]: k for k, m in self._index["entries"].items() if not m.get("term")
                 if not m.get("purged") and not m.get("weak")}
 
     @_mutating
@@ -1037,6 +1039,10 @@ class Vault:
             ttl: int | None = None) -> Entry:
         """Store a value; the same live value yields the same reference."""
         self.expire()
+        if kind == "term":
+            e = self._put_term(type_, session)
+            self._save_index()
+            return e
         fp = self.fingerprint(value)
         existing = self._index["by_fingerprint"].get(fp)
         if existing and not self._index["entries"][existing].get("purged"):
@@ -1047,6 +1053,25 @@ class Vault:
             return e
         e = self._put_new(value, type_, kind, session, ttl)
         self._save_index()
+        return e
+
+    TERM_TTL = 100 * 365 * 86400   # a term's placeholder lasts as long as its line in terms.txt
+
+    def _put_term(self, label: str, session: str | None) -> "Entry":
+        """The entry of a personal term: the key is derived from the label, so every document and every session
+        gets the same placeholder. Only metadata: the matched text is never stored (docs/TERMS.md)."""
+        key = f"{label}_c0"
+        meta = self._index["entries"].get(key)
+        if meta is None or not meta.get("term"):
+            now = time.time()
+            meta = asdict(Entry(key=key, type=label, kind="term", fingerprint="", display=None, created=now,
+                                last_used=now, expires=now + self.TERM_TTL, max_expires=now + self.TERM_TTL,
+                                session=session, sessions=[], term=True))
+            self._index["entries"][key] = meta
+        e = Entry.from_meta(meta)
+        if session and session not in e.sessions:
+            e.sessions.append(session)
+        self._touch(e, save=False)
         return e
 
     def _put_new(self, value: str, type_: str, kind: str, session: str | None, ttl: int | None) -> "Entry":
@@ -1084,6 +1109,10 @@ class Vault:
         new = 0
         dirty = False
         for value, type_, kind in items:
+            if kind == "term":
+                out.append(self._put_term(type_, session))
+                dirty = True
+                continue
             fp = self.fingerprint(value)
             existing = self._index["by_fingerprint"].get(fp)
             if existing and not self._index["entries"][existing].get("purged"):
@@ -1156,6 +1185,14 @@ class Vault:
             st = self.status(key, session)
             if st != "ok":
                 return None, st
+        if meta.get("term"):
+            from . import terms
+            value, listed = terms.canonical_of(meta["type"])
+            if value is None:
+                return None, (f"{meta['type']} has no variant without a * to put back" if listed
+                              else f"{meta['type']} is no longer in terms.txt")
+            self._touch(Entry.from_meta(meta))
+            return value, "ok"
         value = self.backend.get(key)
         if value is None:
             return None, "expired"
@@ -1296,7 +1333,7 @@ class Vault:
         now = time.time()
         e.last_used = now
         e.uses += 1
-        if self.cfg.get("renew_on_use", True):
+        if self.cfg.get("renew_on_use", True) and not e.term:
             e.expires = min(now + self._ttl_for(e.type), e.max_expires)
         self._index["entries"][e.key] = asdict(e)
         if save:

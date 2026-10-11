@@ -12,6 +12,8 @@ import stat
 from dataclasses import dataclass
 from pathlib import Path
 
+from .vault import ConfigError
+
 WORD = "word"        # Jan: no letter or digit on either side
 STARTS = "starts"    # Kowalsk*: word start, any ending
 ENDS = "ends"        # *kowalski: any start, word end
@@ -21,7 +23,9 @@ MIN_INSIDE = 4       # *x* shorter than this would replace half of every text
 LABEL_RE = re.compile(r"[A-Z][A-Z_]{0,31}")
 
 
-class TermsError(ValueError):
+class TermsError(ConfigError):
+    """A ConfigError: every hook fails closed on it, as on a broken config."""
+
     def __init__(self, message: str, line: int | None = None):
         super().__init__(message)
         self.line = line
@@ -122,6 +126,12 @@ def compile_entities(entities: list[Entity]) -> Matcher:
 def default_path() -> Path:
     from . import vault
     return vault.HOME / "terms.txt"
+
+
+def canonical_of(label: str, path: Path | None = None) -> tuple[str | None, bool]:
+    """(first plain variant, whether the label is in the file), read from the file at this call."""
+    ent = next((e for e in load(path) if e.label == label), None)
+    return (ent.canonical if ent else None), ent is not None
 
 
 def load(path: Path | None = None, reserved: frozenset[str] = frozenset()) -> list[Entity]:
