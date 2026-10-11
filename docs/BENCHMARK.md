@@ -109,6 +109,21 @@ Per dataset, per type, per split, and per rule:
 - Where a rule has a score (Presidio's score, an entropy threshold, a context word), precision-recall
   curves and AUC (TASK-11.11); a rule without one is a single point, and the report says n/a.
 
+## Is a dataset worth keeping
+
+A dataset earns its weight only if it can tell a good rule change from a bad one. After the first
+baseline run, each one is checked (TASK-11.15) and kept or dropped by the user:
+
+- **Scope:** the share and the count of its gold positives that map to a maisecrets type. Mostly
+  out of scope means it measures something maisecrets does not claim.
+- **Saturation:** baseline precision and recall per type. Both near 1.0 leave no room to show an
+  improvement, only a regression.
+- **Discrimination:** how many rules fire on it, how many fire only there, and whether probe
+  mutations (disabling each of the most-firing rules, moving a threshold) move its score at all.
+- **Overlap:** a dataset whose score always moves exactly like another's adds no information.
+
+A dropped dataset leaves the equal-weight mean; the decision and its numbers are recorded here.
+
 ## Judging a change
 
 A mutation (add, disable or replace a rule, change a threshold or a word list) is applied inside

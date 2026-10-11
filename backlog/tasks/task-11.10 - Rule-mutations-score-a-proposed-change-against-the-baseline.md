@@ -4,11 +4,12 @@ title: 'Rule mutations: score a proposed change against the baseline'
 status: To Do
 assignee: []
 created_date: '2026-10-11 10:20'
-updated_date: '2026-10-11 11:06'
+updated_date: '2026-10-11 11:16'
 labels:
   - benchmark
 dependencies:
   - TASK-11.9
+  - TASK-11.15
 parent_task_id: TASK-11
 priority: medium
 ordinal: 24000
