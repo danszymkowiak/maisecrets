@@ -1,9 +1,10 @@
 ---
 id: TASK-11.19
 title: 'bench: a synthetic tool-output dataset and a perturbation suite'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:06'
+updated_date: '2026-10-11 17:28'
 labels:
   - benchmark
 dependencies: []

@@ -1,10 +1,10 @@
 ---
 id: TASK-11.17
 title: Brainstorm ways to reduce false positives
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 15:46'
-updated_date: '2026-10-11 17:19'
+updated_date: '2026-10-11 17:44'
 labels:
   - benchmark
   - design
@@ -22,8 +22,8 @@ Requested by the user 2026-10-11. Most of the lost score is false alarms: Gretel
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A written list of approaches, each with the false alarms it targets (rule, count on dev) and its risk to recall
-- [ ] #2 The most promising become backlog tasks or bench/mutations files, judged with bench/round.py judge
+- [x] #1 A written list of approaches, each with the false alarms it targets (rule, count on dev) and its risk to recall
+- [x] #2 The most promising become backlog tasks or bench/mutations files, judged with bench/round.py judge
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -36,4 +36,12 @@ Family A, number rules (Gretel): Presidio validates aba-routing, it-fiscal-code,
 Family B, keyword rules (CredData): FPs are spread (193 of 307 files with a judged hit have one; leaving out the 20 noisiest files only lifts P 78.6 -> 85.1, capping per file lowers it). By value shape (all splits, FP/TP): identifiers 'UPPER-UPPER-..._' 375/0 on every dataset; 'UPPER_lower...' 765 FP for 1 CredData TP and 12 ai4privacy TP; digits:word on ds-keyword-colon 33/0 (ai4privacy -4). Value classes with low precision on ds-keyword-equal-signs: has-brackets 56/4, template 6/0, path-ish 51/16. Mutations b-*.toml use a new bench field allow (regexes on the value).
 
 Family C, ai4privacy email/ip/phone 'FPs' are label gaps, not rule errors: only ~18 of 3,600 dev cases have a raw mask entry for the value. (1) ai4privacy's own chunking: the value at offset 0 of a continuation record (ids ...B, ...C) is unlabelled: email 1,005, ip 318, phone 20. (2) text the generator wrote around the injected PII (filler phones such as +1-234-567-8901, emails and IPs in obvious slots). Scorer option: do not count a detection at offset 0 of a continuation record; (2) cannot be split from real FPs without reading text, so ai4privacy precision is a lower bound.
+
+Verdicts (bench/round.py judge, round 2, 2026-10-11): within tolerance: us-bank near word + SWIFT (+1.10/+1.15, no better than near alone), us-bank SWIFT only (+0.28/+0.29), se-personnummer Luhn (+0.03/+0.05). Strict: b-upper-dash-identifier (+0.39 dev, +0.00 check), b-digits-colon-word (+0.03/+0.00). Rejected: us-bank account words only (Gretel recall -0.41), it checksums (it-vat Luhn loses its 3 generated finds), us-passport / us-license#1 context (ai4privacy score -0.01), aba checksum (generated gold fails), b-upper-underscore-identifier (+0.82 dev, ai4privacy score -0.01), combined checksums+context. Plugin tasks: TASK-11.28 (us-bank), 11.29 (se/it checksums), 11.30 (identifier filters), 11.31 (uk-postcode), all waiting for approval in TASK-17. Questions in TASK-17: the tolerance's score rule, the ai4privacy chunk-start scorer fix.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Spike done: three families of false alarms measured with counts and masked shapes. Number rules: missing Presidio checksums and too-general context words; us-bank near-word is the big win (+1.10/+1.15). Keyword rules: identifier-shaped values (dev-only evidence). ai4privacy: label gaps, ~1,300 provable (chunk starts). Four plugin tasks (11.28-11.31) and three inbox questions (TASK-17). Bench gained validator, allow (bae3538) and filter (2f5ab40) fields.
+<!-- SECTION:FINAL_SUMMARY:END -->
