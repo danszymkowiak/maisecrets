@@ -19,7 +19,7 @@ From the repository root:
 
 ```bash
 uv run --project bench python -m unittest discover -s bench/tests   # the bench's own tests, a few seconds
-uv run --project bench python bench/setup.py                         # TAB and Gretel; CredData needs a path
+uv run --project bench python bench/setup.py                         # Gretel; CredData needs --creddata <path>
 uv run --project bench python bench/run.py                           # the baseline, about 4 minutes on 16 cores
 uv run --project bench python bench/usefulness.py                    # is each dataset worth keeping
 uv run --project bench python bench/mutate.py bench/mutations/*.toml --guard tab
@@ -33,11 +33,19 @@ uv run --project bench python bench/errors.py                        # false pos
 | CredData (Samsung) | 11,030 source files, 15,753 credentials and 48,061 near misses, values obfuscated | Apache-2.0 tooling, each file its project's licence | you clone `https://github.com/Samsung/CredData` and run its `download_data.py --data_dir data` (hours), then `--creddata <path>` |
 | TAB | 1,268 ECHR court decisions, identifiers marked by two annotators | MIT | cloned into the data directory, or `--tab <path>` |
 | Gretel synthetic_pii_finance_multilingual | 55,940 finance documents in 7 languages | Apache-2.0 | downloaded from Hugging Face |
-| ai4privacy pii-masking-300k | not wired: academic and non-commercial use only | AI4Privacy licence | — |
+| ai4privacy pii-masking-300k | 225,405 records in 6 languages | **academic and non-commercial use only** (AI4Privacy licence) | opt-in: `--with-ai4privacy`, for your own local measurement |
 
 Each dataset becomes `<data>/parquet/<dataset>.parquet` in one schema, with a dev or check split by source.
 `manifest.json` records the versions and counts; a second setup run with the same versions builds nothing.
 `--only creddata,tab` limits the setup to some datasets.
+
+**ai4privacy and the licence.** Its licence allows academic and non-commercial use only and needs a written licence
+from AI4Privacy for derivative works. The bench builds it only on request, every report that includes it says so,
+and its results stay out of anything sent upstream. **If you maintain maisecrets, get AI4Privacy's permission
+(licensing@ai4privacy.com) before you run the bench with it.**
+
+**TAB** was dropped after the first run (saturated and out of scope, `docs/BENCHMARK.md`); `--only tab` still
+builds it.
 
 ## Commands
 

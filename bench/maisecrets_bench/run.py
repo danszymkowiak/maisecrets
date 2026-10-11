@@ -25,6 +25,20 @@ LANGUAGES = {
 SKIP_TYPES = {"HIDDEN"}     # removal of invisible characters: no detection to score
 # where text no span labels is negative; CredData labels candidate lines only (docs/BENCHMARK.md, CredData)
 UNLABELLED_NEGATIVE = {"creddata": False}
+# left out of a default run: TAB is saturated and out of scope (docs/BENCHMARK.md, user decision 2026-10-11)
+DROPPED = {"tab"}
+# a dataset whose results stay local; its note goes into every report that includes it
+LOCAL_ONLY = {"ai4privacy": "ai4privacy: academic and non-commercial use only (AI4Privacy licence). Local "
+                            "measurement; leave it out of anything sent upstream. The plugin's owner needs "
+                            "AI4Privacy's permission first (licensing@ai4privacy.com)."}
+
+
+def default_datasets(manifest: dict) -> list[str]:
+    return sorted(set(manifest.get("datasets", {})) - DROPPED)
+
+
+def licence_notes(names) -> list[str]:
+    return [f"> {LOCAL_ONLY[n]}" for n in sorted(names) if n in LOCAL_ONLY]
 # the detected types a dataset annotates; a detection of another type there is neither right nor wrong. CredData
 # labels credentials only; the others label personal data broadly and judge every type
 JUDGED = {"creddata": frozenset({"SECRET"})}
@@ -45,7 +59,7 @@ def _init_worker(regions: list[str], locale: str, mutation=None) -> None:
     _detect = detector.detect
     if mutation is not None:
         from .mutation import apply
-        _detect._RULES = apply(mutation, _detect.rules())
+        _detect._RULES = apply(mutation, _detect.rules(), strict=False)   # validated over all regions before
 
 
 def _detections(text: str) -> list[score.Detection]:
@@ -154,7 +168,7 @@ def _pct(x) -> str:
 
 def report(summary: dict, manifest: dict, seconds: float) -> str:
     """The markdown report: counts, rates and rule ids only."""
-    out = ["# maisecrets rule benchmark", "",
+    out = ["# maisecrets rule benchmark", "", *licence_notes(summary["datasets"]), "",
            f"Overall score (equal weight over datasets): **{_pct(summary['overall'])}**. Run time {seconds:.0f} s.", "",
            "| dataset | version | TP | FP | found | FN | precision | recall | F1 | clean samples | score |"
            " unreviewed /1k lines | out-of-scope touched |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -210,3 +224,14 @@ def run(parquet: Path, datasets: list[str], out: Path, jobs: int, limit: int | N
                                                   "manifest": manifest}, indent=2) + "\n", encoding="utf-8")
     (out / "report.md").write_text(report(summary, manifest, seconds), encoding="utf-8")
     return summary
+
+
+def newest_full_run(runs_dir: Path, manifest: dict) -> Path:
+    """The newest run over every dataset of the manifest without --limit: what a baseline must be."""
+    want = set(default_datasets(manifest))
+    for p in sorted(runs_dir.glob("*/datasets.json"), reverse=True):
+        meta = json.loads(p.read_text(encoding="utf-8"))
+        if not meta.get("limit") and set(meta["datasets"]) == want and (p.parent / "detections.parquet").exists():
+            return p.parent
+    from .paths import BenchError
+    raise BenchError(f"no run over all of {', '.join(sorted(want))} without --limit; run bench/run.py first")

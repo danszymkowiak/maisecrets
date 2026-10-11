@@ -98,5 +98,19 @@ def gretel_source(cache: Path) -> Source:
                   lambda: {"dropped": stats.dropped})
 
 
+def ai4privacy_source(cache: Path) -> Source:
+    """Opt-in and local: academic and non-commercial use only (maisecrets_bench/adapters/ai4privacy.py)."""
+    from .adapters import ai4privacy
+    stats = ai4privacy.Stats()
+
+    def version() -> str:
+        from huggingface_hub import HfApi
+        return HfApi().dataset_info(ai4privacy.HF_ID).sha
+
+    return Source("ai4privacy", version,
+                  lambda: ai4privacy.samples(ai4privacy.records(str(cache / "hf")), load_table("ai4privacy"), stats),
+                  lambda: {"dropped": stats.dropped, "licence": "academic and non-commercial use only; local"})
+
+
 def default_out() -> Path:
     return data_dir() / "parquet"

@@ -1,0 +1,8 @@
+name = "us-license#1: licence word just before the number"
+why = "Dev brief: 188 false alarms against 18 true positives, every one a bare digit run."
+
+[[change]]
+op = "set"
+rule = "us-license#1"
+regex = "(?i:(?:licen[cs]e|driver|dl)\\b\\D{0,30}?)\\b([0-9]{6,14}|[0-9]{16})\\b"
+secret_group = 1

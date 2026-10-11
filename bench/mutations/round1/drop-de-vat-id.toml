@@ -1,0 +1,6 @@
+name = "Drop de-vat-id#0"
+why = "Dev brief: 71 false alarms, 0 true positives; a German VAT id names a company, not a person."
+
+[[change]]
+op = "disable"
+rule = "de-vat-id#0"

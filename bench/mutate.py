@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 
-from maisecrets_bench import mutate, mutation, setup
+from maisecrets_bench import mutate, mutation, run, setup
 from maisecrets_bench.paths import BenchError, data_dir
 
 
@@ -27,14 +27,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
     args = ap.parse_args(argv)
     try:
-        if args.baseline:
-            base_dir = args.baseline
-        else:
-            full = [p.parent for p in sorted((data_dir() / "runs").glob("*/datasets.json"))
-                    if not json.loads(p.read_text(encoding="utf-8")).get("limit")]
-            if not full:
-                raise BenchError("no full run to compare with; run bench/run.py first")
-            base_dir = full[-1]
+        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        base_dir = args.baseline or run.newest_full_run(data_dir() / "runs", manifest)
         samples, det, names = mutate.baseline(base_dir, setup.default_out())
         roles = {n: "guard" for n in args.guard.split(",") if n}
         unknown = set(roles) - set(names)

@@ -1,0 +1,28 @@
+name = "Combined: the five single changes without de-plz"
+why = "If each passes alone, together they should; this checks the interactions."
+
+[[change]]
+op = "set"
+rule = "us-bank"
+regex = "(?i:(?:account|acct|bank|check|debit|save)\\b\\D{0,30}?)\\b([0-9]{8,17})\\b"
+secret_group = 1
+
+[[change]]
+op = "set"
+rule = "us-license#1"
+regex = "(?i:(?:licen[cs]e|driver|dl)\\b\\D{0,30}?)\\b([0-9]{6,14}|[0-9]{16})\\b"
+secret_group = 1
+
+[[change]]
+op = "set"
+rule = "us-passport#0"
+regex = "(?i:passport\\D{0,30}?)\\b([0-9]{9})\\b"
+secret_group = 1
+
+[[change]]
+op = "disable"
+rule = "uk-postcode"
+
+[[change]]
+op = "disable"
+rule = "de-vat-id#0"

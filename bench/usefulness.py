@@ -43,7 +43,7 @@ def verdicts(t: dict, same: dict) -> dict:
 
 def render(t: dict, same: dict, probes: list[str]) -> str:
     v = verdicts(t, same)
-    out = ["# Is each dataset worth keeping?", "",
+    out = ["# Is each dataset worth keeping?", "", *run.licence_notes(t), "",
            "| dataset | positives | in scope | score | precision | recall | clean samples | rules firing | "
            "only here | probes that move it | verdict |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     for name, d in t.items():
@@ -77,10 +77,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--probes", type=int, default=30, help="how many of the most-firing rules to probe")
     args = ap.parse_args(argv)
     try:
-        runs = sorted((data_dir() / "runs").glob("*/detections.parquet"))
-        if not args.run and not runs:
-            raise BenchError("no run with saved detections; run bench/run.py first")
-        rdir = args.run or runs[-1].parent
+        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        rdir = args.run or run.newest_full_run(data_dir() / "runs", manifest)
         meta = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))
         if meta.get("limit"):
             raise BenchError(f"{rdir} ran with --limit; the check needs a full run")

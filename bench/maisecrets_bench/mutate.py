@@ -36,6 +36,9 @@ def _totals(samples: list, det: dict) -> dict:
 
 
 def evaluate(mutations: list[Mutation], samples: list, base_det: dict, roles: dict, jobs: int) -> list[dict]:
+    from .mutation import validate
+    for m in mutations:
+        validate(m)
     base = _totals(samples, base_det)
     out = []
     for m in mutations:
@@ -48,7 +51,9 @@ def evaluate(mutations: list[Mutation], samples: list, base_det: dict, roles: di
 
 
 def report(results: list[dict], baseline_dir: Path) -> str:
-    out = ["# Rule mutations", "", f"Baseline: `{baseline_dir.name}`. Accepted: no dataset worse in recall, precision "
+    notes = run.licence_notes(results[0]["datasets"]) if results else []
+    out = ["# Rule mutations", "", *notes, "",
+           f"Baseline: `{baseline_dir.name}`. Accepted: no dataset worse in recall, precision "
            "or clean samples; ranked by the change of the mean score of the scored datasets.", "",
            "| rank | mutation | verdict | mean score change | " + " | ".join(results[0]["datasets"]) + " |",
            "|---|---|---|---|" + "---|" * len(results[0]["datasets"])] if results else ["# Rule mutations", "", "none"]

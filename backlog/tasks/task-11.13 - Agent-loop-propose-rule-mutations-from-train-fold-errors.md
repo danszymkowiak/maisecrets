@@ -1,10 +1,10 @@
 ---
 id: TASK-11.13
 title: 'Agent loop: propose rule mutations from train-fold errors'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 10:20'
-updated_date: '2026-10-11 11:06'
+updated_date: '2026-10-11 13:18'
 labels:
   - benchmark
   - agent

@@ -23,10 +23,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--split", choices=("dev", "check", "all"), default="dev")
     args = ap.parse_args(argv)
     try:
-        runs = sorted((data_dir() / "runs").glob("*/detections.parquet"))
-        if not args.run and not runs:
-            raise BenchError("no run with saved detections; run bench/run.py first")
-        rdir = args.run or runs[-1].parent
+        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        rdir = args.run or run.newest_full_run(data_dir() / "runs", manifest)
         meta = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))
         det = run.load_detections(rdir / "detections.parquet")
         recs = []

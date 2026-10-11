@@ -1,0 +1,33 @@
+# ai4privacy pii-masking-300k: privacy_mask label -> maisecrets type. LOCAL AND OPT-IN (academic and non-commercial
+# licence; docs/BENCHMARK.md). In scope where maisecrets claims the type. The ID-like labels (IDCARD, PASSPORT,
+# SOCIALNUMBER, DRIVERLICENSE) are random digit or letter runs without any country's format: out of scope.
+
+[labels]
+EMAIL = "EMAIL"
+TEL = "PHONE"
+IP = "IP"
+PASS = "SECRET"
+IDCARD = "OUT_OF_SCOPE"
+PASSPORT = "OUT_OF_SCOPE"
+SOCIALNUMBER = "OUT_OF_SCOPE"
+DRIVERLICENSE = "OUT_OF_SCOPE"
+USERNAME = "OUT_OF_SCOPE"
+GIVENNAME1 = "OUT_OF_SCOPE"
+GIVENNAME2 = "OUT_OF_SCOPE"
+LASTNAME1 = "OUT_OF_SCOPE"
+LASTNAME2 = "OUT_OF_SCOPE"
+LASTNAME3 = "OUT_OF_SCOPE"
+TITLE = "OUT_OF_SCOPE"
+SEX = "OUT_OF_SCOPE"
+BOD = "OUT_OF_SCOPE"
+DATE = "OUT_OF_SCOPE"
+TIME = "OUT_OF_SCOPE"
+BUILDING = "OUT_OF_SCOPE"
+STREET = "OUT_OF_SCOPE"
+SECADDRESS = "OUT_OF_SCOPE"
+CITY = "OUT_OF_SCOPE"
+STATE = "OUT_OF_SCOPE"
+COUNTRY = "OUT_OF_SCOPE"
+POSTCODE = "OUT_OF_SCOPE"
+GEOCOORD = "OUT_OF_SCOPE"
+CARDISSUER = "OUT_OF_SCOPE"

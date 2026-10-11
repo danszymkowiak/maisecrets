@@ -1,0 +1,8 @@
+name = "us-bank: context word just before the number"
+why = "Dev brief: 2,798 false alarms against 163 true positives; the context check passes when 'account' stands anywhere in a finance document. Require a bank word within 30 non-digit characters before the number."
+
+[[change]]
+op = "set"
+rule = "us-bank"
+regex = "(?i:(?:account|acct|bank|check|debit|save)\\b\\D{0,30}?)\\b([0-9]{8,17})\\b"
+secret_group = 1

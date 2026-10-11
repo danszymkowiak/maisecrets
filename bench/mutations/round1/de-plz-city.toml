@@ -1,0 +1,7 @@
+name = "de-plz: only a postcode followed by a place name"
+why = "Dev brief: 276 false alarms against 4 true positives; in an address the postcode stands before the town (10115 Berlin)."
+
+[[change]]
+op = "set"
+rule = "de-plz"
+regex = "\\b(?!01000\\b|99999\\b)(0[1-9]\\d{3}|[1-9]\\d{4})(?= [A-ZÄÖÜ][a-zäöüß])"

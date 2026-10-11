@@ -1,0 +1,6 @@
+name = "Drop uk-postcode"
+why = "Dev brief: 256 false alarms, 0 true positives; a postcode alone identifies no one."
+
+[[change]]
+op = "disable"
+rule = "uk-postcode"

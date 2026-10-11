@@ -35,8 +35,11 @@ The detector runs in a temp maisecrets home (`MAISECRETS_HOME`), never the real 
 
 Licences: CredData's tooling is Apache-2.0 and each file keeps its source project's licence
 (CredData kept permissive ones); TAB is MIT; Gretel is Apache-2.0. ai4privacy allows academic and
-non-commercial use only and needs a written licence for derivative works; whether it stays is the
-user's decision (inbox, TASK-11.6). The setup downloads; no derived file is published.
+non-commercial use only and needs a written licence for derivative works. **Decision, 2026-10-11
+(user):** it is opt-in and local: the setup builds it only with `--with-ai4privacy`, for the user's
+own non-commercial measurement. A report that goes upstream leaves it out, and the bench README tells
+the plugin's owner to get AI4Privacy's permission (licensing@ai4privacy.com) before using it. The
+setup downloads; no derived file is published.
 
 ## One schema
 
@@ -137,6 +140,12 @@ baseline run, each one is checked (TASK-11.15) and kept or dropped by the user:
 - **Overlap:** a dataset whose score always moves exactly like another's adds no information.
 
 A dropped dataset leaves the equal-weight mean; the decision and its numbers are recorded here.
+
+**Decision, 2026-10-11 (user):** TAB is dropped. In the first full run it had no in-scope positives,
+99.7% of its 1,268 documents had no false alarm (4 in 9.6 M characters), only 3 rules fired on it and
+2 of 30 probes moved its score: saturated and out of scope. Its adapter stays (`--only tab`), but
+setup and runs leave it out by default. CredData and Gretel stay: each has rules that fire only there
+(21 and 40) and they moved together on only 16.7% of the probes.
 
 ## Judging a change
 

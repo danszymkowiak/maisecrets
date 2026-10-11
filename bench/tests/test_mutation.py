@@ -63,6 +63,17 @@ class ApplyTests(unittest.TestCase):
         with self.assertRaisesRegex(BenchError, "'colour'"):
             mutation.apply(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\ncolour = "red"\n'), self.base)
 
+    def test_a_rule_of_another_region_is_skipped_in_a_group_without_it(self):
+        # us-bank exists in the English group only; the German group must run the mutation too (round 1, 2026-10-11)
+        m = _load('name = "x"\n[[change]]\nop = "disable"\nrule = "us-bank"\n')
+        without = [r for r in self.base if r.id != "us-bank"]
+        self.assertEqual([r.id for r in mutation.apply(m, without, strict=False)], [r.id for r in without])
+
+    def test_validation_knows_the_rules_of_every_region(self):
+        mutation.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "it-fiscal-code"\n'))
+        with self.assertRaisesRegex(BenchError, "'no-such-rule'"):
+            mutation.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'))
+
     def test_a_disable_only_mutation_says_so(self):
         self.assertTrue(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n').disable_only)
         self.assertFalse(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\nentropy = 3.0\n').disable_only)

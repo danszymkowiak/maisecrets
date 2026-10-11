@@ -72,14 +72,29 @@ def _fields(c: dict, where: str) -> dict:
     return out
 
 
-def apply(m: Mutation, rules: list) -> list:
-    """A new rule list with the mutation applied; `rules` itself is not changed."""
+def validate(m: Mutation) -> None:
+    """Every rule a change names exists in some region, and every field can be set. Run once, before the groups."""
+    from .detector import rule_index
+    known = rule_index()
+    for n, c in enumerate(m.changes, 1):
+        where = f"{m.name}, change {n}"
+        if c["op"] in ("disable", "set") and c.get("rule") not in known:
+            raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector in any region")
+        if c["op"] in ("set", "add"):
+            _fields(c, where)
+
+
+def apply(m: Mutation, rules: list, strict: bool = True) -> list:
+    """A new rule list with the mutation applied; `rules` itself is not changed. With strict=False a change to a rule
+    this list does not hold is skipped: the rules differ by region, and us-bank is not in the German group."""
     from .detector import detect
     out = list(rules)
     ids = {r.id for r in out}
     for n, c in enumerate(m.changes, 1):
         where = f"{m.name}, change {n}"
         if c["op"] in ("disable", "set") and c.get("rule") not in ids:
+            if not strict:
+                continue
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector")
         if c["op"] == "disable":
             out = [r for r in out if r.id != c["rule"]]

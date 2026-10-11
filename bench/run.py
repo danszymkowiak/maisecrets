@@ -30,7 +30,8 @@ def main(argv: list[str]) -> int:
         if not manifest_path.exists():
             raise BenchError(f"no benchmark data in {parquet}; run bench/setup.py first")
         known = sorted(json.loads(manifest_path.read_text(encoding="utf-8"))["datasets"])
-        names = args.only.split(",") if args.only else known
+        names = args.only.split(",") if args.only else run.default_datasets(
+            json.loads(manifest_path.read_text(encoding="utf-8")))
         missing = set(names) - set(known)
         if missing:
             raise BenchError(f"not set up: {', '.join(sorted(missing))}")
