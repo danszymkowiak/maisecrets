@@ -3,9 +3,10 @@ id: TASK-11.20
 title: >-
   Experiment: suppress digest, integrity and object-id shapes unless a secret
   label is near
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:07'
+updated_date: '2026-10-11 17:49'
 labels:
   - benchmark
 dependencies:
@@ -29,3 +30,9 @@ Report rank 1 (cheapest, lowest risk). Pure hex of 32/40/56/64/96/128 characters
 - [ ] #2 Counts of false alarms removed and finds lost per rule, from bench/errors.py (masked)
 - [ ] #3 Re-judged on the synthetic tool-output dataset once TASK-11.19 lands; a passing change becomes a plugin task with a can-fail belief
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-11 probe (run 20261011-173619, counts only): on generic-api-key and ds-* rules, CredData hex-digest-shaped values (32/40/56/64/96/128 hex, 24-hex ObjectId) are real secrets: 2,591 TP vs 87 FP. By the label before the value: strong secret label 451 TP / 32 FP; other labels (key, ...) 2,137 TP / 54 FP; a digest label (hash, sha, checksum, integrity, etag, commit, ...) 3 TP / 1 FP. So 'drop unless a strong label' would cost ~2,100 finds; only 'drop when the label names a digest' is safe, and it is tiny on CredData. Prefixed digests (sha256:, sha512-, h1:) never matched these rules on the corpora. Next: the synthetic dataset's run decides whether digests are false alarms in tool output at all.
+<!-- SECTION:NOTES:END -->
