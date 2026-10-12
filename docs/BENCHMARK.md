@@ -323,7 +323,7 @@ datadog-application-key takes the same shape. etsy-access-token, jfrog-api-key, 
 keep, carried as our own rules when gitleaks goes (TASK-19.4): with only a provider label Betterleaks
 misses all three, and old JFrog keys still sit in configuration files.
 
-**Next:** the set fails on two rules, not as a whole. TASK-36 benches Betterleaks with gitleaks'
+**Next:** the set fails on two rules, not as a whole. TASK-19.8 benches Betterleaks with gitleaks'
 generic-api-key carried over and npm-access-token checked; TASK-19.4 switches only on an accepted
 verdict.
 
