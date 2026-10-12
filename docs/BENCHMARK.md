@@ -432,6 +432,39 @@ fullwidth forms could be undone by a normaliser with an offset map (TASK-11.25).
 undone by decode-and-rescan (TASK-11.26). CredData keeps more under homoglyph, escape and base64 because
 its keyword rules match the label and take any value after it.
 
+### Normaliser stages (TASK-11.25, 2026-10-12)
+
+`maisecrets/normalise.py` cleans a copy of the text and the shape rules scan it a second time; a hit
+there redacts the original range, hidden characters included. Each stage was judged twice:
+
+- **On the scored datasets** (mutation run 20261012-150659 against baseline 20261012-141549, the floor
+  verdict): entity is a clean win (CredData +4 true positives, no false positive anywhere). ansi, cr,
+  invisible, gutter and fullwidth are neutral: the datasets hold none of those disguises. escape passes
+  the verdict only because one card is found more, while Gretel's false hits rise by 60 (5,583 to
+  5,643); by the true-against-false trade (TASK-18.2) it stays off.
+- **On the perturbation suite** (perturb 20261012-152034 without stages, one run per stage; 400
+  samples per dataset, ai4privacy left out of the sums). Recall over all datasets, 87.8 % untouched:
+
+| transform | stage | without | with |
+|---|---|---|---|
+| zero-width space | invisible | 18.6% | 88.6% |
+| soft hyphen | invisible | 18.6% | 88.6% |
+| fullwidth | fullwidth | 34.9% | 87.8% |
+| ANSI reset | ansi | 21.0% | 89.3% |
+| CR | cr | 33.3% | 88.4% |
+| HTML entity | entity | 9.3% | 89.3% |
+| markdown escape | escape | 60.1% | 88.1% |
+
+No stage changes recall under another transform. The suite has no gutter transform; gutter is
+neutral on the datasets and its case (a value in `cat -n`, `grep -n` or diff output) is covered by
+`tests/test_normalise.py`.
+
+**Time** (`bench/normtime.py`, ansi, cr, invisible, gutter, entity and fullwidth on, median of 15 scans,
+idle machine): looking costs nothing measurable (25 KB plain +0 ms, 120 KB plain +2 ms); when a stage
+changes the text the second pass scans it again in full, 25 KB +19 ms (19 to 38 ms) and 120 KB +95 ms
+(95 to 190 ms), with a gutter or ANSI colour on every line. Scanning only the changed lines would cut
+that.
+
 ## Is a dataset worth keeping
 
 A dataset earns its weight only if it can tell a good rule change from a bad one. After the first
