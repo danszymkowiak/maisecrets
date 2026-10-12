@@ -91,5 +91,24 @@ class LowercaseTests(unittest.TestCase):
         self.assertEqual(ibans(f"ref {cand}"), [])
 
 
+class HyphenTests(unittest.TestCase):
+    """TASK-29: the vendored pattern takes hyphens between the groups, the validator stripped only spaces."""
+
+    def test_a_hyphenated_iban_is_found(self):
+        for iban in (DE, CH, GB):
+            dashed = "-".join(iban[i:i + 4] for i in range(0, len(iban), 4))
+            with self.subTest(iban=dashed):
+                self.assertTrue(detect._iban_ok(dashed))
+                self.assertEqual(ibans(f"IBAN {dashed}"), [dashed])
+                self.assertEqual(ibans(f"IBAN {dashed.lower()}"), [dashed.lower()])
+
+    def test_a_hyphenated_mod97_failure_is_no_hit(self):
+        for iban in (DE, CH, GB):
+            dashed = "-".join(broken(iban)[i:i + 4] for i in range(0, len(iban), 4))
+            with self.subTest(iban=dashed):
+                self.assertFalse(detect._iban_ok(dashed))
+                self.assertEqual(ibans(f"IBAN {dashed}"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

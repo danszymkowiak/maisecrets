@@ -147,8 +147,8 @@ IBAN_LENGTH = {
 
 
 def _iban_ok(raw: str) -> bool:
-    s = raw.replace(" ", "").upper()
-    if not 15 <= len(s) <= 34:
+    s = raw.replace(" ", "").replace("-", "").upper()    # the vendored pattern takes both separators (TASK-29)
+    if not 15 <= len(s) <= 34 or not s.isalnum():
         return False
     if raw != raw.upper() and IBAN_LENGTH.get(s[:2]) != len(s):
         return False

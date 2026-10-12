@@ -1,9 +1,10 @@
 ---
 id: TASK-29
 title: 'Plugin: an IBAN written with hyphens is never found (test first)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 06:37'
+updated_date: '2026-10-12 07:04'
 labels:
   - detection
   - tdd
@@ -22,6 +23,12 @@ Found during TASK-22 (2026-10-12). The vendored IBAN regex takes [ -] between th
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A test first: a hyphenated valid IBAN is found, a hyphenated mod-97 failure is not
-- [ ] #2 Judged on the bench: IBAN recall not lower, precision unchanged
+- [x] #1 A test first: a hyphenated valid IBAN is found, a hyphenated mod-97 failure is not
+- [x] #2 Judged on the bench: IBAN recall not lower, precision unchanged
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+_iban_ok strips hyphens as well as spaces (and refuses anything not alphanumeric after that), so 'DE89-3704-...' passes its check. Tests in tests/test_iban_forms.py (HyphenTests). Bench run 20261012-085837 against 20261012-084443: no dataset has hyphenated IBANs, IBAN unchanged everywhere; Nemotron +2 true positives (US_BANK_NUMBER), no new false positive.
+<!-- SECTION:FINAL_SUMMARY:END -->
