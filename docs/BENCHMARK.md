@@ -148,7 +148,14 @@ values are weakly diverse (the same few names and domains), so its type-level re
 - **findocs** (3,300 generated documents, ours). Precision 100.0%, recall 84.4%, F1 91.6%. The
   misses are three gaps: an IBAN after an MT940 `?31` subfield (594, TASK-22), a US phone written
   `(494) 360-7563` (600, TASK-23), and a card number after the German word `Karte` (300, TASK-24).
-  AHV and UID numbers are labelled but out of scope until TASK-20 adds the Swiss types.
+  AHV and UID numbers map to CH_AHV and CH_UID (TASK-20, gold revision valid2). The Swiss rules
+  were judged as a mutation that runs them in every language group (`bench/mutations/add-swiss-ch.toml`,
+  baseline 20261012-081433, mutation run 20261012-082626): accepted, findocs AHV 900/900 and UID
+  600/600, no new false alarm on CredData, Gretel, Mendeley, Nemotron or the synthetic output, 13 more
+  on ai4privacy (of about 250,000 records), weighted false positives +0.000. So the dotted AHV form
+  stands without a context word; the bare 13 digits keep one. 900 AHV positives are too few to prove
+  the 0.999 floor (about 3,000 needed), and a plain run groups the Swiss documents by language (`de`,
+  `fr`), not region `ch`: both are TASK-28.
 
 **Usefulness (run 20261012-011327, before the Mendeley e-mail fix).** Each new dataset is in scope,
 not saturated and moved by probes (Nemotron 22 of 30, findocs 8, Mendeley 5): keep, all three scored.

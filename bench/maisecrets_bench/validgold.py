@@ -18,7 +18,7 @@ from typing import Callable
 
 from .schema import Sample
 
-REVISION = "valid1"      # part of every dataset's version: a change here builds the datasets again
+REVISION = "valid2"   # valid2 adds CH_AHV and CH_UID (TASK-20); part of every version: a change rebuilds them
 
 
 def _digits(v: str) -> str:
@@ -46,11 +46,13 @@ def _checks() -> dict[str, tuple[re.Pattern | None, Callable[[str], bool]]]:
         "DE_ID_CARD": (None, v["de_id_card"]),
         "DE_VAT_ID": (None, v["de_vat_id"]),
         "DE_HEALTH_INSURANCE": (None, v["de_health_insurance"]),
+        "CH_AHV": (re.compile(r"756(?:\.?\d{4}){2}\.?\d{2}"), v["ch_ahv"]),
+        "CH_UID": (re.compile(r"CHE[-\s]?\d{3}\.?\d{3}\.?\d{3}"), v["ch_uid"]),
     }
 
 
 CHECKS = ("IBAN", "CARD", "US_SSN", "ABA_ROUTING_NUMBER", "DE_TAX_ID", "DE_SOCIAL_SECURITY", "DE_ID_CARD",
-          "DE_VAT_ID", "DE_HEALTH_INSURANCE")
+          "DE_VAT_ID", "DE_HEALTH_INSURANCE", "CH_AHV", "CH_UID")
 
 
 def _ok(ok: Callable[[str], bool], value: str) -> bool:

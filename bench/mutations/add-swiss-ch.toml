@@ -1,0 +1,26 @@
+name = "Add the Swiss rules (AHV/AVS, UID) to every group"
+why = "TASK-20: judged in every language group, not only a Swiss one, so the guards show any precision cost"
+
+[[change]]
+op = "add"
+id = "ch-ahv"
+type = "CH_AHV"
+validator = "ch_ahv"
+regex = '(?<![\d.])756\.\d{4}\.\d{4}\.\d{2}(?!\d|\.\d)'
+context = ["ahv", "avs", "ahv-nr", "ahv-nummer", "ahvn13", "avs-nr", "sozialversicherungsnummer", "sozialversicherung", "versichertennummer", "sv-nummer", "numéro avs", "numero avs", "n° avs", "no avs", "assurance sociale", "assicurazione sociale", "numéro d'assuré", "numero d'assicurato"]
+
+[[change]]
+op = "add"
+id = "ch-ahv-bare"
+type = "CH_AHV"
+validator = "ch_ahv"
+require_context = true
+regex = '(?<![\d.])756\d{10}(?!\d|\.\d)'
+context = ["ahv", "avs", "ahv-nr", "ahv-nummer", "ahvn13", "avs-nr", "sozialversicherungsnummer", "sozialversicherung", "versichertennummer", "sv-nummer", "numéro avs", "numero avs", "n° avs", "no avs", "assurance sociale", "assicurazione sociale", "numéro d'assuré", "numero d'assicurato"]
+
+[[change]]
+op = "add"
+id = "ch-uid"
+type = "CH_UID"
+validator = "ch_uid"
+regex = '\bCHE[-\s]?\d{3}\.?\d{3}\.?\d{3}(?:\s?(?:MWST|TVA|IVA))?(?![\w.]\d|\w)'

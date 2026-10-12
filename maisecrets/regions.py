@@ -25,7 +25,7 @@ _COUNTRY_ALIAS = {"gb": "uk"}
 # the language of a region, for the label files; a region not listed adds PII rules only.
 # A region with two label languages lists both (Belgium: Dutch and French).
 REGION_LANGUAGE = {
-    "de": "de", "at": "de", "ch": "de", "li": "de",
+    "de": "de", "at": "de", "ch": ("de", "fr", "it"), "li": "de",
     "us": "en", "uk": "en", "au": "en", "ca": "en", "in": "en", "ng": "en", "ph": "en", "sg": "en",
     "za": "en", "ie": "en", "nz": "en",
     "es": "es", "it": "it", "fi": "fi", "se": "sv", "pl": "pl", "tr": "tr", "kr": "ko", "th": "th",

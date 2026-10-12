@@ -34,7 +34,7 @@ _TYPES: frozenset[str] | None = None
 def all_regions() -> tuple[str, ...]:
     """Every region the vendored Presidio rules know, `generic` included."""
     recs = json.loads((REPO / "maisecrets" / "rules" / "presidio.json").read_text(encoding="utf-8"))["recognizers"]
-    return tuple(sorted({detect.presidio_region(r["id"]) for r in recs}))
+    return tuple(sorted({detect.presidio_region(r["id"]) for r in recs} | {d["region"] for d in detect.REGIONAL_RULES}))
 
 
 def known_types() -> frozenset[str]:
@@ -42,6 +42,7 @@ def known_types() -> frozenset[str]:
     global _TYPES
     if _TYPES is None:
         _TYPES = frozenset({r.type for r in detect._load_presidio(all_regions())}
+                           | {r.type for r in detect._load_regional(all_regions())}
                            | {r.type for r in detect._load_own()} | detect.SECRET_TYPES)
     return _TYPES
 
@@ -50,7 +51,7 @@ def rule_index() -> dict:
     """Every rule of every region by id: type, regex and the fields a mutation can set. What an agent reads before it
     proposes a change; the rule sets are public (gitleaks, Presidio, detect-secrets, the plugin's own)."""
     rules = (detect._load_own() + detect._load_detect_secrets(("en", "de")) + detect._load_gitleaks()
-             + detect._load_presidio(all_regions()))
+             + detect._load_regional(all_regions()) + detect._load_presidio(all_regions()))
     out = {}
     for r in rules:
         out.setdefault(r.id, {"type": r.type, "regex": r.regex.pattern, "keywords": list(r.keywords),

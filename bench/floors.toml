@@ -1,19 +1,19 @@
 # Recall floors per type and the dataset weights of the false-positive objective (docs/BENCHMARK.md, TASK-21).
 # Tiers decided by the user 2026-10-11. A floor is a recall share, "no_regression" (the type must not get worse) or
-# "none" (not scored). A type no tier lists gets default_tier. CH_AHV and the Swiss tax and ID numbers join their
-# tiers when TASK-20 adds the types (critical and high).
+# "none" (not scored). A type no tier lists gets default_tier. CH_AHV joined the critical tier and CH_UID the high
+# tier with TASK-20.
 
 default_tier = "default"
 
 [tiers.critical]
 floor = 0.999
-types = ["IBAN", "CARD", "US_SSN", "US_BANK_NUMBER", "SECRET_PREFIXED"]
+types = ["IBAN", "CARD", "US_SSN", "US_BANK_NUMBER", "SECRET_PREFIXED", "CH_AHV"]
 
 [tiers.high]
 floor = 0.99
 types = ["EMAIL", "PHONE", "IP", "ABA_ROUTING_NUMBER",
          "DE_TAX_ID", "DE_TAX_NUMBER", "DE_VAT_ID", "DE_SOCIAL_SECURITY", "DE_ID_CARD", "DE_PASSPORT",
-         "DE_HEALTH_INSURANCE", "DE_FUEHRERSCHEIN"]
+         "DE_HEALTH_INSURANCE", "DE_FUEHRERSCHEIN", "CH_UID"]
 
 [tiers.default]
 floor = "no_regression"

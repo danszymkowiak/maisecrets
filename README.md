@@ -584,14 +584,16 @@ one-line tip that appears once a day at session start.
 
 `regions`: country codes, for example `["de", "us"]`. Each country adds its
 Presidio rules for personal data, such as a German tax ID or a US social
-security number. The entry `auto` is the country of your system setting (on
+security number, or for `ch` the Swiss AHV/AVS number and company UID. The
+entry `auto` is the country of your system setting (on
 macOS and Windows the system setting, not `LANG`). The default is `["auto"]`.
 An empty list keeps the generic rules only. The old key `pii_regions` still
 works.
 
 Credential labels come in languages. English labels (`password:`, `pass:`,
 `token:`) are always on. maisecrets adds the labels of your system language
-and of each region, for example `passwort:` and `kennwort:` for German. The
+and of each region, for example `passwort:` and `kennwort:` for German (`ch`
+brings German, French and Italian). The
 labels are data files in `maisecrets/rules/labels/`, one file per language.
 A new language is one new file. Files exist for Czech, Danish, Dutch,
 English, Finnish, French, German, Italian, Korean, Norwegian (Bokmål),
@@ -1118,6 +1120,12 @@ Four sources, one scanner (`maisecrets/detect.py`):
   password with no user in a URL (`redis://:…@host`), the secret half of an AWS
   key pair within a few lines after its `AKIA…` id, and full-length GitLab
   runner and deploy tokens.
+- **Own country rules** where Presidio has none: Switzerland (`ch`), the
+  AHV/AVS number (`756.1234.5678.97`, with its EAN-13 check digit; the 13
+  digits without dots only next to a word such as AHV, AVS or
+  Versichertennummer) and the company UID (`CHE-123.456.789`, mod-11 check
+  digit, with or without MWST/TVA/IVA). Swiss IBANs and `+41` numbers are
+  covered by the IBAN and phone rules.
 - Prefixes newer than the vendored rulesets live in
   `maisecrets/rules/prefixes.txt`, one line each, extended by pull request
   (`CONTRIBUTING.md`): `glrt-`, `gldt-`, `whsec_`, `cfut_` so far, the last

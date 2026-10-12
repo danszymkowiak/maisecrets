@@ -181,6 +181,26 @@ def _de_tax_id_ok(v: str) -> bool:
     return (0 if check == 10 else check) == digits[10]
 
 
+def _ch_ahv_ok(v: str) -> bool:
+    """AHV/AVS number (AHVN13): 756, 9 digits, an EAN-13 check digit (weights 1 and 3 from the left)."""
+    d = re.sub(r"\D", "", v)
+    if len(d) != 13 or not d.startswith("756"):
+        return False
+    total = sum(int(c) * (3 if i % 2 else 1) for i, c in enumerate(d[:12]))
+    return (10 - total % 10) % 10 == int(d[12])
+
+
+def _ch_uid_ok(v: str) -> bool:
+    """Company UID (eCH-0097): CHE, 8 digits and a mod-11 check digit, weights 5 4 3 2 7 6 5 4; a check of 10 is
+    never issued. A VAT suffix (MWST, TVA, IVA) may follow."""
+    m = re.match(r"\s*CHE[-\s]?(\d{3})\.?(\d{3})\.?(\d{3})", v)
+    if not m:
+        return False
+    d = "".join(m.groups())
+    check = 11 - sum(int(c) * w for c, w in zip(d[:8], (5, 4, 3, 2, 7, 6, 5, 4))) % 11
+    return check != 10 and check % 11 == int(d[8])
+
+
 def _de_social_security_ok(v: str) -> bool:
     """Rentenversicherungsnummer, VKVV § 4 checksum plus birth-date ranges."""
     v = v.upper().replace(" ", "")
@@ -412,6 +432,8 @@ VALIDATORS = {
     "de_lanr": _de_lanr_ok,
     "de_bsnr": lambda v: len(v.strip()) == 9 and v.strip().isdigit() and v.strip() != "000000000",
     "de_vat_id": _de_vat_id_ok,
+    "ch_ahv": _ch_ahv_ok,
+    "ch_uid": _ch_uid_ok,
     "luhn": lambda v: _luhn_ok(re.sub(r"\D", "", v)),
     "iban": _iban_ok,
     "public_ip": _public_ip,
@@ -594,6 +616,28 @@ def presidio_region(rec_id: str) -> str:
     return head if len(head) == 2 and rec_id.count("-") >= 1 else "generic"
 
 
+# country rules of our own, for a country Presidio has none for (TASK-20: Switzerland). A checksum-validated shape
+# with its separators stands alone; the same digits without them need a context word.
+_CH_AHV_CONTEXT = ("ahv", "avs", "ahv-nr", "ahv-nummer", "ahvn13", "avs-nr", "sozialversicherungsnummer",
+                   "sozialversicherung", "versichertennummer", "sv-nummer", "numéro avs", "numero avs", "n° avs",
+                   "no avs", "assurance sociale", "assicurazione sociale", "numéro d'assuré", "numero d'assicurato")
+REGIONAL_RULES: list[dict] = [
+    {"id": "ch-ahv", "region": "ch", "type": "CH_AHV", "validator": "ch_ahv", "context": _CH_AHV_CONTEXT,
+     "regex": r"(?<![\d.])756\.\d{4}\.\d{4}\.\d{2}(?!\d|\.\d)"},
+    {"id": "ch-ahv", "region": "ch", "type": "CH_AHV", "validator": "ch_ahv", "context": _CH_AHV_CONTEXT,
+     "require_context": True, "regex": r"(?<![\d.])756\d{10}(?!\d|\.\d)"},
+    {"id": "ch-uid", "region": "ch", "type": "CH_UID", "validator": "ch_uid",
+     "context": ("uid", "ide", "idi", "mwst", "tva", "iva", "unternehmens-identifikationsnummer"),
+     "regex": r"\bCHE[-\s]?\d{3}\.?\d{3}\.?\d{3}(?:\s?(?:MWST|TVA|IVA))?(?![\w.]\d|\w)"},
+]
+
+
+def _load_regional(regions: tuple[str, ...]) -> list[Rule]:
+    return [Rule(id=d["id"], type=d["type"], regex=_Lazy(d["regex"]), validator=d["validator"],
+                 context=d.get("context", ()), require_context=d.get("require_context", False), whole_match=True)
+            for d in REGIONAL_RULES if d["region"] in regions]
+
+
 def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]:
     data = json.loads((RULES_DIR / "presidio.json").read_text(encoding="utf-8"))
     out: list[Rule] = []
@@ -699,7 +743,7 @@ def rules() -> list[Rule]:
         pii = [r for r in own if r.type != "SECRET"]
         active = active_regions()
         _RULES = (secrets + _load_detect_secrets(active.languages) + _load_vendored_secrets()
-                  + _load_presidio(active.regions) + pii)
+                  + _load_regional(active.regions) + _load_presidio(active.regions) + pii)
     return _RULES
 
 
