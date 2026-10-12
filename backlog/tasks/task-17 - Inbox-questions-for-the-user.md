@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 08:20'
+updated_date: '2026-10-12 09:27'
 labels:
   - inbox
 dependencies: []
@@ -69,5 +69,10 @@ TASK-25: the two guards are in (commit below): tests/_isolate refuses to start w
 created: 2026-10-12 08:20
 ---
 TASK-23: the US (NXX) NXX-XXXX rule (region us, reserved middle-9 area codes excluded) on clean gold (run 20261012-101259 against 20261012-100249): PHONE recall findocs 50% -> 100%, Gretel 56.7% -> 63.3%, Nemotron 23.2% -> 29.7% (about 2,600 more finds); TASK-21.8 verdict: accepted (PHONE gap narrowed, no floor or guard worse). But weighted false positives per 1,000 tokens rise 0.2912 -> 0.2921 (+43: Gretel 25, Nemotron 17, ai4privacy 1), and TASK-23's AC #2 says 'not higher'. I read the 43: nearly all are real-looking phone numbers the datasets left unlabelled ('can be reached at (832) ...', 'Phone: (301) ...', a dial-in number), the rest placeholders such as (555) 555-1234 or public office numbers. Options: (a) accept: the TASK-21.8 verdict decides, the 'false positives' are missing labels; (b) keep AC #2 strict and reject the rule; (c) first teach the bench to leave an unlabelled hit of a valid shape unjudged (a new task), then judge again. I recommend (a): 2,600 finds against 43 hits that are mostly unlabelled numbers, and the verdict the bench was given says accepted; (c) is worth doing later for every type, not as a gate here.
+---
+
+created: 2026-10-12 09:27
+---
+TASK-11.36 (Kaggle PII Data Detection as a real-text check): needs your Kaggle account: an API token in the environment or ~/.kaggle, and your acceptance of the competition's terms on kaggle.com (the data is competition data, so it can only be opt-in like ai4privacy). Options: (a) you accept the terms and put a token in place, then I write the opt-in adapter and test it on the real data; (b) I write the adapter now against the documented format (tokens, labels, whitespace per essay) with a made-up fixture, untested on the real data until (a); (c) drop the task. I recommend (a): an adapter that never saw the real file tends to break on its first run, and the dataset's value is exactly that it is real text.
 ---
 <!-- COMMENTS:END -->

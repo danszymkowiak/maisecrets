@@ -1346,7 +1346,9 @@ def _label_on_next_line(text: str, m, start: int, end: int, secret: str) -> bool
 
 def _measure_number(text: str, m, start: int, end: int, secret: str) -> bool:
     """A limit or a duration, such as a refresh token's TTL in seconds."""
-    return bool(secret.strip("\"' ").isdigit() and _MEASURE_LABEL_RE.search(_label_before(text, start)))
+    v = secret.strip("\"' ")
+    v = v[:-1] if v.endswith(".") else v     # the full stop of a sentence is no part of the number (TASK-32)
+    return bool(v.isdigit() and _MEASURE_LABEL_RE.search(_label_before(text, start)))
 
 
 # the checks that drop a hit, by name: (text, match, start, end, secret) -> drop? A rule lists the ones it takes

@@ -4,10 +4,12 @@ title: 'Bench: Kaggle PII Data Detection as a real-text check'
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:40'
+updated_date: '2026-10-12 09:27'
 labels:
   - benchmark
   - dataset
-dependencies: []
+dependencies:
+  - TASK-17
 parent_task_id: TASK-11
 priority: low
 ordinal: 64000
@@ -24,3 +26,9 @@ The Learning Agency Lab's Kaggle competition data: student essays, labelled by p
 - [ ] #1 The competition terms are recorded; the adapter is opt-in (off by default) and needs the user's own Kaggle account and acceptance of the terms
 - [ ] #2 An adapter and label table; the dataset is a guard (no weight in the mean) unless the usefulness check shows it adds information
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12: blocked on the user's Kaggle account and acceptance of the competition terms (inbox TASK-17). No work started.
+<!-- SECTION:NOTES:END -->
