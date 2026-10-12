@@ -39,7 +39,13 @@ text is already in the model's context.
 redact statement.pdf                    # writes statement.pdf.redacted.txt next to it
 redact lohn.xlsx --regions ch --drop-column Name
 redact notes.txt --out ~/prep           # writes ~/prep/notes.txt.redacted.txt
+redact ~/tax-2025 --recursive           # mirrors the tree into ~/tax-2025.redacted/
 ```
+
+A directory run redacts every supported file and mirrors the tree into `<dir>.redacted/` (or
+`--out`); subfolders only with `--recursive`. Unsupported files, a PDF without text and a link
+that points outside the tree are skipped with one line each; an output inside the source tree is
+refused; an output that exists is kept. One value keeps one placeholder across the whole run.
 
 Each value becomes a placeholder of its type (`⟦IBAN_1⟧`, `⟦SECRET_2⟧`); the same value keeps the
 same placeholder across a run. Without `--regions` the country rules of the person's maisecrets

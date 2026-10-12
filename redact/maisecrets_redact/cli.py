@@ -15,7 +15,9 @@ def parser() -> argparse.ArgumentParser:
         prog="redact", description="Extract the text of a document (PDF, CSV, Excel, text) and redact personal data "
                                    "and secrets in it, before the text goes to a language model. See docs/REDACT.md.")
     ap.add_argument("path", metavar="PATH", help="a file, or a directory to redact every supported file in")
-    ap.add_argument("--out", metavar="DIR", help="where the redacted text goes (default: next to the input)")
+    ap.add_argument("--out", metavar="DIR",
+                    help="where the redacted text goes (default: next to a file; <dir>.redacted for a directory)")
+    ap.add_argument("--recursive", "-r", action="store_true", help="for a directory: its subfolders too")
     ap.add_argument("--regions", metavar="LIST",
                     help="country rules, comma-separated (for example ch,de); default: your maisecrets config")
     ap.add_argument("--drop-column", metavar="HEADER", action="append", default=[],
@@ -57,8 +59,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     from . import app
     src = Path(args.path)
+    if src.is_dir():
+        return _run_dir(args, src)
     if not src.is_file():
-        print(f"redact: {src}: not a file (directories come with TASK-34.6)", file=sys.stderr)
+        print(f"redact: {src}: no such file or directory", file=sys.stderr)
         return 2
     target = Path(args.out) / (src.name + ".redacted.txt") if args.out else src.with_name(src.name + ".redacted.txt")
     if target.exists():
@@ -82,3 +86,24 @@ def main(argv: list[str] | None = None) -> int:
     found = ", ".join(f"{t} {n}" for t, n in sorted(result.counts.items())) or "nothing found"
     print(f"redact: {src.name} -> {target} ({found})", file=sys.stderr)
     return 0
+
+
+def _run_dir(args, src: Path) -> int:
+    from . import app
+    out = Path(args.out) if args.out else src.with_name(src.name + ".redacted")
+    regions = tuple(r.strip().lower() for r in args.regions.split(",") if r.strip()) if args.regions else None
+    try:
+        summary = app.run_dir(src, out, _model_detectors(args), regions, interactive=sys.stdin.isatty(),
+                              recursive=args.recursive, ask=_ask, no_review=args.no_review,
+                              drop_columns=frozenset(args.drop_column),
+                              log=lambda line: print(f"redact: {line}", file=sys.stderr))
+    except RuntimeError as exc:
+        print(f"redact: {exc}; nothing is written", file=sys.stderr)
+        return 2
+    except (review.StaleReview, KeyError, ValueError) as exc:
+        print(f"redact: {exc}", file=sys.stderr)
+        return 1
+    found = ", ".join(f"{t} {n}" for t, n in sorted(summary.counts.items())) or "nothing found"
+    print(f"redact: {src} -> {out}: {summary.written} written, {summary.review} waiting on review, "
+          f"{summary.skipped} skipped, {summary.exists} already there ({found})", file=sys.stderr)
+    return 3 if summary.review else 0
