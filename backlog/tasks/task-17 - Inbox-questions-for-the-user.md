@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 09:52'
+updated_date: '2026-10-12 10:06'
 labels:
   - inbox
 dependencies: []
@@ -79,5 +79,15 @@ TASK-11.36 (Kaggle PII Data Detection as a real-text check): needs your Kaggle a
 created: 2026-10-12 09:52
 ---
 User, 2026-10-12: TASK-23 accept (the TASK-21.8 verdict decides; the extra hits are mostly unlabelled numbers). TASK-25: drop AC #2. TASK-11.36: the Kaggle details come later. TASK-19.2: switch generic-password and generic-credential-uri off until TASK-19.3 benches them.
+---
+
+created: 2026-10-12 10:04
+---
+User, 2026-10-12: accepted every recommendation of comments #1-#6. #1 approve TASK-11.28..11.31 (each re-judged on the clean gold under the floor verdict); #2 the tolerance rule is superseded by the floor verdict (TASK-21); #3 the scorer leaves a hit at offset 0 of an ai4privacy continuation record neutral and reports note that ai4privacy precision is a lower bound (TASK-33); #4 TASK-11.32 stays in the bench, closed; #5 Nemotron, Mendeley and findocs stay scored; #6 floors.toml weights (Gretel, findocs 2.0) and the SECRET split confirmed. Still open: the Kaggle details (TASK-11.36).
+---
+
+created: 2026-10-12 10:06
+---
+TASK-34.7 (redact --reversible): the vault that maps placeholders back to values is the most sensitive file of the tool. Options: (a) reuse the plugin's store backends (keychain on macOS, Credential Locker on Windows, encrypted file on Linux) under a separate service name per run; (b) a separate encrypted file per run (key from a passphrase or a key file), kept away from the output; (c) build it only once your friends confirm the PHI use case. I recommend (b) with (c): a per-run file can be handed over with the redacted text and deleted afterwards, unlike entries in the keychain, and the spec defers the mode until the use case is confirmed. Also: is the PHI use case confirmed?
 ---
 <!-- COMMENTS:END -->

@@ -4,12 +4,11 @@ title: 'Plugin: us-bank needs a bank word just before the number'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:44'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 10:04'
 labels:
   - plugin
   - benchmark
 dependencies:
-  - TASK-17
   - TASK-19.7
 parent_task_id: TASK-11
 priority: medium
@@ -29,3 +28,9 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 - [ ] #1 detect.py's us-bank asks for an account/bank word within 30 non-digit characters before the number, as the mutation does
 - [ ] #2 A can-fail belief or corpus case covers it; unit tests, replay_can_fail and the bench rerun pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12: approved by the user (inbox TASK-17 #1). Re-judge on the clean gold (TASK-30/31) under the floor verdict (TASK-21.8) before it lands.
+<!-- SECTION:NOTES:END -->
