@@ -1,10 +1,10 @@
 ---
 id: TASK-11.25
 title: 'Experiment: a normaliser with an offset map before the shape rules'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 12:28'
 labels:
   - benchmark
 dependencies:

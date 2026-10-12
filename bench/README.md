@@ -25,6 +25,7 @@ uv run --project bench python bench/usefulness.py                    # is each d
 uv run --project bench python bench/mutate.py bench/mutations/*.toml --guard tab
 uv run --project bench python bench/errors.py                        # false positives and misses, masked
 uv run --project bench python bench/audit.py                         # gold that fails a validity rule, masked
+uv run --project bench python bench/recommend.py --mutations <dir>   # one page per round for the plugin's owner
 ```
 
 ## Datasets
@@ -61,6 +62,7 @@ builds it.
 | `bench/mutate.py <files> [--guard …]` | `<data>/mutations/<time>/report.md`, `results.json` | each rule change accepted (no dataset worse in recall, precision or clean samples), accepted within tolerance (no dataset's score lower, recall at most 0.5 points lower; `--recall-tolerance`) or rejected with the reason, ranked by verdict and the change of the mean score |
 | `bench/perturb.py [--only …] [--per-dataset 400]` | `<data>/perturb/<time>/report.md`, `results.json` | recall per dataset when every positive is rewritten by one transform (zero-width, soft hyphen, fullwidth, homoglyph, ANSI reset, CR, wrap, base64, hex, entity, escape, truncation) |
 | `bench/loo.py [--baseline …]` | `<data>/loo/<time>/report.md`, `results.json`, `mutations/` | each rule that fired, disabled on its own and judged as `mutate.py` does: an accepted removal is a candidate, the rejected ones are the rules that earn their place |
+| `bench/recommend.py --mutations <dirs> [--baseline …]` | `<data>/recommendations/<time>/recommendations.md` | one page per round: baseline per dataset, recall floors per type, the accepted rule changes with per-dataset deltas, the rejected ones with their reason, the rules that never fire, how to reproduce; no local-only dataset (ai4privacy), no value (TASK-11.14) |
 | `bench/audit.py [--only …]` | `<data>/audit/<time>/report.md`, `results.json` | per dataset and type: positives that fail each candidate validity rule (`maisecrets_bench/audit.py`), with example shapes; what `validgold.py` and `bench/gold_exceptions.json` are chosen from (TASK-30) |
 | `bench/errors.py [--split dev]` | `errors-dev.md`, `errors-dev.jsonl` in the run | false positives by rule and misses by type, by shape and the common words before them |
 
