@@ -1,10 +1,10 @@
 ---
 id: TASK-19.1
 title: Betterleaks sync script with a filter-expression converter (test first)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 05:03'
 labels:
   - detection
   - tdd
@@ -29,7 +29,13 @@ Rule filters are expressions (CEL in v1.9, Expr in v2). The functions in use are
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Unit tests first: each supported function and operator, both naming styles, and a rule whose filter uses anything unknown makes the sync fail and names the rule (no rule is vendored without its filter)
-- [ ] #2 Running it against v1.9.0 and v2.0.0-rc.2 converts every rule or fails loudly; the result for v1.9.0 is committed
-- [ ] #3 scripts/check_vendored_rules.py and tests/test_vendored_rules.py cover the new files the way they cover gitleaks
+- [x] #1 Unit tests first: each supported function and operator, both naming styles, and a rule whose filter uses anything unknown makes the sync fail and names the rule (no rule is vendored without its filter)
+- [x] #2 Running it against v1.9.0 and v2.0.0-rc.2 converts every rule or fails loudly; the result for v1.9.0 is committed
+- [x] #3 scripts/check_vendored_rules.py and tests/test_vendored_rules.py cover the new files the way they cover gitleaks
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+scripts/sync_betterleaks.py vX.Y.Z [--check] fetches config/betterleaks.toml and LICENSE at the tag, parses each filter/prefilter expression (both filter.X v1.9 names and v2 names; let, ternary, slices, lists, raw strings, word operators) into a JSON tree, drops validate/analyze/revoke, maps valueGroup to secretGroup, and fails naming the rule on an unknown function, token or rule field. v1.9.0 (463 rules) and v2.0.0-rc.2 (466 rules) both convert; v1.9.0 is vendored (regenerated from the script, byte-identical). check_vendored_rules.py and its tests cover the four new files (version pairing, no rules, rule without id). The detector does not read betterleaks.json yet (TASK-19.2).
+<!-- SECTION:FINAL_SUMMARY:END -->

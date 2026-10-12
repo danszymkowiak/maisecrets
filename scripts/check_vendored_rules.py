@@ -5,7 +5,8 @@ Usage: scripts/check_vendored_rules.py
 
 Each generated file is a regular file (no symlink) of a sane size, every JSON file parses, each
 version file holds one version, and the JSON of detect-secrets and Presidio names the version its
-version file names: a commit that moves one of these two version files alone is red. gitleaks.json
+version file names: a commit that moves one of these two version files alone is red. Betterleaks
+is checked the same way (betterleaks.json names its version, and every rule has an id). gitleaks.json
 carries no version, so for gitleaks only the sync script keeps the two together.
 """
 from __future__ import annotations
@@ -19,10 +20,11 @@ ROOT = Path(__file__).resolve().parent.parent
 RULES = "maisecrets/rules"
 GENERATED = ("GITLEAKS_VERSION", "gitleaks.toml", "gitleaks.json", "LICENSE-gitleaks",
              "DETECT_SECRETS_VERSION", "detect_secrets.json", "LICENSE-detect-secrets",
-             "PRESIDIO_VERSION", "presidio.json", "LICENSE-presidio")
+             "PRESIDIO_VERSION", "presidio.json", "LICENSE-presidio",
+             "BETTERLEAKS_VERSION", "betterleaks.toml", "betterleaks.json", "LICENSE-betterleaks")
 MAX_BYTES = 2_000_000
 VERSION_RE = {"GITLEAKS_VERSION": r"v\d+\.\d+\.\d+", "DETECT_SECRETS_VERSION": r"v\d+\.\d+\.\d+",
-              "PRESIDIO_VERSION": r"\d+\.\d+\.\d+"}
+              "PRESIDIO_VERSION": r"\d+\.\d+\.\d+", "BETTERLEAKS_VERSION": r"v\d+\.\d+\.\d+(?:-rc\.\d+)?"}
 
 
 def problems(root: Path = ROOT) -> list[str]:
@@ -48,12 +50,17 @@ def problems(root: Path = ROOT) -> list[str]:
         if not re.fullmatch(rx, version[name]):
             out.append(f"{name}: not a version")
     for json_name, key, version_name in (("detect_secrets.json", "detect_secrets_version", "DETECT_SECRETS_VERSION"),
-                                         ("presidio.json", "presidio_version", "PRESIDIO_VERSION")):
+                                         ("presidio.json", "presidio_version", "PRESIDIO_VERSION"),
+                                         ("betterleaks.json", "version", "BETTERLEAKS_VERSION")):
         got = data.get(json_name, {}).get(key) if isinstance(data.get(json_name), dict) else None
         if got != version[version_name]:
             out.append(f"{json_name} is for {got!r}, {version_name} names {version[version_name]!r}")
-    if not isinstance(data.get("gitleaks.json"), dict) or not data["gitleaks.json"].get("rules"):
-        out.append("gitleaks.json: no rules")
+    for name in ("gitleaks.json", "betterleaks.json"):
+        if not isinstance(data.get(name), dict) or not data[name].get("rules"):
+            out.append(f"{name}: no rules")
+    bl = data.get("betterleaks.json")
+    if isinstance(bl, dict) and any(not isinstance(r, dict) or not r.get("id") for r in bl.get("rules", [])):
+        out.append("betterleaks.json: a rule without an id")
     return out
 
 

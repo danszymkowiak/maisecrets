@@ -28,7 +28,8 @@ class VendoredRulesTests(unittest.TestCase):
 
     def test_a_version_file_moved_alone_is_refused(self):
         # a version moved without its rules (a sync that did not run): it must not pass the pipeline
-        for name, new in (("PRESIDIO_VERSION", "9.9.999"), ("DETECT_SECRETS_VERSION", "v9.9.9")):
+        for name, new in (("PRESIDIO_VERSION", "9.9.999"), ("DETECT_SECRETS_VERSION", "v9.9.9"),
+                          ("BETTERLEAKS_VERSION", "v9.9.9")):
             with self.subTest(name):
                 saved = (self.rules / name).read_text(encoding="utf-8")
                 (self.rules / name).write_text(new + "\n", encoding="utf-8")
@@ -52,9 +53,20 @@ class VendoredRulesTests(unittest.TestCase):
         if not symlinked and os.name != "nt":
             self.fail("a symlink could not be made outside Windows")
 
-    def test_a_gitleaks_json_without_rules_is_refused(self):
-        (self.rules / "gitleaks.json").write_text(json.dumps({"title": "x"}), encoding="utf-8")
-        self.assertIn("gitleaks.json: no rules", cvr.problems(self.root))
+    def test_a_rules_json_without_rules_is_refused(self):
+        for name, extra in (("gitleaks.json", {}), ("betterleaks.json", {"version": "v1.9.0"})):
+            with self.subTest(name):
+                saved = (self.rules / name).read_text(encoding="utf-8")
+                (self.rules / name).write_text(json.dumps({"title": "x", **extra}), encoding="utf-8")
+                self.assertIn(f"{name}: no rules", cvr.problems(self.root))
+                (self.rules / name).write_text(saved, encoding="utf-8")
+
+    def test_a_betterleaks_rule_without_an_id_is_refused(self):
+        p = self.rules / "betterleaks.json"
+        data = json.loads(p.read_text(encoding="utf-8"))
+        data["rules"].append({"regex": "x"})
+        p.write_text(json.dumps(data), encoding="utf-8")
+        self.assertIn("betterleaks.json: a rule without an id", cvr.problems(self.root))
 
 
 if __name__ == "__main__":
