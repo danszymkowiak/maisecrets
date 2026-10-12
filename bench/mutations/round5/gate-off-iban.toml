@@ -1,0 +1,8 @@
+name = "iban: no context word required"
+why = "TASK-21.9: the relaxed run (curves 20261012-194832) finds more true positives without its context gate; judged by the floors first."
+
+[[change]]
+op = "set"
+rule = "iban"
+require_context = false
+score = 1.0

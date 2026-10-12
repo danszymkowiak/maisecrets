@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 20:13'
+updated_date: '2026-10-12 20:49'
 labels:
   - inbox
 dependencies: []
@@ -38,6 +38,8 @@ TASK-38 and TASK-39 (from leave-one-out, both accepted on the bench): (38) de-va
 TASK-34.8, your variant (all four, 2 of 4, privacy-filter's lone spans dropped, not reviewed), from the cached rules-first spans: names 88 %, addresses 90 %, birth dates 100 %, phones 100 %, accounts 98 %; 7.2 false redactions and 9 review prompts per 1,000 words (25 when they are asked). I now recommend it over 2 of 3. To ship it: urchade back among the defaults, and a vote rule redact lacks (k of N, plus a model whose lone spans are never asked about). Shall I implement it as the default?
 
 Answered by the user 2026-10-12: redact's vote is all four models, 2 of 4, privacy-filter's lone spans not reviewed; implemented as the default (55bfff7). The TASK-34.8 vote questions above are settled.
+
+TASK-40 (operating points, TASK-21.9): credit-card without its context-word gate and generic-api-key's entropy bar from 3.5 to 3.3. Together on the bench: +325 card numbers, +259 generic secrets, +12 bank numbers, for 167 more false positives (+0.003 weighted per 1,000 tokens). Options: (a) both, (b) cards only, (c) neither. I recommend (a): the floors put recall first, and card numbers are critical.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

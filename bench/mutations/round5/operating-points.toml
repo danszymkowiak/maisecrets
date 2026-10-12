@@ -1,0 +1,13 @@
+name = "Operating points: credit-card without its context gate, generic-api-key entropy 3.3"
+why = "TASK-21.9: the two operating-point changes that gain finds of their own type: +325 cards for +66 false positives, +259 generic secrets for +101 (mutation run 20261012-224331). Judged together because rules interact."
+
+[[change]]
+op = "set"
+rule = "credit-card"
+require_context = false
+score = 1.0
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+entropy = 3.3

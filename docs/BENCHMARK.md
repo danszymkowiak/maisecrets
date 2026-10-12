@@ -573,6 +573,30 @@ Nemotron 0.064, Mendeley and findocs 0).
 The verdicts below (strict, within tolerance) came first. They stay in the reports as a comparison
 column until TASK-21.10 has re-judged the mutations accepted under them.
 
+### Operating points (TASK-21.9, 2026-10-12)
+
+From the curves of baseline 20261012-194832 (`bench/curves.py`): one entropy rule is left (generic-api-key, 3.5)
+and the Presidio rules have a context gate, on or off. Each candidate was judged as a mutation (run
+20261012-224331); the counts are the finds gained and false positives added over the whole bench.
+
+| change | verdict | finds gained | false positives added |
+|---|---|---|---|
+| credit-card without its context gate | accepted | CARD +325, US_BANK_NUMBER +12 | +66 |
+| generic-api-key entropy 3.3 (today 3.5) | accepted | SECRET_GENERIC +259 | +101 |
+| us-ssn#0 without its gate | accepted | PHONE +175 (a phone number in an SSN shape) | +86 |
+| us-itin#0 without its gate | accepted | PHONE +51 | +6 |
+| us-npi#1 without its gate | accepted | PHONE +5 | +2 |
+| aba-routing#0 without its gate | accepted | ABA +18, PHONE +227, US_BANK_NUMBER +26 | +2,503 |
+| iban, ip#2, ip#3, us-ssn#2 without their gate | neutral | - | - |
+| generic-api-key entropy 3.4 | neutral | - | - |
+| generic-api-key entropy 3.6 to 4.0 | rejected | generic secrets lost | - |
+
+Floors come first, so a narrowed gap accepts a change that adds false positives. Of these, two gain finds of their
+own type at a fair price: credit-card without the gate and generic-api-key at 3.3. Applied together (run
+20261012-224916) they are accepted: CARD +325, SECRET_GENERIC +259, US_BANK_NUMBER +12, 167 more false positives,
+weighted false positives per 1,000 tokens +0.003, mean score +0.22. The ID rules gain only phone numbers they mistype,
+and aba-routing#0 pays 2,503 false alarms for them. Applying the pair waits for the user (TASK-40).
+
 ### Leave-one-out (TASK-18, 2026-10-12)
 
 Each of the 94 rules that fire in baseline 20261012-194832 was left out on its own (`bench/loo.py`, run

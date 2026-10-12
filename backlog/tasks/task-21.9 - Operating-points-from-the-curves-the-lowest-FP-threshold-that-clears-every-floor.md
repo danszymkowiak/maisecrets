@@ -3,10 +3,10 @@ id: TASK-21.9
 title: >-
   Operating points from the curves: the lowest-FP threshold that clears every
   floor
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-12 19:36'
+updated_date: '2026-10-12 20:49'
 labels:
   - benchmark
 dependencies:
@@ -27,6 +27,12 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A report lists, per rule with a curve, the current threshold, the chosen one, and the FP/1k and recall change
-- [ ] #2 The chosen thresholds, applied together, are judged as one mutation and the result recorded
+- [x] #1 A report lists, per rule with a curve, the current threshold, the chosen one, and the FP/1k and recall change
+- [x] #2 The chosen thresholds, applied together, are judged as one mutation and the result recorded
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Operating points searched and judged (docs/BENCHMARK.md, Operating points): credit-card without its gate and generic-api-key at entropy 3.3 accepted together (run 20261012-224916: CARD +325, SECRET_GENERIC +259, +167 false positives). Plugin change TASK-40 waits for the user.
+<!-- SECTION:FINAL_SUMMARY:END -->

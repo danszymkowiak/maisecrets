@@ -1,0 +1,7 @@
+name = "generic-api-key: entropy threshold 3.8"
+why = "TASK-21.9: the operating point search (today 3.5; curve 20261012-194832)."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+entropy = 3.8
