@@ -8,8 +8,9 @@
 # user-as-password        `-u app:app`: the password repeats the user name
 # sigv4-key-id            the access key id in a SigV4 credential scope (a presigned URL), not the secret half
 # ds-value                detect-secrets' value filter (templates, $VAR, sequences)
+# upper-dash-identifier   an identifier constant such as PROD-DB-PASS_7 (TASK-11.30)
 # off                     the rule is not loaded at all (alone on its line)
-generic-api-key        word-path uuid-elided-or-derived
+generic-api-key        word-path uuid-elided-or-derived upper-dash-identifier
 curl-auth-user         user-as-password
 aws-access-token       sigv4-key-id
 hashicorp-tf-password  ds-value

@@ -736,6 +736,9 @@ def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]
 # holds spaces. A cut value that is one capitalised word ("secret: Developers, Webhooks, …",
 # "a secret: PostToolUse must …", both in this repository) is the start of a sentence.
 _DS_QUOTE_GROUP = {"ds-keyword-colon": 3, "ds-keyword-equal-signs": 4}
+# fixes judged on the bench for one keyword rule each (TASK-11.30); the shared ones are DS_KEYWORD_FIXES
+_DS_EXTRA_FIXES = {"ds-keyword-colon": ("upper-dash-identifier", "time-or-ratio"),
+                   "ds-keyword-equal-signs": ("upper-dash-identifier",)}
 # a function word right after a letters-only value: the label opened a sentence, not a value. Only the label
 # languages' commonest joining words, so that a password followed by a comment or a line break still counts.
 # Applied only in a markdown table cell (TASK-15): upstream keeps a password label with a word and prose after it
@@ -779,8 +782,8 @@ def _load_detect_secrets(languages: tuple[str, ...] = ("en",)) -> list[Rule]:
                         keywords=() if r["id"] == "ds-basic-auth" else kws,
                         secret_group=int(r["group"]), validator="ds_value",
                         quote_group=_DS_QUOTE_GROUP.get(r["id"], 0),
-                        fixes=DS_KEYWORD_FIXES if keyword_rule else ("user-as-password",) if r["id"] == "ds-basic-auth"
-                        else (),
+                        fixes=DS_KEYWORD_FIXES + _DS_EXTRA_FIXES.get(r["id"], ()) if keyword_rule
+                        else ("user-as-password",) if r["id"] == "ds-basic-auth" else (),
                         value_after_anchor=keyword_rule))
     return out
 
@@ -1377,6 +1380,8 @@ def _measure_number(text: str, m, start: int, end: int, secret: str) -> bool:
 # the checks that drop a hit, by name: (text, match, start, end, secret) -> drop? A rule lists the ones it takes
 # (Rule.fixes): its loader sets them, and rules/overrides.txt for a vendored rule by its upstream ID (TASK-19.2,
 # TASK-26). The bench switches one off by name (op = "unfix")
+_UPPER_DASH_IDENTIFIER_RE = re.compile(r"[\"'`]?[A-Z]+(?:-[A-Z]+)+_")
+_TIME_OR_RATIO_RE = re.compile(r"[\"'`]?\d+:[a-z]+[\"'`]?")
 DS_KEYWORD_FIXES = ("code-value", "names-its-label", "prose-in-table-cell", "label-on-next-line", "measure-number",
                     "uuid-elided-or-derived")
 FIXES = {
@@ -1400,6 +1405,10 @@ FIXES = {
     "sigv4-key-id": lambda text, m, start, end, secret: bool(
         _SIGV4_CREDENTIAL_RE.search(text, max(0, start - 24), start) and _SIGV4_SCOPE_RE.match(text, end)),
     "ds-value": lambda text, m, start, end, secret: not _ds_value_ok(secret.strip("\"'")),
+    # an identifier constant, PROD-DB-PASS_7: CredData 375 false alarms of the shape, no true find (TASK-11.30)
+    "upper-dash-identifier": lambda text, m, start, end, secret: bool(_UPPER_DASH_IDENTIFIER_RE.match(secret)),
+    # a time or a ratio after a colon label, 0:default (TASK-11.30)
+    "time-or-ratio": lambda text, m, start, end, secret: bool(_TIME_OR_RATIO_RE.fullmatch(secret)),
 }
 
 

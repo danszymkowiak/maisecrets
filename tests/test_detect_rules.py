@@ -722,6 +722,21 @@ class LabelValueTests(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(kinds(text), [])
 
+    def test_an_upper_dash_identifier_value_is_no_secret(self):
+        # TASK-11.30: CredData had 375 false alarms of this shape and no true find on any dataset
+        for text in ("pass§word = PROD-DB-PASS_7", "pass§word: AZURE-STORAGE-KEY_V2",
+                     "tok§en = OAUTH-CLIENT-SECRET_k8s"):
+            with self.subTest(text=text):
+                self.assertEqual(kinds(text), [])
+        for text, value in (("pass§word = Xk-9_mQ2rTz", "Xk-9_mQ2rTz"), ("pass§word = LDAP-Bind_x7Q", "LDAP-Bind_x7Q")):
+            with self.subTest(text=text):
+                self.assertEqual([v for _, v in kinds(text)], [value])
+
+    def test_digits_a_colon_and_a_word_after_a_colon_label_is_no_secret(self):
+        # TASK-11.30: a time or a ratio (CredData: 33 false alarms, no true find)
+        self.assertEqual(kinds("pass§word: 0:default"), [])
+        self.assertEqual([v for _, v in kinds("pass§word: 0:default9X")], ["0:default9X"])
+
     def test_the_credential_words_that_start_with_pass_stay_labels(self):
         for text in ("pass§: abababab12", "Pass§: abababab12", "db_pass§: abababab12", "pass§wd: abababab12",
                      "pass§phrase: abababab12", "pass§code: abababab12", "pass§key: abababab12",

@@ -602,6 +602,11 @@ NO_HIT = [
     ('md prose after keyword', '| s§ecrets: precision and recall; values obfuscated with their shape kept |'),
     ('md prose after singular keyword', '| p§assword: rotation and storage |'),
     ('de md prose after keyword', '| K§ennwort: speicherung und rotation |'),
+    # TASK-11.30: an identifier constant and a time or ratio after a credential label
+    ('identifier constant colon', 'p§assword: AZURE-STORAGE-KEY_V2'),
+    ('identifier constant equals', 't§oken = OAUTH-CLIENT-SECRET_k8s'),
+    ('identifier constant generic', 'export MY_A§PI_K§EY=PROD-DB-PASS_7'),
+    ('time or ratio', 's§ecret: 0:default'),
 ]
 
 HIT = [
