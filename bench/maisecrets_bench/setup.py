@@ -166,5 +166,22 @@ def ai4privacy_source(cache: Path) -> Source:
                   lambda: {"dropped": stats.dropped, "licence": "academic and non-commercial use only; local"})
 
 
+def kagglepii_source(cache: Path) -> Source:
+    """Opt-in and local: the user's own Kaggle account, the competition rules accepted there
+    (maisecrets_bench/adapters/kagglepii.py). The version is the size of train.json and the adapter's revision."""
+    from .adapters import kagglepii
+    from .paths import REPO
+    stats = kagglepii.Stats()
+    path: list = []
+
+    def version() -> str:
+        path[:] = [kagglepii.download(cache, REPO)]
+        return f"{path[0].stat().st_size}:{kagglepii.REVISION}"
+
+    return Source("kagglepii", version,
+                  lambda: kagglepii.samples(kagglepii.records(path[0]), load_table("kagglepii"), stats),
+                  lambda: {"dropped": stats.dropped, "licence": "not yet recorded; local (TASK-11.36)"})
+
+
 def default_out() -> Path:
     return data_dir() / "parquet"

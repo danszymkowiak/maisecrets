@@ -33,7 +33,8 @@ UNLABELLED_NEGATIVE = {"creddata": False}
 DROPPED = {"tab"}
 # a dataset that guards: a change must not make it worse, but it has no weight in the overall mean. The generated
 # tool output is ours, so tuning to it would be circular (docs/BENCHMARK.md, Synthetic tool output)
-GUARD = {"synthetic"}
+# kagglepii: real essays, but only personal values are labelled; a guard until the usefulness check (TASK-11.36)
+GUARD = {"synthetic", "kagglepii"}
 
 
 def default_roles(names) -> dict:
@@ -44,7 +45,9 @@ def default_roles(names) -> dict:
 LOCAL_ONLY = {"ai4privacy": "ai4privacy: academic and non-commercial use only (AI4Privacy licence). Local "
                             "measurement; leave it out of anything sent upstream. The plugin's owner needs "
                             "AI4Privacy's permission first (licensing@ai4privacy.com). Its precision is a lower "
-                            "bound: its generator also wrote values outside the labelled slots (TASK-33)."}
+                            "bound: its generator also wrote values outside the labelled slots (TASK-33).",
+              "kagglepii": "kagglepii: The Learning Agency Lab - PII Data Detection (Kaggle competition data). Local "
+                           "until its licence is recorded (TASK-11.36); leave it out of anything sent upstream."}
 
 
 def default_datasets(manifest: dict) -> list[str]:

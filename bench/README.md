@@ -40,6 +40,7 @@ uv run --project bench python bench/recommend.py --mutations <dir>   # one page 
 | findocs (generated) | 3,300 Swiss salary certificates and tax returns (de, fr), bank statements, MT940 and CSV exports, QR-bills, US W-2 and 1099 forms, invoices | ours | generated from a fixed seed; nothing downloaded |
 | synthetic tool output | 3,000 generated terminal outputs (printenv, git diff, kubectl, lockfiles, ...); a guard, not in the mean | ours | generated from a fixed seed; nothing downloaded |
 | ai4privacy pii-masking-300k | 225,405 records in 6 languages | **academic and non-commercial use only** (AI4Privacy licence) | opt-in: `--with-ai4privacy`, for your own local measurement |
+| The Learning Agency Lab - PII Data Detection (Kaggle) | about 6,800 student essays, labelled by people | **competition data: your Kaggle account must accept the competition rules**; licence not yet recorded | opt-in: `--with-kaggle-pii`, local, a guard |
 
 Each dataset becomes `<data>/parquet/<dataset>.parquet` in one schema, with a dev or check split by source.
 `manifest.json` records the versions and counts; a second setup run with the same versions builds nothing.
@@ -49,6 +50,12 @@ Each dataset becomes `<data>/parquet/<dataset>.parquet` in one schema, with a de
 from AI4Privacy for derivative works. The bench builds it only on request, every report that includes it says so,
 and its results stay out of anything sent upstream. **If you maintain maisecrets, get AI4Privacy's permission
 (licensing@ai4privacy.com) before you run the bench with it.**
+
+**The Kaggle competition data.** Kaggle hands it out only to an account that has accepted the competition's
+rules (kaggle.com/competitions/pii-detection-removal-from-educational-data, Join Competition). Put your
+own API token into `KAGGLE_API_TOKEN` (the environment, or `.env` at the repository root, which git
+ignores); the setup passes it to the Kaggle CLI and never prints it. Until its licence is recorded here
+(TASK-11.36) its results stay local, like ai4privacy's.
 
 **TAB** was dropped after the first run (saturated and out of scope, `docs/BENCHMARK.md`); `--only tab` still
 builds it.

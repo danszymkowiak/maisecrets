@@ -1,0 +1,13 @@
+# The Learning Agency Lab - PII Data Detection (maisecrets_bench/adapters/kagglepii.py): the competition's labels.
+# Only personal values are labelled (a student's own name, not a cited author's), so an unlabelled e-mail or URL may
+# be an institution's: precision here is a lower bound. Names, usernames, ID numbers, URLs and street addresses are
+# not types the plugin claims.
+
+[labels]
+EMAIL = "EMAIL"
+PHONE_NUM = "PHONE"
+NAME_STUDENT = "OUT_OF_SCOPE"
+USERNAME = "OUT_OF_SCOPE"
+ID_NUM = "OUT_OF_SCOPE"
+URL_PERSONAL = "OUT_OF_SCOPE"
+STREET_ADDRESS = "OUT_OF_SCOPE"
