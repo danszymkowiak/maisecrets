@@ -632,7 +632,8 @@ def _load_vendored_secrets(name: str) -> list[Rule]:
 ENTITY_TYPE = {"EMAIL_ADDRESS": "EMAIL", "IBAN_CODE": "IBAN", "CREDIT_CARD": "CARD",
                "IP_ADDRESS": "IP", "PHONE_NUMBER": "PHONE"}
 # covered by OWN_RULES with bounded regexes and validators, or not PII worth a placeholder
-PRESIDIO_SKIP = {"email", "url", "date", "mac-address", "uuid", "phone", "crypto"}
+# uk-postcode: false alarms only on the bench, and a postcode alone identifies no one (TASK-11.31)
+PRESIDIO_SKIP = {"email", "url", "date", "mac-address", "uuid", "phone", "crypto", "uk-postcode"}
 # validator id per presidio recognizer id; a recognizer with a validator we did not port
 # keeps its pattern score and is treated as weak (context required)
 PRESIDIO_VALIDATOR = {"iban": "iban", "credit-card": "luhn", "ip": "public_ip",
