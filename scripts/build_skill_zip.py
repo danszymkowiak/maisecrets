@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "secret-hygiene"
-DETECTOR = ("maisecrets/__init__.py", "maisecrets/detect.py", "maisecrets/regions.py")
+DETECTOR = ("maisecrets/__init__.py", "maisecrets/detect.py", "maisecrets/filterexpr.py", "maisecrets/regions.py")
 OPENAI_NAME = "maisecrets-secret-hygiene"
 
 

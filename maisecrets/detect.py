@@ -38,10 +38,15 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import filterexpr
+
 RULES_DIR = Path(__file__).resolve().parent / "rules"
 # normaliser stages (maisecrets/normalise.py) whose cleaned copy the shape rules scan as well: off until the bench has
 # judged them (TASK-11.25)
 NORMALISE: tuple[str, ...] = ()
+# the vendored secret rule set: "gitleaks" or "betterleaks" (TASK-19). The bench compares both (TASK-19.3); TASK-19.4
+# switches and removes gitleaks
+SECRET_RULES = "gitleaks"
 
 
 @dataclass(frozen=True)
@@ -92,6 +97,8 @@ class Rule:
     require_context: bool = False      # weak shape: accept only with a context word nearby
     whole_match: bool = False          # presidio: the entity is the whole match, never a sub-group
     quote_group: int = 0               # detect-secrets: group of the optional opening quote
+    filter: object = None              # Betterleaks: the converted filter tree; true drops the hit (filterexpr.py)
+    fixes: tuple[str, ...] = ()        # our fixes of a vendored rule (rules/overrides.txt, FIXES below)
 
 
 # ----------------------------------------------------------------- helpers --
@@ -471,7 +478,37 @@ OWN_RULES: list[dict] = [
 
 
 # ------------------------------------------------------------- rule loading --
+def _load_overrides(text: str | None = None) -> dict[str, tuple[str, ...]]:
+    """rules/overrides.txt: `rule-id  fix fix ...` per line, our fixes of vendored rules by upstream rule ID."""
+    if text is None:
+        text = (RULES_DIR / "overrides.txt").read_text(encoding="utf-8")
+    out: dict[str, tuple[str, ...]] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            rule_id, *fixes = line.split()
+            out[rule_id] = tuple(fixes)
+    return out
+
+
+def override_problems(text: str | None = None) -> list[str]:
+    """What is wrong in rules/overrides.txt: a rule ID that no vendored set has (upstream renamed or dropped it, and
+    the fix went stale) or a fix that FIXES does not know."""
+    vendored = set()
+    for name in ("gitleaks.json", "betterleaks.json"):
+        path = RULES_DIR / name
+        if path.exists():
+            vendored |= {r["id"] for r in json.loads(path.read_text(encoding="utf-8")).get("rules", [])}
+    out = []
+    for rule_id, fixes in _load_overrides(text).items():
+        if rule_id not in vendored:
+            out.append(f"overrides.txt: {rule_id} is in no vendored rule set")
+        out += [f"overrides.txt: {rule_id} names an unknown fix {f!r}" for f in fixes if f not in FIXES]
+    return out
+
+
 def _load_gitleaks() -> list[Rule]:
+    fixes = _load_overrides()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")   # "possible nested set" in two gitleaks regexes
         # gitleaks.json is the same rules as JSON, for a Python without tomllib; a test keeps the two equal
@@ -492,9 +529,40 @@ def _load_gitleaks() -> list[Rule]:
                 id=r["id"], type="SECRET", regex=_Lazy(_re2_to_python(r["regex"])),
                 keywords=tuple(k.lower() for k in r.get("keywords", []) or ()),
                 entropy=float(r.get("entropy", 0) or 0), secret_group=int(r.get("secretGroup", 0) or 0),
-                allow_regexes=tuple(allow), stopwords=tuple(stop),
+                allow_regexes=tuple(allow), stopwords=tuple(stop), fixes=fixes.get(r["id"], ()),
             ))
     return rules
+
+
+def _load_betterleaks() -> list[Rule]:
+    """The converted Betterleaks rules (scripts/sync_betterleaks.py). Each rule's filter is joined with the global
+    filter by `||`. Left out: a rule without a regex (a path rule), a skipReport rule (only a component of a
+    multipart rule) and the path prefilter (the scanner sees text, not files). Components do not gate their primary
+    rule: a client secret is redacted with or without its client id nearby (TASK-19.3 benches the difference)."""
+    fixes = _load_overrides()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        cfg = json.loads((RULES_DIR / "betterleaks.json").read_text(encoding="utf-8"))
+    top = cfg.get("filter")
+    rules: list[Rule] = []
+    for r in cfg.get("rules", []):
+        if "regex" not in r or r.get("skipReport"):
+            continue
+        own = r.get("filter")
+        tree = ["bin", "||", top, own] if top and own else (top or own)
+        rules.append(Rule(
+            id=r["id"], type="SECRET", regex=_Lazy(_re2_to_python(r["regex"])),
+            keywords=tuple(k.lower() for k in r.get("keywords", []) or ()),
+            secret_group=int(r.get("secretGroup", 0) or 0), filter=tree, fixes=fixes.get(r["id"], ()),
+        ))
+    return rules
+
+
+def _load_vendored_secrets() -> list[Rule]:
+    loaders = {"gitleaks": _load_gitleaks, "betterleaks": _load_betterleaks}
+    if SECRET_RULES not in loaders:
+        raise ValueError(f"SECRET_RULES is {SECRET_RULES!r}: not one of {sorted(loaders)}")
+    return loaders[SECRET_RULES]()
 
 
 # entity -> placeholder type (short, stable); anything else keeps its entity name
@@ -623,14 +691,14 @@ _RULES: list[Rule] | None = None
 
 
 def rules() -> list[Rule]:
-    """Own secret rules first (longer shapes win the span), then gitleaks, then PII."""
+    """Own secret rules first (longer shapes win the span), then the vendored set (SECRET_RULES), then PII."""
     global _RULES
     if _RULES is None:
         own = _load_own()
         secrets = [r for r in own if r.type == "SECRET"]
         pii = [r for r in own if r.type != "SECRET"]
         active = active_regions()
-        _RULES = (secrets + _load_detect_secrets(active.languages) + _load_gitleaks()
+        _RULES = (secrets + _load_detect_secrets(active.languages) + _load_vendored_secrets()
                   + _load_presidio(active.regions) + pii)
     return _RULES
 
@@ -1125,6 +1193,27 @@ def _url_password_not_a_value(v: str) -> bool:
     return True
 
 
+def _uuid_elided_or_derived(text: str, m, start: int, end: int, secret: str) -> bool:
+    """A UUID without a secret label before it, an elided value (sk-...), or a label that names a derived thing
+    (secret_id)."""
+    return bool((_UUID_RE.fullmatch(secret.strip("\"'` ")) and not _SECRET_LABEL_RE.search(
+                    text, max(_line_start(text, start), start - 60), start))
+                or (_ELISION_RE.search(secret) and len(secret.rstrip(".\u2026")) < 20)
+                or _DERIVED_LABEL_RE.search(text, max(_line_start(text, start), start - 60), start))
+
+
+# our fixes of vendored rules, by the name rules/overrides.txt gives them: (text, match, start, end, secret) -> drop?
+FIXES = {
+    "word-path": lambda text, m, start, end, secret: bool(_WORD_PATH_RE.fullmatch(secret.strip("'\""))),
+    "uuid-elided-or-derived": _uuid_elided_or_derived,
+    "user-as-password": lambda text, m, start, end, secret: _pass_equals_user(m.group(0), secret),
+    # the key id in a SigV4 credential scope (a presigned URL, an Authorization header)
+    "sigv4-key-id": lambda text, m, start, end, secret: bool(
+        _SIGV4_CREDENTIAL_RE.search(text, max(0, start - 24), start) and _SIGV4_SCOPE_RE.match(text, end)),
+    "ds-value": lambda text, m, start, end, secret: not _ds_value_ok(secret.strip("\"'")),
+}
+
+
 def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False) -> list[Match]:
     """Return non-overlapping matches, leftmost first; the first rule to claim a span wins."""
     if not text:
@@ -1182,8 +1271,6 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
                     continue   # a YAML anchor or alias alone after a colon label: &gitlab_token_fields
             if rule.id.startswith("ds-keyword") and (is_code_word(secret) or value_is_code(text, start, end, secret)):
                 continue
-            if rule.id == "generic-api-key" and _WORD_PATH_RE.fullmatch(secret.strip("'\"")):
-                continue
             if rule.id.startswith("ds-keyword") and _names_its_label(text, start, secret):
                 continue
             if (rule.id.startswith("ds-keyword") and secret.isalpha() and secret.islower()
@@ -1200,20 +1287,13 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
             if (rule.id == "auth-scheme" and not any(c.isdigit() for c in secret)
                     and re.fullmatch(r"[A-Za-z]+(?:[_-][A-Za-z]+)+", secret)):
                 continue   # words, not a token: Bearer test_access_token
-            if (rule.id.startswith("ds-keyword") or rule.id == "generic-api-key") and (
-                    (_UUID_RE.fullmatch(secret.strip("\"'` ")) and not _SECRET_LABEL_RE.search(
-                        text, max(_line_start(text, start), start - 60), start))
-                    or (_ELISION_RE.search(secret) and len(secret.rstrip(".\u2026")) < 20)
-                    or _DERIVED_LABEL_RE.search(text, max(_line_start(text, start), start - 60), start)):
-                continue   # a UUID, an elided value (sk-...), or a label that names a derived thing (secret_id)
-            if rule.id in ("ds-basic-auth", "curl-auth-user") and _pass_equals_user(m.group(0), secret):
+            if rule.id.startswith("ds-keyword") and _uuid_elided_or_derived(text, m, start, end, secret):
                 continue
-            if (rule.id == "aws-access-token" and _SIGV4_CREDENTIAL_RE.search(text, max(0, start - 24), start)
-                    and _SIGV4_SCOPE_RE.match(text, end)):
-                continue   # the key id in a SigV4 credential scope (a presigned URL, an Authorization header)
+            if rule.id == "ds-basic-auth" and _pass_equals_user(m.group(0), secret):
+                continue
+            if rule.fixes and any(FIXES[f](text, m, start, end, secret) for f in rule.fixes):
+                continue   # our fixes of a vendored rule (rules/overrides.txt)
             if rule.id == "url-password-no-user" and _url_password_not_a_value(secret):
-                continue
-            if rule.id == "hashicorp-tf-password" and not _ds_value_ok(secret.strip("\"'")):
                 continue
             if rule.id == "phone" and not _phone_ok(text, start, secret):
                 continue
@@ -1222,6 +1302,9 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
             if overlaps(start, end):
                 continue
             if rule.entropy and shannon_entropy(secret) < rule.entropy:
+                continue
+            if rule.filter is not None and filterexpr.discards(rule.filter,
+                                                              filterexpr.finding(text, m.start(), m.end(), secret)):
                 continue
             if rule.validator:
                 try:

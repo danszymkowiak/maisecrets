@@ -6,5 +6,5 @@ runner = ["tests/test_detect_rules.py::ScanRuleTests::test_the_key_id_in_a_sigv4
 
 [proof]
 file = "maisecrets/detect.py"
-find = "                    and _SIGV4_SCOPE_RE.match(text, end)):"
-replace = "                    and True):"
+find = "_SIGV4_CREDENTIAL_RE.search(text, max(0, start - 24), start) and _SIGV4_SCOPE_RE.match(text, end)),"
+replace = "_SIGV4_CREDENTIAL_RE.search(text, max(0, start - 24), start) and True),"

@@ -1,0 +1,14 @@
+# Our fixes to vendored rules, keyed by the upstream rule ID (TASK-19.2; the pattern of Kingfisher's
+# imported-rules-capabilities.yml). One line per rule: `rule-id  fix fix ...`. Each fix is a check in
+# maisecrets/detect.py (FIXES) that drops a hit of that rule. A rule ID that no vendored set has any more
+# fails tests/test_betterleaks_rules.py: a fix must not go stale quietly after a rule sync.
+#
+# word-path               `key = "Europe/Dublin"`: words joined by `/` are a time zone or a path (2026-09-29)
+# uuid-elided-or-derived  a UUID without a secret label, an elided value (sk-...), a label naming a derived thing
+# user-as-password        `-u app:app`: the password repeats the user name
+# sigv4-key-id            the access key id in a SigV4 credential scope (a presigned URL), not the secret half
+# ds-value                detect-secrets' value filter (templates, $VAR, sequences)
+generic-api-key        word-path uuid-elided-or-derived
+curl-auth-user         user-as-password
+aws-access-token       sigv4-key-id
+hashicorp-tf-password  ds-value

@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-11 23:39'
+updated_date: '2026-10-12 05:27'
 labels:
   - inbox
 dependencies: []
@@ -49,5 +49,15 @@ TASK-11.34/11.35/11.37: the usefulness check (run 20261012-011327) says keep for
 created: 2026-10-11 23:39
 ---
 TASK-21.1/21.7: bench/floors.toml weighs gretel and findocs 2.0 in the false-positive objective (every other dataset 1.0), and splits SECRET into SECRET_PREFIXED (critical, 0.999: a CredData category naming a vendor token with a fixed shape, 36 parts listed in the file) and SECRET_GENERIC (no regression: API, Key, Password, Token, CMD/CURL/SQL passwords, URL credentials, ...). Options: (a) confirm 2.0 and the split as written; (b) another weight (name it); (c) move parts between prefixed and generic (name them). I recommend (a): 2.0 makes the two finance sets count as much as two others without letting one of them decide alone, and the split puts in the critical tier only shapes a dedicated rule can find. TASK-21.1 waits for this answer; the scoring code (TASK-21.8) does not.
+---
+
+created: 2026-10-12 05:27
+---
+INCIDENT (2026-10-12, TASK-19.2): to run the suite with Betterleaks on, I wrote a scratch runner that called detect.rules() BEFORE the tests imported tests/_isolate.py. That imported maisecrets.vault with no MAISECRETS_HOME set, so vault.HOME, INDEX, CONFIG and SERVICE were bound to the real ~/.maisecrets for the whole run (tests/test_core.py caught it at import, 6 tests failed on 'the vault home is the one _isolate made'). tests/test_vault.py ran, and its _reset() deletes HOME/index.json, vault.json, vault.enc.json, key, audit.log, events.log and writes config.json = {"backend": "jsonfile", "allow_plaintext_store": true}. So the real store's index, encrypted vault file and key are probably gone, and the real config.json probably now selects the PLAINTEXT jsonfile backend; any secret stored since then may sit in ~/.maisecrets/vault.json in the clear. I could not check: listing ~/.maisecrets was denied, and I did not try again. Please check ~/.maisecrets (file times around 2026-10-12, the config backend), restore from a backup if you have one, and delete any plaintext vault.json. The runner is deleted. Options for preventing this: (a) a new task: vault refuses the default home when a test marker (MAISECRETS_TEST_HOME_OWNED) is set but MAISECRETS_HOME is not, plus a test; (b) only a note in docs/TESTING.md that any runner must import tests/_isolate first. I recommend (a): the guard works for any future runner, a note does not.
+---
+
+created: 2026-10-12 05:27
+---
+TASK-19.2: with SECRET_RULES = 'betterleaks', in-process tests that pass under gitleaks fail (about 40). Most come from two rules only Betterleaks has: generic-password (flags 'testpass', 'continue', 'self._password', ...) and generic-credential-uri (flags '%24REDIS_PASSWORD', '2026-10-08', '443' in the password slot of a URL), values the detect-secrets and url-password-no-user fixes already drop. AC #1 asks that the existing tests pass in both modes. Options: (a) let overrides.txt switch a rule off ('generic-password  off') and switch these two off until TASK-19.3 benches them, then rerun to find what remains; (b) port the matching fixes to the two rules now (ds-value, the url-password checks); (c) narrow AC #1 to 'gitleaks mode unchanged', and the Betterleaks differences become TASK-19.3's input. I recommend (a): the epic keeps a new rule only when the bench shows no precision loss, so these two are off until TASK-19.3 shows otherwise, and the fixes in (b) can follow there with evidence. (I did not get a clean list of the remaining failures: that run was the faulty one above.)
 ---
 <!-- COMMENTS:END -->
