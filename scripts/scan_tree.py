@@ -30,9 +30,11 @@ VENDORED = ("maisecrets/rules/",)   # the rule sets carry secret shapes by desig
 
 def _git_files(root: Path) -> list[str] | None:
     """The paths git would carry under root, relative to it; None when root is no checkout or git fails."""
+    # without GIT_*: inside a git hook GIT_DIR names the repository being committed, not the one at root
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     try:
         r = subprocess.run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
-                           cwd=root, capture_output=True, timeout=60)
+                           cwd=root, capture_output=True, timeout=60, env=env)
     except (OSError, subprocess.TimeoutExpired):
         return None
     if r.returncode != 0:

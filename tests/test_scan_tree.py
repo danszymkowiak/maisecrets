@@ -47,7 +47,30 @@ class ScanTreeTests(unittest.TestCase):
         (self.root / "notes" / "idea.md").write_text(f"token = {TOKEN}\n", encoding="utf-8")
 
     def git(self, *args: str) -> None:
-        subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True)
+        # without GIT_*: in a commit hook GIT_DIR names the repository being committed, and `git init` here marked
+        # that repository bare (2026-10-12, a commit from a worktree)
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True, env=env)
+
+    @unittest.skipUnless(shutil.which("git"), "git is not installed")
+    def test_inside_a_git_hook_the_scan_lists_its_own_root_and_leaves_the_other_repository_alone(self):
+        outer = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, outer, True)
+        subprocess.run(["git", "init", "-q", str(outer)], check=True, capture_output=True,
+                       env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")})
+        (outer / "outer.txt").write_text("x\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(outer), "add", "outer.txt"], check=True, capture_output=True,
+                       env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")})
+        self.git("init", "-q")
+        (self.root / ".gitignore").write_text("notes/\n", encoding="utf-8")
+        from unittest import mock
+        hook = {"GIT_DIR": str(outer / ".git"), "GIT_INDEX_FILE": str(outer / ".git" / "index")}
+        with mock.patch.dict(os.environ, hook):
+            self.git("init", "-q")
+            self.assertEqual(sorted(scan_tree._git_files(self.root)), [".gitignore", "clean.txt"])
+        bare = subprocess.run(["git", "-C", str(outer), "config", "core.bare"], capture_output=True, text=True,
+                              env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")})
+        self.assertEqual(bare.stdout.strip(), "false")
 
     @unittest.skipUnless(shutil.which("git"), "git is not installed")
     def test_an_ignored_folder_is_not_scanned_in_a_checkout(self):
