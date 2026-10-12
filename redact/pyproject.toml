@@ -3,7 +3,10 @@ name = "maisecrets-redact"
 version = "0.1.0"
 description = "Redact documents before they reach a language model: the maisecrets rules plus local PII models (docs/REDACT.md)"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "openpyxl>=3.1",
+    "pypdf>=5",
+]
 
 [project.scripts]
 redact = "maisecrets_redact.cli:main"
