@@ -22,3 +22,7 @@ hooks/incident-marker.*
 
 # the benchmark's own environment (uv); its data lives outside the repository (docs/BENCHMARK.md)
 bench/.venv/
+
+# private research notes and reports: never published, and the tree scan skips what git ignores
+research_notes/
+reports/
