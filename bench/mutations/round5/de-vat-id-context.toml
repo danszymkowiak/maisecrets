@@ -1,0 +1,7 @@
+name = "de-vat-id#0: a VAT context word required"
+why = "TASK-18.2. Leave-one-out: its 60 Gretel hits are FIX and XML identifiers (49=, PartyID, ReportingBankID) that pass the checksum, never a labelled value. A context word (USt-IdNr, VAT) keeps a real VAT ID."
+
+[[change]]
+op = "set"
+rule = "de-vat-id#0"
+require_context = true

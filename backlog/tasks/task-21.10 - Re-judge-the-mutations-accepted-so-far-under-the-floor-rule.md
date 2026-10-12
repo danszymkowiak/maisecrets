@@ -1,10 +1,10 @@
 ---
 id: TASK-21.10
 title: Re-judge the mutations accepted so far under the floor rule
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 19:13'
 labels:
   - benchmark
 dependencies:
@@ -25,6 +25,12 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A table of each earlier mutation: old verdict, new verdict, and the deciding type or dataset
-- [ ] #2 Plugin tasks built on a mutation that now fails get a comment and wait for the user
+- [x] #1 A table of each earlier mutation: old verdict, new verdict, and the deciding type or dataset
+- [x] #2 Plugin tasks built on a mutation that now fails get a comment and wait for the user
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Table in docs/BENCHMARK.md (The earlier accepted changes under the floor rule): of the round 1-3 changes, de-vat-id#0, label-negative and the three digest filters still pass; every us-bank variant, se-personnummer and wordlike-75 now fail. Plugin tasks on a failing change: 11.28 and 11.29 (se part) closed as not applied; 11.22 noted.
+<!-- SECTION:FINAL_SUMMARY:END -->

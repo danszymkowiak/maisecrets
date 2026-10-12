@@ -1,0 +1,6 @@
+name = "Drop de-handelsregister"
+why = "TASK-18.2. Its hits are real commercial register numbers (HRB after an Amtsgericht) that no dataset labels: company identifiers, public, not personal data."
+
+[[change]]
+op = "disable"
+rule = "de-handelsregister"

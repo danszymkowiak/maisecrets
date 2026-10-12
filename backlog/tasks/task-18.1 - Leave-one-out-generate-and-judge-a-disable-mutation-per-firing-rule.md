@@ -1,10 +1,10 @@
 ---
 id: TASK-18.1
 title: 'Leave-one-out: generate and judge a disable mutation per firing rule'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-12 12:24'
+updated_date: '2026-10-12 18:01'
 labels:
   - benchmark
 dependencies:
@@ -32,6 +32,8 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12 (TASK-19.7): run on baseline 20261012-141549 (bench/loo.py --baseline ~/.cache/maisecrets-bench/runs/20261012-141549): the rule set is now Betterleaks v1.9.0 + carried gitleaks rules + Veles; 95 rules fire, so 95 disable mutations, with Betterleaks/Veles rule IDs. The generator reads the rule IDs from that run, so no list needs editing.
+
+2026-10-12 evening: run on the new baseline 20261012-194832 (94 rules fire).
 <!-- SECTION:NOTES:END -->
 
 ## Comments

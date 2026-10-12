@@ -573,6 +573,60 @@ Nemotron 0.064, Mendeley and findocs 0).
 The verdicts below (strict, within tolerance) came first. They stay in the reports as a comparison
 column until TASK-21.10 has re-judged the mutations accepted under them.
 
+### Leave-one-out (TASK-18, 2026-10-12)
+
+Each of the 94 rules that fire in baseline 20261012-194832 was left out on its own (`bench/loo.py`, run
+20261012-200148) and the removals ranked by `bench/rank.py`: pure wins (false positives saved, no find lost),
+then trades by weighted false positives saved per weighted find lost (lost finds weigh 100 critical, 10 high, 1 no
+regression), then the protected rules (a floor broken, a gap worse or a guard lost).
+
+The first ranking was wrong in one way that matters: the floors only see the types the plugin claims, so a rule
+that finds passports, ID cards or licences, which the datasets label as out of scope, looked like a pure win. The
+ranking now counts those finds too, weighted 10 (mutation run 20261012-212629 re-ran the 33 candidates):
+
+| rule | false positives saved | finds lost | unscored finds lost | verdict of the ranking |
+|---|---|---|---|---|
+| es-passport | 89 | 0 | 5,541 passports | keep |
+| us-license#0 | 156 | 24 | 2,231 driving licences | keep |
+| es-nif | 65 | 0 | 1,412 ID cards | keep |
+| it-passport | 29 | 0 | 539 passports | keep |
+| medical-license | 9 | 0 | 280 (health plan, licence numbers) | keep |
+| us-npi#0 | 51 | 0 | 18 | keep |
+| uk-nino | 16 | 0 | 8 national insurance numbers | keep |
+| de-vat-id#0 | 60 | 0 | 0 | candidate: require a context word (TASK-38) |
+| de-handelsregister | 32 | 0 | 0 | candidate: drop (TASK-39) |
+| de-tax-number#2 | 7 | 0 | 0 | keep: its hits are real tax numbers after "Steuernummer:", which Gretel does not label |
+
+Reading the hits mattered as much as the counts. de-vat-id#0's hits are FIX and XML identifiers that pass the
+checksum, so a VAT context word removes them; de-handelsregister's are real register numbers, of companies, not
+people. No trade saves more weighted false positives than it costs except url-query-secret (48 saved for 3 secrets
+and 3 unscored finds, ratio 1.5, weak evidence), which stays. The protected list holds every rule behind a
+floor: credit-card, email, us-bank, phone, iban, ch-ahv, ip, us-ssn, private-key, jwt, aws-access-token, the
+keyword rules and generic-api-key among them.
+
+### The earlier accepted changes under the floor rule (TASK-21.10, 2026-10-12)
+
+Every change accepted in rounds 1 to 3 (strictly or within tolerance), judged again against baseline 20261012-194832
+(mutation runs 20261012-173742 and 20261012-211246). Four were already applied after an earlier re-judge (TASK-11.29
+to 11.31, 11.32 was closed by the user).
+
+| change | earlier verdict | floor verdict | deciding type |
+|---|---|---|---|
+| Drop uk-postcode | accepted | accepted, applied (TASK-11.31) | - |
+| Keyword rules: skip an UPPER-UPPER-…_ identifier | accepted | accepted, applied (TASK-11.30) | - |
+| ds-keyword-colon: skip digits:word | accepted | accepted, applied (TASK-11.30) | - |
+| Drop de-vat-id#0 | within tolerance | accepted | - |
+| Generic rules: skip label-negative | accepted | accepted | - |
+| Generic rules: skip digest any / prefix / label | accepted | accepted | - |
+| Generic rules: skip object id | accepted | neutral | - |
+| us-bank: context word just before the number | within tolerance | rejected, not applied (TASK-11.28) | US_BANK_NUMBER, ABA, CARD, PHONE gaps worse |
+| us-bank: a bank word before, not after a SWIFT tag | within tolerance | rejected | the same gaps worse |
+| us-bank: not a SWIFT MT field tag's number | within tolerance | rejected | CARD gap worse (3 finds on Gretel) |
+| se-personnummer: Luhn | within tolerance | rejected, not applied (TASK-11.29) | US_SSN gap worse (10 on Gretel) |
+| Generic rules: skip wordlike-75 | within tolerance | rejected | SECRET_GENERIC, a find lost on CredData |
+
+Every change the tolerance let through on 2026-10-11 fails the floor rule except de-vat-id#0.
+
 ### The earlier verdicts (for comparison)
 
 - **Inclusion, strict (*accepted*):** on every dataset, precision, recall and the share of clean

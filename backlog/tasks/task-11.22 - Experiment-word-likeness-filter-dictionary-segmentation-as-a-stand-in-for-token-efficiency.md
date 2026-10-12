@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 19:13'
 labels:
   - benchmark
 dependencies:
@@ -38,4 +38,6 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12, tooling in 97b5373: maisecrets_bench/wordlike.py (coverage by greedy segmentation, letter-bigram log-odds), filters bench:wordlike_75, bench:wordlike_44, bench:bigram_309 (skip outside a strong label), mutations bench/mutations/round3/{wordlike-75,wordlike-44,bigram-309}.toml. Word list: SCOWL american-english from the system (Debian wamerican 2020.12.07, SCOWL's permissive licence), not bundled; 73,133 words, 93 ms load, about 8 MB in /usr/bin/python3 3.12. Provisional judge under the OLD verdict (round 20261012-000333, baseline 20261011-220740, guard tab): wordlike-75 accepted within tolerance (dev +0.17, check +0.40, CredData +0.49); wordlike-44 rejected (dev +0.75, CredData +2.25, but ai4privacy -0.01 and recall -0.03 on ai4privacy/CredData); bigram-309 rejected (+0.01 / -0.01). Re-judge under TASK-21.8 on the new rule set.
+
+2026-10-12 (TASK-21.10): wordlike-75, the mutation this experiment produced, is REJECTED under the floor verdict against 20261012-194832 (SECRET_GENERIC: one find lost on CredData). It was accepted within tolerance on 2026-10-11. A threshold that keeps every find, or none, before any plugin task.
 <!-- SECTION:NOTES:END -->
