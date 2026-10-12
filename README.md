@@ -1143,7 +1143,7 @@ IBAN, credit card and IP come from Presidio's regexes with our validators
 subfield code (`:86:…?31DE89…?32`, the counterparty in a bank statement
 export) and in lower case; a lowercase one must also have its country's
 length, since a lowercase hex digest passes mod 97 one time in 97. A card number without a word like
-"card" or "Kreditkarte" nearby is not reported: Presidio scores the bare
+"card", "Karte", "Kreditkarte", "carte" or "carta" nearby is not reported: Presidio scores the bare
 shape low, and a 16-digit number passes Luhn one time in ten.
 
 Measure what the rules would catch on your own recordings, values never

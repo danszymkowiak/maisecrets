@@ -150,6 +150,10 @@ values are weakly diverse (the same few names and domains), so its type-level re
   `(494) 360-7563` (600, TASK-23), and a card number after the German word `Karte` (300, TASK-24).
   TASK-22 closed the first: run 20261012-084443 against 20261012-081433 finds the 594 IBANs, and
   nothing else moves on any dataset (lowercase IBANs, the other half of TASK-22, occur in none).
+  TASK-24 closed the third: Presidio's card words are English, and card words of the label
+  languages (Karte, Kreditkarte, carte, carta, tarjeta, …) now count. Run 20261012-102454 against
+  20261012-100249: findocs CARD 50% to 100%, Gretel CARD 36.3% to 44.7%, one more false positive
+  (Gretel); verdict accepted.
   AHV and UID numbers map to CH_AHV and CH_UID (TASK-20, gold revision valid2). The Swiss rules
   were judged as a mutation that runs them in every language group (`bench/mutations/add-swiss-ch.toml`,
   baseline 20261012-081433, mutation run 20261012-082626): accepted, findocs AHV 900/900 and UID
