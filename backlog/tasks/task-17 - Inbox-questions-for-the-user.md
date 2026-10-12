@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 09:27'
+updated_date: '2026-10-12 09:52'
 labels:
   - inbox
 dependencies: []
@@ -74,5 +74,10 @@ TASK-23: the US (NXX) NXX-XXXX rule (region us, reserved middle-9 area codes exc
 created: 2026-10-12 09:27
 ---
 TASK-11.36 (Kaggle PII Data Detection as a real-text check): needs your Kaggle account: an API token in the environment or ~/.kaggle, and your acceptance of the competition's terms on kaggle.com (the data is competition data, so it can only be opt-in like ai4privacy). Options: (a) you accept the terms and put a token in place, then I write the opt-in adapter and test it on the real data; (b) I write the adapter now against the documented format (tokens, labels, whitespace per essay) with a made-up fixture, untested on the real data until (a); (c) drop the task. I recommend (a): an adapter that never saw the real file tends to break on its first run, and the dataset's value is exactly that it is real text.
+---
+
+created: 2026-10-12 09:52
+---
+User, 2026-10-12: TASK-23 accept (the TASK-21.8 verdict decides; the extra hits are mostly unlabelled numbers). TASK-25: drop AC #2. TASK-11.36: the Kaggle details come later. TASK-19.2: switch generic-password and generic-credential-uri off until TASK-19.3 benches them.
 ---
 <!-- COMMENTS:END -->

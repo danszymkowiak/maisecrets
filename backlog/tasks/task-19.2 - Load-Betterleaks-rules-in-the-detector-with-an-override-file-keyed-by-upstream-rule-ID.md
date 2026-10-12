@@ -6,13 +6,12 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-12 05:27'
+updated_date: '2026-10-12 09:53'
 labels:
   - detection
   - tdd
 dependencies:
   - TASK-21.8
-  - TASK-17
 parent_task_id: TASK-19
 priority: high
 ordinal: 55000
@@ -37,4 +36,6 @@ Kingfisher's overlay pattern (crates/kingfisher-rules/data/imported-rules-capabi
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12 run: done and committed: maisecrets/filterexpr.py (evaluator, tokenRatio UNKNOWN, a failing filter keeps the hit), detect.SECRET_RULES switch ('gitleaks' default, 'betterleaks'), _load_betterleaks (global filter OR rule filter; skipReport and path-only rules left out; components do not gate), rules/overrides.txt + FIXES + override_problems(), the four inline fixes moved there, SigV4 belief retargeted, skill zip carries filterexpr.py. tests/test_betterleaks_rules.py. Full suite green in gitleaks mode. Open: AC #1 in Betterleaks mode (about 40 in-process tests fail, mostly generic-password and generic-credential-uri: inbox question), AC #3 timings not measured yet. A faulty scratch runner (rules loaded before tests/_isolate) bound the vault to the real home: see the inbox incident; never run the suite with detect imported before _isolate.
+
+2026-10-12: user agreed to switch generic-password and generic-credential-uri off until TASK-19.3 benches them.
 <!-- SECTION:NOTES:END -->

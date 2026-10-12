@@ -4,13 +4,12 @@ title: 'Vault: never bind the real home when a test forgot its isolation (test f
 status: To Do
 assignee: []
 created_date: '2026-10-12 05:42'
-updated_date: '2026-10-12 06:03'
+updated_date: '2026-10-12 09:53'
 labels:
   - tdd
   - safety
   - refactor
-dependencies:
-  - TASK-17
+dependencies: []
 references:
   - maisecrets/vault.py
   - tests/_isolate.py
@@ -37,4 +36,6 @@ Fix, test first: (1) when MAISECRETS_TEST_HOME_OWNED is set, vault refuses a hom
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12: guards done (vault.WrongHome/_check_home in load_config, Vault(), make_backend; the import-order check in tests/_isolate.py), tests/test_isolation_order.py, docs/TESTING.md Isolation. A first version refused any home other than the marker's: 15 tests that give a child or the vault a second temp home on purpose failed, so the vault guard refuses only the user's own ~/.maisecrets. AC #2 waits on the inbox (option a recommended: drop it).
+
+2026-10-12: user agreed to drop AC #2; the guards cover the incident.
 <!-- SECTION:NOTES:END -->
