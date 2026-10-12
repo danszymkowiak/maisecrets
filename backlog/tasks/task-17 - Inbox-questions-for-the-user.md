@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 17:48'
+updated_date: '2026-10-12 20:13'
 labels:
   - inbox
 dependencies: []
@@ -32,6 +32,12 @@ TASK-11.25 (plugin normaliser): switch on ansi, cr, invisible, gutter, entity, f
 TASK-34.8 vote, superseding my two notes above (new defaults knowledgator + fastino + privacy-filter, models run after the rules, run 20261012-191234). Gain of the model step over rules alone (names 0 %, addresses 0 %, birth dates 0 %, phones 79 %, accounts 89 %, 0.3 false/1k words): (a) 2 of 3 agree: 83 %, 89 %, 97 %, 100 %, 98 %; 6.0 false/1k words; 25 review prompts/1k words. (b) all 3 agree (today): 60 %, 71 %, 70 %, 95 %, 92 %; 2.5 false/1k; 36 prompts/1k. (c) all four models, 2 of 4: 88 %, 90 %, 100 %, 100 %, 98 %; 7.2 false/1k; 25 prompts/1k. I recommend (a): a missed name is the costly error before data reaches Claude, and (a) also asks fewer review questions than (b). (c) adds 5 points on names for 1.2 more false redactions per 1,000 words, if you prefer recall further. Either way about 25 review prompts per 1,000 words is a lot; most are privacy-filter's lone spans.
 
 TASK-8: may I file the drafted feature request (user-defined personal terms, C25) on Mcpgate-de/maisecrets? The draft is in TASK-8's notes. Options: (a) file it as drafted, (b) edit first, (c) not now. I recommend (b) a quick read: the draft is from 2026-10-11 and the fork has changed since (Betterleaks, redact); it says nothing about those, which is right for an upstream issue, but the date and test count are stale.
+
+TASK-38 and TASK-39 (from leave-one-out, both accepted on the bench): (38) de-vat-id#0 requires a VAT context word: its 60 hits on Gretel are FIX/XML identifiers that pass the checksum; (39) drop de-handelsregister: its hits are real company register numbers, public, not personal data. Options: approve both, one, or none. I recommend both; 39 is a judgement call (a company number is not personal, but some prefer to hide it).
+
+TASK-34.8, your variant (all four, 2 of 4, privacy-filter's lone spans dropped, not reviewed), from the cached rules-first spans: names 88 %, addresses 90 %, birth dates 100 %, phones 100 %, accounts 98 %; 7.2 false redactions and 9 review prompts per 1,000 words (25 when they are asked). I now recommend it over 2 of 3. To ship it: urchade back among the defaults, and a vote rule redact lacks (k of N, plus a model whose lone spans are never asked about). Shall I implement it as the default?
+
+Answered by the user 2026-10-12: redact's vote is all four models, 2 of 4, privacy-filter's lone spans not reviewed; implemented as the default (55bfff7). The TASK-34.8 vote questions above are settled.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

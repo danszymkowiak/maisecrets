@@ -3,10 +3,10 @@ id: TASK-21.9
 title: >-
   Operating points from the curves: the lowest-FP threshold that clears every
   floor
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 19:36'
 labels:
   - benchmark
 dependencies:

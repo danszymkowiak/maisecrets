@@ -4,7 +4,7 @@ title: 'redact: measure it on the bench datasets (deterministic alone vs with mo
 status: Done
 assignee: []
 created_date: '2026-10-12 10:06'
-updated_date: '2026-10-12 17:44'
+updated_date: '2026-10-12 20:13'
 labels:
   - redact
   - bench
@@ -33,6 +33,8 @@ The bench (bench/, TASK-30 clean gold) already labels names and addresses, which
 2026-10-12: the model extra installed and each backend checked on the real libraries: urchade needed sentencepiece+protobuf (added), openai/privacy-filter answered word pieces (merge_pieces), gliner2 backend written for fastino (local class only; asked in its own labels). Measurement: python -m maisecrets_redact.measure (redact/maisecrets_redact/measure.py), 150 dev samples per dataset (findocs, gretel, nemotron, mendeley), 6 detectors; run 20261012-161906 under ~/.cache/maisecrets-bench/redact/. User 2026-10-12: models only in this tool, never the plugin.
 
 Follow-up (user, 2026-10-12): models now read the text after the rules (ba3b74a); privacy-filter's private_date mapped (its 0 % birth dates was a mapping bug); defaults knowledgator + fastino + privacy-filter, chosen by least overlapping misses (8f7d26b; correlation table in docs/REDACT.md). Re-measured rules-first: run 20261012-191234. Report for the user: https://claude.ai/code/artifact/b7c326ff-8386-44c0-b6f3-b713799fa4cf. Vote rule: inbox TASK-17.
+
+User 2026-10-12: default = all four models, 2 of 4, privacy-filter's lone spans dropped (models.VOTE_K, models.NOT_REVIEWED; 55bfff7).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
