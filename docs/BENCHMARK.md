@@ -150,6 +150,10 @@ values are weakly diverse (the same few names and domains), so its type-level re
   `(494) 360-7563` (600, TASK-23), and a card number after the German word `Karte` (300, TASK-24).
   TASK-22 closed the first: run 20261012-084443 against 20261012-081433 finds the 594 IBANs, and
   nothing else moves on any dataset (lowercase IBANs, the other half of TASK-22, occur in none).
+  TASK-23 closed the second (accepted by the user on 2026-10-12): a region-us rule for `(NXX) NXX-XXXX`
+  (area code and exchange 2-9, no reserved middle 9). Run 20261012-135603 against 20261012-131230: PHONE
+  findocs 80.0% to 100%, Gretel 56.7% to 63.3%, Nemotron 23.2% to 29.7%; false hits +40 (Gretel 22,
+  Nemotron 17, ai4privacy 1), mostly real-looking numbers the datasets left unlabelled; verdict accepted.
   TASK-24 closed the third: Presidio's card words are English, and card words of the label
   languages (Karte, Kreditkarte, carte, carta, tarjeta, …) now count. Run 20261012-102454 against
   20261012-100249: findocs CARD 50% to 100%, Gretel CARD 36.3% to 44.7%, one more false positive

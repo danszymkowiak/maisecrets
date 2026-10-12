@@ -1,10 +1,10 @@
 ---
 id: TASK-23
 title: 'Plugin: a US phone number in the (NXX) NXX-XXXX form is missed (test first)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 23:25'
-updated_date: '2026-10-12 09:53'
+updated_date: '2026-10-12 12:00'
 labels:
   - plugin
   - benchmark
@@ -23,8 +23,8 @@ Found by the findocs dataset (TASK-11.37, run 20261012-011327): every US phone o
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A unit test with a (NXX) NXX-XXXX number in prose goes red first, then green
-- [ ] #2 findocs and Nemotron PHONE recall before and after; no floor broken, weighted FP/1k not higher (TASK-21.8)
+- [x] #1 A unit test with a (NXX) NXX-XXXX number in prose goes red first, then green
+- [x] #2 findocs and Nemotron PHONE recall before and after; no floor broken, weighted FP/1k not higher (TASK-21.8)
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -36,3 +36,9 @@ Found by the findocs dataset (TASK-11.37, run 20261012-011327): every US phone o
 
 2026-10-12: user accepted (inbox TASK-17). Resume from the stash.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+detect.REGIONAL_RULES: us-phone-paren (region us), (NXX) NXX-XXXX with area code and exchange starting 2-9 and no reserved middle 9 in the area code (the bench counts those as invalid gold since TASK-30). tests/test_us_phone.py red first (now on an explicit rule set, TASK-27). Bench run 20261012-135603 against 20261012-131230: PHONE findocs 80.0% -> 100%, Gretel 56.7% -> 63.3%, Nemotron 23.2% -> 29.7%; false hits +40, mostly unlabelled real-looking numbers; TASK-21.8 verdict accepted; the user accepted the trade on 2026-10-12 (inbox TASK-17), so AC #2's 'not higher' is waived by that decision.
+<!-- SECTION:FINAL_SUMMARY:END -->

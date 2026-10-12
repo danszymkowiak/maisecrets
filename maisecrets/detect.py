@@ -667,11 +667,16 @@ REGIONAL_RULES: list[dict] = [
     {"id": "ch-uid", "region": "ch", "type": "CH_UID", "validator": "ch_uid",
      "context": ("uid", "ide", "idi", "mwst", "tva", "iva", "unternehmens-identifikationsnummer"),
      "regex": r"\bCHE[-\s]?\d{3}\.?\d{3}\.?\d{3}(?:\s?(?:MWST|TVA|IVA))?(?![\w.]\d|\w)"},
+    # a US number without its country code, in the (NXX) NXX-XXXX form: the phone rule wants a +1 (TASK-23). The
+    # numbering plan bounds it: area code and exchange start with 2-9, an area code's middle digit is not 9 (reserved;
+    # the bench counts such a number as invalid gold since TASK-30)
+    {"id": "us-phone-paren", "region": "us", "type": "PHONE",
+     "regex": r"(?<![\w(])\([2-9][0-8]\d\) ?[2-9]\d{2}-\d{4}(?![\d-])"},
 ]
 
 
 def _load_regional(regions: tuple[str, ...]) -> list[Rule]:
-    return [Rule(id=d["id"], type=d["type"], regex=_Lazy(d["regex"]), validator=d["validator"],
+    return [Rule(id=d["id"], type=d["type"], regex=_Lazy(d["regex"]), validator=d.get("validator"),
                  context=d.get("context", ()), require_context=d.get("require_context", False), whole_match=True)
             for d in REGIONAL_RULES if d["region"] in regions]
 
