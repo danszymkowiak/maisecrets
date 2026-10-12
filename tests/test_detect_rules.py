@@ -215,11 +215,13 @@ class ValidatorTests(unittest.TestCase):
             good = iban_complete(r.choice(["DE", "GB", "FR", "NL"]), bban)
             with self.subTest(good=good):
                 self.assertTrue(detect._iban_ok(good))
-                self.assertTrue(detect._iban_ok(good.lower()))
+                # lower case also needs the country's length (TASK-22): these random lengths mostly lack it
+                self.assertEqual(detect._iban_ok(good.lower()), detect.IBAN_LENGTH[good[:2]] == len(good))
                 spaced = " ".join(good[i:i + 4] for i in range(0, len(good), 4))
                 self.assertTrue(detect._iban_ok(spaced))
                 self.assertFalse(detect._iban_ok(good[:2] + f"{(int(good[2:4]) + 1) % 100:02d}" + good[4:]))
         self.assertTrue(detect._iban_ok(" ".join(["DE89", "3704", "0044", "0532", "0130", "00"])))
+        self.assertTrue(detect._iban_ok(" ".join(["de89", "3704", "0044", "0532", "0130", "00"])))
         self.assertFalse(detect._iban_ok(iban_complete("DE", "1234567890")))     # 14 characters
         self.assertFalse(detect._iban_ok(iban_complete("DE", "1" * 31)))         # 35 characters
 

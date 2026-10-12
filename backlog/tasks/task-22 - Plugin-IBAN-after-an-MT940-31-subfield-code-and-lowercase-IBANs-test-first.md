@@ -3,10 +3,10 @@ id: TASK-22
 title: >-
   Plugin: IBAN after an MT940 ?31 subfield code, and lowercase IBANs (test
   first)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 06:51'
 labels:
   - plugin
   - detection
@@ -27,7 +27,13 @@ German MT940 statements (and, as far as known, many Swiss banks' MT940 exports) 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tests first: ?31, ?30/?32 neighbours and /IBAN forms found; lowercase found; a mod-97 failure in each form not found
-- [ ] #2 Judged on the bench: Gretel structured group (TASK-11.33) for recall, precision unchanged on every dataset
-- [ ] #3 The synthetic tax templates (TASK-11.37) include MT940 :86: subfields
+- [x] #1 Tests first: ?31, ?30/?32 neighbours and /IBAN forms found; lowercase found; a mod-97 failure in each form not found
+- [x] #2 Judged on the bench: Gretel structured group (TASK-11.33) for recall, precision unchanged on every dataset
+- [x] #3 The synthetic tax templates (TASK-11.37) include MT940 :86: subfields
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The vendored Presidio IBAN pattern gets a left boundary that also takes an MT940 subfield code (?NN), patched at load (_presidio_regex). Lowercase IBANs are an own rule, iban-lowercase (plain or in groups of four, also after ?NN); _iban_ok holds a value with lowercase letters to its country's length (IBAN_LENGTH, SWIFT registry), since a lowercase hex digest passes mod 97 one time in 97. A first version made the vendored pattern case-insensitive: its optional groups then took the next word ('ES06... appar') and Gretel lost 2 IBANs, CredData 2 hits; split into two rules, the bench (run 20261012-084443 against 20261012-081433) finds the 594 findocs ?31 IBANs and nothing else moves. findocs' MT940 template already had :86: subfields (TASK-11.37). Found on the way: a hyphenated IBAN is never found (TASK-29).
+<!-- SECTION:FINAL_SUMMARY:END -->

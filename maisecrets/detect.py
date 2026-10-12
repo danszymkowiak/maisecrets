@@ -131,9 +131,26 @@ def _luhn_ok(digits: str) -> bool:
     return total % 10 == 0
 
 
+# IBAN length per country (SWIFT IBAN registry). Only a lowercase IBAN is held to it (TASK-22): a lowercase hex digest
+# such as `de12…` passes mod 97 one time in 97, an upper-case IBAN keeps the vendored check alone
+IBAN_LENGTH = {
+    "AD": 24, "AE": 23, "AL": 28, "AT": 20, "AZ": 28, "BA": 20, "BE": 16, "BG": 22, "BH": 22, "BI": 27, "BR": 29,
+    "BY": 28, "CH": 21, "CR": 22, "CY": 28, "CZ": 24, "DE": 22, "DJ": 27, "DK": 18, "DO": 28, "EE": 20, "EG": 29,
+    "ES": 24, "FI": 18, "FK": 18, "FO": 18, "FR": 27, "GB": 22, "GE": 22, "GI": 23, "GL": 18, "GR": 27, "GT": 28,
+    "HN": 28, "HR": 21, "HU": 28, "IE": 22, "IL": 23, "IQ": 23, "IS": 26, "IT": 27, "JO": 30, "KW": 30, "KZ": 20,
+    "LB": 28, "LC": 32, "LI": 21, "LT": 20, "LU": 20, "LV": 21, "LY": 25, "MC": 27, "MD": 24, "ME": 22, "MK": 19,
+    "MN": 20, "MR": 27, "MT": 31, "MU": 30, "NI": 28, "NL": 18, "NO": 15, "OM": 23, "PK": 24, "PL": 28, "PS": 29,
+    "PT": 25, "QA": 29, "RO": 24, "RS": 22, "RU": 33, "SA": 24, "SC": 31, "SD": 18, "SE": 24, "SI": 19, "SK": 24,
+    "SM": 27, "SO": 23, "ST": 25, "SV": 28, "TL": 23, "TN": 24, "TR": 26, "UA": 29, "VA": 22, "VG": 24, "XK": 20,
+    "YE": 30,
+}
+
+
 def _iban_ok(raw: str) -> bool:
     s = raw.replace(" ", "").upper()
     if not 15 <= len(s) <= 34:
+        return False
+    if raw != raw.upper() and IBAN_LENGTH.get(s[:2]) != len(s):
         return False
     rearranged = s[4:] + s[:4]
     return int("".join(str(ord(c) - 55) if c.isalpha() else c for c in rearranged)) % 97 == 1
@@ -477,6 +494,11 @@ OWN_RULES: list[dict] = [
     # ?token=… / &api_key=… in a URL
     {"id": "url-query-secret", "type": "SECRET", "secret_group": 2,
      "regex": r"(?i)[?&]((?:access_?)?token|api[_-]?key|apikey|secret|password|sig|signature)=([^&\s#\"']{8,})"},
+    # an IBAN in lower case, plain or in groups of four, also after an MT940 subfield code (?31); its validator wants
+    # the country's length too (TASK-22)
+    {"id": "iban-lowercase", "type": "IBAN", "validator": "iban",
+     "regex": r"(?:(?<![A-Za-z0-9])|(?<=\?[0-9]{2}))[a-z]{2}[0-9]{2}"
+              r"(?:[a-z0-9]{11,30}|(?:[ -][a-z0-9]{4}){2,7}(?:[ -][a-z0-9]{1,3})?)(?![A-Za-z0-9])"},
     {"id": "email", "type": "EMAIL", "validator": "person_email",
      # the last label is alphabetic: `lodash@4.17.21`, `checkout@v4.1.1` and Homebrew's
      # `python@3.14/3.14.7` are version pins, not addresses (review, 2026-09-26)
@@ -638,6 +660,19 @@ def _load_regional(regions: tuple[str, ...]) -> list[Rule]:
             for d in REGIONAL_RULES if d["region"] in regions]
 
 
+# the vendored IBAN rule's left boundary refuses a digit, so the counterparty IBAN of an MT940 :86: field after its
+# subfield code (`?31DE89…`, ?30 BIC and ?32 name around it) reached the model (TASK-22). Lower case is an own rule
+# (iban-lowercase): with (?i) this pattern's optional groups took the next word (`ES06… appar`) and the IBAN was lost
+_IBAN_LEFT = "(?<![A-Z0-9])"
+_IBAN_LEFT_SUBFIELD = "(?:(?<![A-Z0-9])|(?<=\\?[0-9]{2}))"
+
+
+def _presidio_regex(rec_id: str, regex: str) -> str:
+    if rec_id == "iban" and regex.startswith(_IBAN_LEFT):
+        return _IBAN_LEFT_SUBFIELD + regex[len(_IBAN_LEFT):]
+    return regex
+
+
 def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]:
     data = json.loads((RULES_DIR / "presidio.json").read_text(encoding="utf-8"))
     out: list[Rule] = []
@@ -649,7 +684,8 @@ def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]
         for i, pat in enumerate(rec["patterns"]):
             out.append(Rule(
                 id=f"{rec['id']}" if len(rec["patterns"]) == 1 else f"{rec['id']}#{i}",
-                type=ENTITY_TYPE.get(rec["entity"], rec["entity"]), regex=_Lazy(_re2_to_python(pat["regex"])),
+                type=ENTITY_TYPE.get(rec["entity"], rec["entity"]),
+                regex=_Lazy(_re2_to_python(_presidio_regex(rec["id"], pat["regex"]))),
                 validator=validator, score=float(pat["score"]),
                 context=tuple(c.lower() for c in rec.get("context", [])), require_context=weak,
                 whole_match=True,

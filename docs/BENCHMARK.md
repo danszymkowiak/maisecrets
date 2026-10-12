@@ -146,8 +146,10 @@ values are weakly diverse (the same few names and domains), so its type-level re
   example.com, .net or .org, which the plugin leaves alone on purpose, so e-mail is out of scope there.
   Precision 100.0%, recall 90.6%, F1 95.0%: SSN 100%, phone 93.9%, card 75.7%.
 - **findocs** (3,300 generated documents, ours). Precision 100.0%, recall 84.4%, F1 91.6%. The
-  misses are three gaps: an IBAN after an MT940 `?31` subfield (594, TASK-22), a US phone written
+  misses were three gaps: an IBAN after an MT940 `?31` subfield (594, TASK-22), a US phone written
   `(494) 360-7563` (600, TASK-23), and a card number after the German word `Karte` (300, TASK-24).
+  TASK-22 closed the first: run 20261012-084443 against 20261012-081433 finds the 594 IBANs, and
+  nothing else moves on any dataset (lowercase IBANs, the other half of TASK-22, occur in none).
   AHV and UID numbers map to CH_AHV and CH_UID (TASK-20, gold revision valid2). The Swiss rules
   were judged as a mutation that runs them in every language group (`bench/mutations/add-swiss-ch.toml`,
   baseline 20261012-081433, mutation run 20261012-082626): accepted, findocs AHV 900/900 and UID

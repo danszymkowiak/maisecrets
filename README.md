@@ -1139,7 +1139,10 @@ Four sources, one scanner (`maisecrets/detect.py`):
   out: nearly every candidate was the next `.env` line, not the rest of a key.
 
 IBAN, credit card and IP come from Presidio's regexes with our validators
-(mod-97, Luhn, public-range check). A card number without a word like
+(mod-97, Luhn, public-range check). An IBAN is also found after an MT940
+subfield code (`:86:…?31DE89…?32`, the counterparty in a bank statement
+export) and in lower case; a lowercase one must also have its country's
+length, since a lowercase hex digest passes mod 97 one time in 97. A card number without a word like
 "card" or "Kreditkarte" nearby is not reported: Presidio scores the bare
 shape low, and a 16-digit number passes Luhn one time in ten.
 
