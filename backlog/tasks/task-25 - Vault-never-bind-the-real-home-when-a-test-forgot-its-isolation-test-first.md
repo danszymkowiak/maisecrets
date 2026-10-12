@@ -1,10 +1,10 @@
 ---
 id: TASK-25
 title: 'Vault: never bind the real home when a test forgot its isolation (test first)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 05:42'
-updated_date: '2026-10-12 09:53'
+updated_date: '2026-10-12 10:10'
 labels:
   - tdd
   - safety
@@ -39,3 +39,9 @@ Fix, test first: (1) when MAISECRETS_TEST_HOME_OWNED is set, vault refuses a hom
 
 2026-10-12: user agreed to drop AC #2; the guards cover the incident.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Two guards (commit 2698597): tests/_isolate.py refuses to start when maisecrets.vault was imported with another home, and under a test run's home marker the vault refuses the user's own ~/.maisecrets (vault.WrongHome in load_config, Vault(), make_backend). tests/test_isolation_order.py replays the incident in a child with a fake user home. docs/TESTING.md Isolation explains the rule. AC #2 (no module binds the home at import) dropped by the user on 2026-10-12: the guards cover both entry points of the incident.
+<!-- SECTION:FINAL_SUMMARY:END -->
