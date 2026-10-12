@@ -66,31 +66,42 @@ if the document changes, it is refused as stale.
 
 ## Models on the bench (TASK-34.8, 2026-10-12)
 
-`uv run --project redact --with pyarrow python -m maisecrets_redact.measure` runs the rules and
-each permissive model on 150 documents from each of four bench datasets (findocs, Gretel,
-Nemotron-PII, Mendeley; `docs/BENCHMARK.md`). It writes only offsets under the bench's data
-directory (run 20261012-161906, scored on findocs with names, birth dates and streets labelled,
-TASK-36). A value counts as hidden when redacted spans cover 80 % of it. A false redaction is a
-span that touches no positive gold value, counted per 1,000 words. CPU only.
+`uv run --project redact --with pyarrow python -m maisecrets_redact.measure` runs the rules and then
+each model, as the tool does, on 150 documents from each of four bench datasets (findocs, Gretel,
+Nemotron-PII, Mendeley; `docs/BENCHMARK.md`): run 20261012-191234, offsets only, under the bench's
+data directory. A value counts as hidden when redacted spans cover 80 % of it. A false redaction is
+a span that touches no positive gold value, counted per 1,000 words. A review item is a span the
+vote leaves to a person.
 
-| configuration | names | addresses | birth dates | phones | false / 1k words | s / doc |
-|---|---|---|---|---|---|---|
-| rules alone | 0.2% | 0% | 0% | 79% | 0.3 | 0.002 |
-| rules + urchade/gliner_multi_pii-v1 | 87% | 73% | 100% | 99% | 5.6 | 0.62 |
-| rules + fastino/gliner2-privacy-filter-PII-multi | 84% | 54% | 100% | 100% | 7.4 | 0.63 |
-| rules + knowledgator/gliner-pii-base-v1.0 | 66% | 73% | 73% | 99% | 4.7 | 0.36 |
-| rules + openai/privacy-filter | 84% | 69% | 0% | 96% | 12.2 | 1.13 |
-| rules + gretelai/gretel-gliner-bi-large-v1.0 | 37% | 39% | 37% | 97% | 2.3 | 1.42 |
-| vote of the defaults, no review | 64% | 53% | 73% | 96% | 2.0 | 1.6 |
-| the same, every review answered yes | 90% | 91% | 100% | 98% | 10.7 | 1.6 |
+**What the second step adds.** The rules hide 973 of the 2,746 scored values (IBAN, AHV, SSN,
+e-mail, most phones and accounts) and nearly no names, addresses or birth dates. The models read the
+text with those values already replaced and work on the 1,773 left.
 
-The rules find what has a shape (IBAN, AHV, SSN, e-mail, cards) and nearly nothing of names or
-addresses: the models are what this tool adds. The defaults are urchade, knowledgator and
-fastino. openai/privacy-filter found no date of birth, so in the vote it vetoed every one, and
-it took twice the time; gretel's bi-encoder finds too little. The models' false redactions are
-mostly ID-shaped numbers and dates in financial forms. A vote of two models out of three instead
-of all three hides 83 % of names and 85 % of addresses, at 4.4 false redactions per 1,000
-words. Which vote is the default is a question for the user (TASK-17).
+| configuration | names | addresses | birth dates | phones | accounts | false / 1k words | review / 1k words |
+|---|---|---|---|---|---|---|---|
+| rules alone | 0% | 0% | 0% | 79% | 89% | 0.3 | 0 |
+| rules, then the defaults, 2 of 3 agree | 83% | 89% | 97% | 100% | 98% | 6.0 | 25 |
+| rules, then the defaults, all 3 agree | 60% | 71% | 70% | 95% | 92% | 2.5 | 36 |
+| rules, then all four models, 2 of 4 agree | 88% | 90% | 100% | 100% | 98% | 7.2 | 25 |
+
+**Why these three models.** The vote is only worth something when the models fail on different
+values. Over the 1,773 values the rules leave, the misses of each pair correlate (phi):
+
+| pair | phi of misses | both miss |
+|---|---|---|
+| urchade / fastino | 0.58 | 213 |
+| urchade / knowledgator | 0.39 | 192 |
+| urchade / privacy-filter | 0.35 | 141 |
+| fastino / privacy-filter | 0.33 | 160 |
+| knowledgator / fastino | 0.31 | 206 |
+| knowledgator / privacy-filter | 0.30 | 184 |
+
+The defaults are knowledgator, fastino (GLiNER2) and openai/privacy-filter: the set whose misses
+overlap least (mean phi 0.31; urchade, knowledgator and fastino: 0.43). privacy-filter is a token
+classifier, another architecture than the GLiNER models. Its low score on birth dates in the first
+measurement was a label the tool did not map (`private_date`), now fixed. urchade finds the most
+names alone but misses what fastino misses. Which vote is the default is the user's decision
+(TASK-17).
 
 ## Install
 

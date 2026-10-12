@@ -161,10 +161,9 @@ MODELS: dict[str, Model] = {
         "non-commercial, no derivatives: opt-in; weak on financial text (spec)"),
 }
 PERMISSIVE = frozenset({"apache-2.0", "mit", "bsd-3-clause", "bsd-2-clause"})
-# three permissive models, chosen on the bench (TASK-34.8, docs/REDACT.md): fastino's gliner2 in place of
-# openai/privacy-filter, which found no date of birth (so the vote never redacted one) and took twice the time
-DEFAULTS = ("urchade/gliner_multi_pii-v1", "knowledgator/gliner-pii-base-v1.0",
-            "fastino/gliner2-privacy-filter-PII-multi")
+# the three permissive models whose misses overlap least on the bench (TASK-34.8, docs/REDACT.md): a token
+# classifier (openai/privacy-filter) and two GLiNERs of different lineage; urchade misses what fastino misses
+DEFAULTS = ("knowledgator/gliner-pii-base-v1.0", "fastino/gliner2-privacy-filter-PII-multi", "openai/privacy-filter")
 
 
 class TermsNotAccepted(ValueError):
