@@ -18,7 +18,7 @@ done
 if echo "$*" | grep -q -- "--tags"; then echo "pre-push: --tags refused"; exit 1; fi
 
 if command -v ruff >/dev/null 2>&1; then
-  ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills bench || { echo "pre-push: lint failed"; exit 1; }
+  ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills bench redact || { echo "pre-push: lint failed"; exit 1; }
 fi
 # the checks of seconds first, the checks of minutes after: GitLab's validate stage runs these
 # too and skips every test job when one is red (a secret-shaped test literal cost a pipeline,

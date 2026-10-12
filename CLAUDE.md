@@ -49,10 +49,11 @@ python3 scripts/replay_can_fail.py             # each belief's test must go red 
 python3 scripts/scan_tree.py                   # no secret shape in the tree, test literals included
 python3 scripts/derived_counts.py              # the numbers stated in the docs
 python3 scripts/lint_plugin.py                 # frontmatter YAML, manifests, hook paths, command names
-uvx ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills bench
+uvx ruff check --select E,F,W --line-length 120 maisecrets hooks harness tests scripts skills bench redact
 python3 harness/run.py                         # the real claude client against a fake upstream
 claude plugin test .                           # the mod's own tests (tests/mod.test.ts)
 uv run --project bench python -m unittest discover -s bench/tests   # the rule benchmark (docs/BENCHMARK.md)
+uv run --project redact python -m unittest discover -s redact/tests # the redact tool (docs/REDACT.md)
 ```
 
 All of them run on this machine (`ruff` through `uvx`, the harness with the installed `claude`).

@@ -26,3 +26,6 @@ bench/.venv/
 # private research notes and reports: never published, and the tree scan skips what git ignores
 research_notes/
 reports/
+
+# the redact tool's own environment (uv), like the bench's
+redact/.venv/
