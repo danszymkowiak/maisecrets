@@ -441,8 +441,25 @@ def _ds_value_ok(v: str, min_len: int = 8) -> bool:
     return True
 
 
+# codice fiscale: the value of a character in an odd position (1st, 3rd, ...) for the check letter
+_IT_ODD = dict(zip("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                   (1, 0, 5, 7, 9, 13, 15, 17, 19, 21, 1, 0, 5, 7, 9, 13, 15, 17, 19, 21, 2, 4, 18, 20, 11, 3, 6, 8,
+                    12, 14, 16, 10, 22, 25, 24, 23)))
+
+
+def _it_fiscal_code_ok(v: str) -> bool:
+    """Italian codice fiscale: the 16th character is the check letter of the first 15 (Presidio validates it; on the
+    bench the check removed false alarms only, TASK-11.29)."""
+    v = v.strip().upper()
+    if not re.fullmatch(r"[A-Z0-9]{15}[A-Z]", v):
+        return False
+    total = sum(_IT_ODD[c] if i % 2 == 0 else (int(c) if c.isdigit() else ord(c) - 65) for i, c in enumerate(v[:15]))
+    return chr(65 + total % 26) == v[15]
+
+
 VALIDATORS = {
     "ds_value": _ds_value_ok,
+    "it_fiscal_code": _it_fiscal_code_ok,
     "de_tax_id": _de_tax_id_ok,
     "de_social_security": _de_social_security_ok,
     "de_id_card": _de_id_card_ok,
@@ -636,7 +653,7 @@ ENTITY_TYPE = {"EMAIL_ADDRESS": "EMAIL", "IBAN_CODE": "IBAN", "CREDIT_CARD": "CA
 PRESIDIO_SKIP = {"email", "url", "date", "mac-address", "uuid", "phone", "crypto", "uk-postcode"}
 # validator id per presidio recognizer id; a recognizer with a validator we did not port
 # keeps its pattern score and is treated as weak (context required)
-PRESIDIO_VALIDATOR = {"iban": "iban", "credit-card": "luhn", "ip": "public_ip",
+PRESIDIO_VALIDATOR = {"iban": "iban", "credit-card": "luhn", "ip": "public_ip", "it-fiscal-code": "it_fiscal_code",
                       "de-tax-id": "de_tax_id", "de-social-security": "de_social_security",
                       "de-id-card": "de_id_card", "de-passport": "de_passport",
                       "de-health-insurance": "de_health_insurance", "de-lanr": "de_lanr",

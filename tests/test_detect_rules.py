@@ -344,6 +344,23 @@ class ValidatorTests(unittest.TestCase):
         for system in ("git@github.com", "noreply@acme.de", "Root@host.de", "mailer-daemon@x.org"):
             self.assertFalse(pe(system), system)
 
+    def test_it_fiscal_code_check_letter(self):
+        # TASK-11.29. Published vectors: the Agenzia delle Entrate example and python-stdnum's documentation
+        it = detect.VALIDATORS["it_fiscal_code"]
+        for good in ("RSSMRA85T10A562S", "RCCMNL83S18D969H", "rssmra85t10a562s"):
+            self.assertTrue(it(good), good)
+        for bad in ("RSSMRA85T10A562T", "RCCMNL83S18D969A", "RSSMRA85T10A562"):
+            self.assertFalse(it(bad), bad)
+        self.assertEqual(detect.PRESIDIO_VALIDATOR.get("it-fiscal-code"), "it_fiscal_code")
+
+    def test_an_it_fiscal_code_with_a_wrong_check_letter_is_no_hit(self):
+        rs = detect.build(detect.Settings(regions=("generic", "it")))
+
+        def found(text):
+            return [m.value for m in detect.scan(text, ruleset=rs) if m.kind.startswith("it-fiscal-code")]
+        self.assertEqual(found("codice fiscale RSSMRA85T10A562S"), ["RSSMRA85T10A562S"])
+        self.assertEqual(found("codice fiscale RSSMRA85T10A562T"), [])
+
     def test_a_validator_that_cannot_parse_its_value_rejects_the_hit(self):
         def boom(_v):
             raise ValueError("unparseable")
