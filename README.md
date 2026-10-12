@@ -1102,7 +1102,10 @@ Four sources, one scanner (`maisecrets/detect.py`):
   of Betterleaks' own, which raised false alarms, and three provider rules
   Betterleaks lacks. Betterleaks' generic-password, generic-credential-uri and
   gcp-service-account are off (`rules/overrides.txt`) until the benchmark shows
-  they cost no precision. No Betterleaks or gitleaks binary is used.
+  they cost no precision. No Betterleaks or gitleaks binary is used. Google's
+  Veles detectors (Apache-2.0), as Kingfisher converts them, add providers
+  Betterleaks lacks (`rules/veles.json`, `scripts/sync_veles.py`), such as
+  Bitwarden, Deno, HCP, Heroku platform keys, OpenRouter and Packagist.
 - **Presidio** pattern recognizers, vendored as data under `maisecrets/rules/`
   (MIT, version in `PRESIDIO_VERSION`, refresh with `scripts/sync_presidio.py`):
   country-specific PII with scores and context words. The config key

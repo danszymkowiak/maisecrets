@@ -21,10 +21,12 @@ RULES = "maisecrets/rules"
 GENERATED = ("carried.json", "LICENSE-gitleaks",
              "DETECT_SECRETS_VERSION", "detect_secrets.json", "LICENSE-detect-secrets",
              "PRESIDIO_VERSION", "presidio.json", "LICENSE-presidio",
-             "BETTERLEAKS_VERSION", "betterleaks.toml", "betterleaks.json", "LICENSE-betterleaks")
+             "BETTERLEAKS_VERSION", "betterleaks.toml", "betterleaks.json", "LICENSE-betterleaks",
+             "VELES_VERSION", "veles.json", "LICENSE-kingfisher")
 MAX_BYTES = 2_000_000
 VERSION_RE = {"DETECT_SECRETS_VERSION": r"v\d+\.\d+\.\d+",
-              "PRESIDIO_VERSION": r"\d+\.\d+\.\d+", "BETTERLEAKS_VERSION": r"v\d+\.\d+\.\d+(?:-rc\.\d+)?"}
+              "PRESIDIO_VERSION": r"\d+\.\d+\.\d+", "BETTERLEAKS_VERSION": r"v\d+\.\d+\.\d+(?:-rc\.\d+)?",
+              "VELES_VERSION": r"v\d+\.\d+\.\d+"}
 
 
 def problems(root: Path = ROOT) -> list[str]:
@@ -51,11 +53,12 @@ def problems(root: Path = ROOT) -> list[str]:
             out.append(f"{name}: not a version")
     for json_name, key, version_name in (("detect_secrets.json", "detect_secrets_version", "DETECT_SECRETS_VERSION"),
                                          ("presidio.json", "presidio_version", "PRESIDIO_VERSION"),
-                                         ("betterleaks.json", "version", "BETTERLEAKS_VERSION")):
+                                         ("betterleaks.json", "version", "BETTERLEAKS_VERSION"),
+                                         ("veles.json", "kingfisher", "VELES_VERSION")):
         got = data.get(json_name, {}).get(key) if isinstance(data.get(json_name), dict) else None
         if got != version[version_name]:
             out.append(f"{json_name} is for {got!r}, {version_name} names {version[version_name]!r}")
-    for name in ("carried.json", "betterleaks.json"):
+    for name in ("carried.json", "betterleaks.json", "veles.json"):
         if not isinstance(data.get(name), dict) or not data[name].get("rules"):
             out.append(f"{name}: no rules")
     carried = data.get("carried.json")

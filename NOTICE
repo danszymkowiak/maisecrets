@@ -10,6 +10,12 @@ This product includes four rules of the gitleaks ruleset v8.30.1
 (maisecrets/rules/carried.json), Copyright (c) 2019 Zachary Rice, MIT License
 (see maisecrets/rules/LICENSE-gitleaks), consumed as data.
 
+This product includes secret detection patterns of Google's Veles detectors
+(OSV-SCALIBR, Copyright Google LLC, Apache License 2.0) as converted to regular
+expressions by Kingfisher (Copyright MongoDB, Inc., Apache License 2.0; see
+maisecrets/rules/LICENSE-kingfisher), in maisecrets/rules/veles.json, consumed as
+data. The Kingfisher version is recorded in maisecrets/rules/VELES_VERSION.
+
 This product includes PII detection patterns derived from Microsoft Presidio
 (maisecrets/rules/presidio.json: regexes, scores and context words of its
 pattern recognizers), Copyright (c) Microsoft Corporation, MIT License (see

@@ -542,7 +542,7 @@ def override_problems(text: str | None = None) -> list[str]:
     """What is wrong in rules/overrides.txt: a rule ID that no vendored set has (upstream renamed or dropped it, and
     the fix went stale) or a fix that FIXES does not know."""
     vendored = set()
-    for name in ("betterleaks.json", "carried.json"):
+    for name in ("betterleaks.json", "carried.json", "veles.json"):
         path = RULES_DIR / name
         if path.exists():
             vendored |= {r["id"] for r in json.loads(path.read_text(encoding="utf-8")).get("rules", [])}
@@ -611,8 +611,18 @@ def _load_betterleaks() -> list[Rule]:
     return [carried.pop(r.id, r) for r in rules] + list(carried.values())
 
 
+def _load_veles() -> list[Rule]:
+    """rules/veles.json (scripts/sync_veles.py): Google's Veles detectors as Kingfisher converts them, for providers
+    Betterleaks lacks (TASK-19.5). Plain regexes with a secret group; which ones load is decided in overrides.txt."""
+    fixes = _load_overrides()
+    cfg = json.loads((RULES_DIR / "veles.json").read_text(encoding="utf-8"))
+    return [Rule(id=r["id"], type="SECRET", regex=_Lazy(_re2_to_python(r["regex"])),
+                 secret_group=int(r.get("secret_group", 0) or 0), fixes=fixes.get(r["id"], ()))
+            for r in cfg.get("rules", []) if fixes.get(r["id"]) != ("off",)]
+
+
 def _load_vendored_secrets(name: str) -> list[Rule]:
-    loaders = {"betterleaks": _load_betterleaks}
+    loaders = {"betterleaks": lambda: _load_betterleaks() + _load_veles()}
     if name not in loaders:
         raise ValueError(f"the vendored secret rules are {name!r}: not one of {sorted(loaders)}")
     return loaders[name]()

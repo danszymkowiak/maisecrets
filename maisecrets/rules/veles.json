@@ -1,0 +1,193 @@
+{
+"kingfisher": "v2.11.1",
+"osv_scalibr": "e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845",
+"rules": [
+{
+"id": "veles.secrets/bitbucketcredentials",
+"name": "Bitbucket Git Credentials",
+"path": "(?i)(?:\\.git[/\\\\]config|(?:^|[/\\\\])\\.git-credentials|_history)$",
+"regex": "(?P<TOKEN>\\bhttps://(?P<GIT_USERNAME>[^:\\s]+):(?P<GIT_PASSWORD>[^\\s@]+)@bitbucket\\.org/[^\\s]+\\.git\\b)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/gitbasicauth/bitbucket/detector.go"
+},
+{
+"id": "veles.secrets/bitwardenoauth2access",
+"name": "Bitwarden OAuth2 Client Secret",
+"path": "(?i)bitwarden[ _-]*cli(?:[\\/]+)data\\.json$",
+"regex": "(?s)\"user_(?P<TOKEN_ID>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})_token_apiKeyClientSecret\"\\s*:.{0,20}?\"(?P<TOKEN>[A-Za-z0-9]{10,50})\"",
+"secret_group": 2,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/bitwardenoauth2access/detector.go"
+},
+{
+"id": "veles.secrets/circleciproject",
+"name": "CircleCI Project Token",
+"regex": "(CCIPRJ_[A-Za-z0-9]{22}_[0-9a-f]{40})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/circleci/detector.go"
+},
+{
+"id": "veles.secrets/cloudflareapitoken",
+"name": "Cloudflare API Token",
+"regex": "(?s)(?i)[\"']?\\b(?:CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CF_API_TOKEN|CF_API_KEY|CLOUDFLARE_TOKEN|CF_TOKEN|CLOUDFLARE_AUTH_KEY|CF_ACCOUNT_ID)\\b[\"']?\\s*[=:].{0,20}?(\\b[A-Za-z0-9_-]{40}\\b)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/cloudflareapitoken/detector.go"
+},
+{
+"id": "veles.secrets/codecatalystcredentials",
+"name": "AWS CodeCatalyst Git Credentials",
+"path": "(?i)(?:\\.git[/\\\\]config|(?:^|[/\\\\])\\.git-credentials|_history)$",
+"regex": "(?P<TOKEN>\\bhttps://(?P<GIT_USERNAME>[^:\\s]+):(?P<GIT_PASSWORD>[^\\s@]+)@git\\.[^/]*codecatalyst\\.aws/[^\\s]*)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/gitbasicauth/codecatalyst/detector.go"
+},
+{
+"id": "veles.secrets/codecommitcredentials",
+"name": "AWS CodeCommit Git Credentials",
+"path": "(?i)(?:\\.git[/\\\\]config|(?:^|[/\\\\])\\.git-credentials|_history)$",
+"regex": "(?P<TOKEN>https://(?P<GIT_USERNAME>[^:\\s]+):(?P<GIT_PASSWORD>[^\\s@]+)@git-codecommit\\.[a-zA-Z\\-0-9]+\\.amazonaws\\.com/[^\\s]+)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/gitbasicauth/codecommit/detector.go"
+},
+{
+"id": "veles.secrets/denopatorg",
+"name": "Deno Organization Token",
+"regex": "(ddo_[A-Za-z0-9]{36})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/denopat/detector.go"
+},
+{
+"id": "veles.secrets/digitaloceanapikey",
+"name": "DigitalOcean API Token",
+"regex": "(dop_v1_[abcdef0-9]{64})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/digitaloceanapikey/detector.go"
+},
+{
+"id": "veles.secrets/grokxaiapikey",
+"name": "xAI API Key",
+"regex": "(xai-[A-Za-z0-9]{80})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/grokxaiapikey/detector.go"
+},
+{
+"id": "veles.secrets/hcpclientcredentials",
+"name": "HashiCorp Cloud Platform Client Secret",
+"regex": "[\"']?\\b(?:HCP_CLIENT_SECRET|hcp_client_secret)\\b[\"']?\\s*[:=]\\s*[\"']?([A-Za-z0-9._~\\-]{64})[\"']?",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/hcp/detector.go"
+},
+{
+"id": "veles.secrets/hcpclientcredentials-client-id",
+"name": "HashiCorp Cloud Platform Client ID",
+"regex": "[\"']?\\b(?:HCP_CLIENT_ID|hcp_client_id)\\b[\"']?\\s*[:=]\\s*[\"']?([A-Za-z0-9]{32})[\"']?",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/hcp/detector.go"
+},
+{
+"id": "veles.secrets/herokuplatformkey",
+"name": "Heroku Platform Key",
+"regex": "(\\b(HRKU-[0-9a-zA-Z_-]{60})\\b)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/herokuplatformkey/detector.go"
+},
+{
+"id": "veles.secrets/npmjsaccesstoken",
+"name": "npm Access Token",
+"regex": "(npm_[a-zA-Z0-9]{36})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/npmjsaccesstoken/detector.go"
+},
+{
+"id": "veles.secrets/openrouter",
+"name": "OpenRouter API Key",
+"regex": "(sk-or-v[0-9]+-[A-Za-z0-9_-]{20,})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/openrouter/detector.go"
+},
+{
+"id": "veles.secrets/packagistorgreadtoken",
+"name": "Packagist Organization Read Token",
+"regex": "(packagist_ort_[0-9a-f]{68})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/packagist/detector.go"
+},
+{
+"id": "veles.secrets/packagistorgreadtoken-repository",
+"name": "Packagist Organization Read Token Repository URL",
+"regex": "(https?://repo\\.packagist\\.com[/\\w\\-\\.]*)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/packagist/detector.go"
+},
+{
+"id": "veles.secrets/packagistorgupdatetoken",
+"name": "Packagist Organization Update Token",
+"regex": "(packagist_out_[0-9a-f]{68})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/packagist/detector.go"
+},
+{
+"id": "veles.secrets/packagistorgupdatetoken-repository",
+"name": "Packagist Organization Update Token Repository URL",
+"regex": "(https?://repo\\.packagist\\.com[/\\w\\-\\.]*)",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/packagist/detector.go"
+},
+{
+"id": "veles.secrets/packagistsecret",
+"name": "Packagist API Secret",
+"regex": "(packagist_acs_[0-9a-f]{64,96})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/packagist/detector.go"
+},
+{
+"id": "veles.secrets/packagistsecret-api-key",
+"name": "Packagist API Key",
+"regex": "(packagist_ack_[0-9a-f]{28,32})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/packagist/detector.go"
+},
+{
+"id": "veles.secrets/postmanapikey",
+"name": "Postman API Key",
+"regex": "(PMAK-[A-Fa-f0-9]{24}-[A-Fa-f0-9]{34})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/postmanapikey/detector.go"
+},
+{
+"id": "veles.secrets/postmancollectiontoken",
+"name": "Postman Collection Access Token",
+"regex": "(PMAT-[A-Za-z0-9]{26})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/postmanapikey/detector.go"
+},
+{
+"id": "veles.secrets/sendgrid",
+"name": "SendGrid API Key",
+"regex": "(SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/sendgrid/detector.go"
+},
+{
+"id": "veles.secrets/slackappconfigaccesstoken",
+"name": "Slack App Configuration Access Token",
+"regex": "(xoxe\\.xoxp-\\d{1,10}-[a-zA-Z0-9]{166})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/slacktoken/detector.go"
+},
+{
+"id": "veles.secrets/slackappconfigrefreshtoken",
+"name": "Slack App Configuration Refresh Token",
+"regex": "(xoxe-\\d{1,10}-[a-zA-Z0-9]{147})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/slacktoken/detector.go"
+},
+{
+"id": "veles.secrets/slackappleveltoken",
+"name": "Slack App-Level Token",
+"regex": "(xapp-\\d{1,10}-[A-Za-z0-9]{11}-[0-9]{13}-[a-fA-F0-9]{64})",
+"secret_group": 0,
+"source": "https://raw.githubusercontent.com/google/osv-scalibr/e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845/veles/secrets/slacktoken/detector.go"
+}
+],
+"source": "Google Veles (OSV-SCALIBR e8621f1fff93beb5b70e5d6ba5fdc3e9854ec845, Apache-2.0) as converted by Kingfisher v2.11.1 (Apache-2.0, rules/LICENSE-kingfisher)"
+}

@@ -345,6 +345,15 @@ unchanged (2,708), every other dataset identical, SECRET_PREFIXED gap narrowed, 
 in the four synthetic documents generic-api-key claims the same token first. TASK-19.4 switches to
 this configuration.
 
+**Veles rules from Kingfisher (TASK-19.5, run 20261012-141549).** `scripts/sync_veles.py v2.11.1` vendors the
+26 Veles detectors Kingfisher converts. A generated sample of each was scanned with the current rules: 8 are
+already found by a Betterleaks rule (DigitalOcean, xAI, npm, Postman API key, SendGrid, three Slack tokens),
+the 3 git credential URLs have their password redacted by ds-basic-auth, and 2 Packagist repository URLs and the
+HCP client id are no secrets: those 14 are off in `rules/overrides.txt`. The other 12 (Bitwarden, CircleCI
+project, Cloudflare, Deno, HCP client secret, Heroku platform key, OpenRouter, four Packagist tokens, Postman
+collection) fire on no bench sample: no false hit over every dataset, verdict neutral; kept for the providers
+they add.
+
 **The switch (TASK-19.4, baseline run 20261012-131230).** Betterleaks is the vendored set; gitleaks'
 generic-api-key, etsy-access-token, jfrog-api-key and jfrog-identity-token are carried in
 `rules/carried.json`; generic-password, generic-credential-uri and gcp-service-account are off. Against

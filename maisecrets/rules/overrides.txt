@@ -19,3 +19,21 @@ generic-password       off
 generic-credential-uri off
 # false hits and no true hit on the bench (TASK-19.3: CredData 2 false, 0 true)
 gcp-service-account    off
+# Veles rules (rules/veles.json, TASK-19.5): off where a loaded rule already finds the same token, or where the match
+# is no secret
+veles.secrets/digitaloceanapikey              off
+veles.secrets/grokxaiapikey                   off
+veles.secrets/npmjsaccesstoken                off
+veles.secrets/postmanapikey                   off
+veles.secrets/sendgrid                        off
+veles.secrets/slackappconfigaccesstoken       off
+veles.secrets/slackappconfigrefreshtoken      off
+veles.secrets/slackappleveltoken              off
+# the password of these git URLs is already redacted by ds-basic-auth; the user name is no secret
+veles.secrets/bitbucketcredentials            off
+veles.secrets/codecatalystcredentials         off
+veles.secrets/codecommitcredentials           off
+# a repository URL and a client id: identifiers the token rules use, not secrets
+veles.secrets/packagistorgreadtoken-repository   off
+veles.secrets/packagistorgupdatetoken-repository off
+veles.secrets/hcpclientcredentials-client-id     off
