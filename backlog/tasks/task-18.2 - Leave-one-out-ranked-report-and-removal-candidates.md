@@ -4,7 +4,7 @@ title: 'Leave-one-out: ranked report and removal candidates'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 12:41'
 labels:
   - benchmark
 dependencies:
@@ -27,4 +27,11 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 <!-- AC:BEGIN -->
 - [ ] #1 Report section in docs/BENCHMARK.md or the task's final summary
 - [ ] #2 Plugin tasks for the candidates, each with its real-use note
+- [ ] #3 The ranking: pure wins, then trades by weighted FP saved per TP lost (counts shown, small counts flagged), then protected rules; marginal counts from TASK-18.1
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Ranking decided with the user on 2026-10-12: sort the removals by the change in true positives against the change in false positives. Refined: (1) marginal counts from leave-one-out (only finds no other rule picks up, only alarms that disappear); (2) lost true positives weighted by tier (critical >> high >> no regression), saved false positives weighted by the objective's dataset weights (Gretel and findocs 2.0); (3) three groups: pure wins (false positives saved, no true positive lost; sorted by false positives saved), trades (sorted by weighted false positives saved per true positive lost, both counts shown, small counts flagged as weak evidence), protected (removal breaks a recall floor or worsens a gap: listed, never a candidate). Each candidate keeps its real-use note and a plugin task for the user's approval.
+<!-- SECTION:NOTES:END -->
