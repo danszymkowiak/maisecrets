@@ -44,7 +44,7 @@ class RuleSetTests(unittest.TestCase):
     def test_the_vendored_set_is_a_setting(self):
         bl = detect.build(detect.Settings(secret_rules="betterleaks"))
         self.assertIn("aikido-ci-token", {r.id for r in bl.rules})
-        self.assertNotIn("aikido-ci-token", {r.id for r in detect.rules()})
+        self.assertIn("aikido-ci-token", {r.id for r in detect.rules()}, "Betterleaks is the default (TASK-19.4)")
         with self.assertRaises(ValueError):
             detect.build(detect.Settings(secret_rules="trufflehog"))
 

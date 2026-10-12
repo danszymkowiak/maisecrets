@@ -32,7 +32,7 @@
     [[change]]
     op = "carry"            # take one rule from a vendored set in place of the rule of that id (TASK-19.8)
     rule = "generic-api-key"
-    from = "gitleaks"
+    from = "carried"            # the rules kept from gitleaks (rules/carried.json), or a vendored set
 
     [[change]]
     op = "unfix"            # switch off one named check that drops hits (detect.FIXES, TASK-26)
@@ -165,10 +165,14 @@ def ruleset(m: Mutation, base, strict: bool = True):
 
 
 def _carried(c: dict, where: str):
-    """The rule `rule` of the vendored set `from`, as that set's loader builds it (fixes included)."""
+    """The rule `rule` of the vendored set `from` (or of the carried gitleaks rules: "carried"), as its loader builds it
+    (fixes included)."""
     from .detector import detect
     try:
-        rules = detect._load_vendored_secrets(str(c.get("from")))
+        if c.get("from") == "carried":
+            rules = detect._load_carried()
+        else:
+            rules = detect._load_vendored_secrets(str(c.get("from")))
     except ValueError:
         raise BenchError(f"{where}: vendored set {c.get('from')!r} is not one the detector knows") from None
     rule = next((r for r in rules if r.id == c.get("rule")), None)

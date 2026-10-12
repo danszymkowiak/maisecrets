@@ -54,7 +54,8 @@ class VendoredRulesTests(unittest.TestCase):
             self.fail("a symlink could not be made outside Windows")
 
     def test_a_rules_json_without_rules_is_refused(self):
-        for name, extra in (("gitleaks.json", {}), ("betterleaks.json", {"version": "v1.9.0"})):
+        for name, extra in (("carried.json", {"source": "gitleaks v8.30.1"}),
+                            ("betterleaks.json", {"version": "v1.9.0"})):
             with self.subTest(name):
                 saved = (self.rules / name).read_text(encoding="utf-8")
                 (self.rules / name).write_text(json.dumps({"title": "x", **extra}), encoding="utf-8")
@@ -67,6 +68,13 @@ class VendoredRulesTests(unittest.TestCase):
         data["rules"].append({"regex": "x"})
         p.write_text(json.dumps(data), encoding="utf-8")
         self.assertIn("betterleaks.json: a rule without an id", cvr.problems(self.root))
+
+    def test_carried_rules_must_name_their_gitleaks_source(self):
+        p = self.rules / "carried.json"
+        data = json.loads(p.read_text(encoding="utf-8"))
+        data["source"] = "somewhere"
+        p.write_text(json.dumps(data), encoding="utf-8")
+        self.assertIn("carried.json: names no gitleaks version as its source", cvr.problems(self.root))
 
 
 if __name__ == "__main__":

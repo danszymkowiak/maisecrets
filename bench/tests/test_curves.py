@@ -1,5 +1,5 @@
-"""Precision-recall curves for rules with a score (docs/BENCHMARK.md, Metrics): a gitleaks entropy threshold is swept
-over the candidates of a relaxed run; a Presidio context gate gives two points. Pure functions.
+"""Precision-recall curves for rules with a score (docs/BENCHMARK.md, Metrics): an entropy threshold (a carried
+gitleaks rule) is swept over the candidates of a relaxed run; a Presidio context gate gives two points. Pure functions.
 
 Run: uv run --project bench python -m unittest discover -s bench/tests
 """

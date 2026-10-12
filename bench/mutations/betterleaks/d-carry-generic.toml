@@ -8,4 +8,4 @@ set = "betterleaks"
 [[change]]
 op = "carry"
 rule = "generic-api-key"
-from = "gitleaks"
+from = "carried"          # the gitleaks set itself was removed in TASK-19.4; its rule lives on in rules/carried.json

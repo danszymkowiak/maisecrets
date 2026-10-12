@@ -196,7 +196,8 @@ Per dataset, per type, per split, and per rule:
   stands for a different use (code, legal text, general PII, finance).
 - Hits per rule; the **rules that never fire** on any dataset are listed for possible removal.
 - Where a rule has a score, `bench/curves.py` re-runs the detector with the gates open (entropy thresholds
-  at 0, context requirements off) and keeps each candidate's score. A gitleaks entropy rule gets a curve
+  at 0, context requirements off) and keeps each candidate's score. An entropy rule (since TASK-19.4 the
+  carried gitleaks rules; Betterleaks puts its entropy limits in filter expressions) gets a curve
   of precision over *retained* (the share of the rule's true positives at the lowest threshold that a
   threshold keeps), its area, and the point at today's threshold. A Presidio context gate is on or off,
   so it gets two points, with and without the gate. A rule without a score, or without a judged candidate,
@@ -330,6 +331,12 @@ unchanged (2,708), every other dataset identical, SECRET_PREFIXED gap narrowed, 
 (`bench/mutations/betterleaks/d-carry-generic.toml`). The npm-access-token "losses" were no misses:
 in the four synthetic documents generic-api-key claims the same token first. TASK-19.4 switches to
 this configuration.
+
+**The switch (TASK-19.4, baseline run 20261012-131230).** Betterleaks is the vendored set; gitleaks'
+generic-api-key, etsy-access-token, jfrog-api-key and jfrog-identity-token are carried in
+`rules/carried.json`; generic-password, generic-credential-uri and gcp-service-account are off. Against
+the last gitleaks baseline (20261012-113809): CredData 9,957 to 9,965 true hits, every other number
+unchanged; verdict accepted. The gitleaks rule files and `scripts/sync_gitleaks.py` are gone.
 
 ## Synthetic tool output
 

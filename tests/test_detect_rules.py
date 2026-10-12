@@ -98,13 +98,16 @@ def tax_id_check(first10: str) -> str:
 
 # ------------------------------------------------------------------ loaders --
 class RuleLoaderTests(unittest.TestCase):
-    def test_gitleaks_rules_are_secret_rules_with_their_allowlists(self):
-        rules = detect._load_gitleaks()
-        self.assertGreater(len(rules), 150)
+    def test_vendored_rules_are_secret_rules_and_the_carried_ones_keep_their_allowlists(self):
+        rules = detect._load_betterleaks()
+        self.assertGreater(len(rules), 400)
         self.assertEqual({r.type for r in rules}, {"SECRET"})
         self.assertEqual(len({r.id for r in rules}), len(rules))
         by_id = {r.id: r for r in rules}
+        # gitleaks' generic-api-key is carried in place of Betterleaks' own (TASK-19.4): its entropy and allowlists
         generic = by_id["generic-api-key"]
+        self.assertIsNone(generic.filter)
+        self.assertEqual({r.id for r in detect._load_carried()} - set(by_id), set())
         self.assertEqual(generic.entropy, 3.5)
         self.assertIn("token", generic.keywords)
         self.assertTrue(all(k == k.lower() for r in rules for k in r.keywords))
@@ -978,13 +981,18 @@ if __name__ == "__main__":
 
 
 class GitleaksJsonTests(unittest.TestCase):
-    """The detector reads gitleaks.json, because tomllib is Python 3.11+ and the stock python3 of
-    macOS is 3.9. The JSON must hold exactly the rules of the vendored gitleaks.toml."""
+    """The detector reads betterleaks.json, because tomllib is Python 3.11+ and the stock python3 of
+    macOS is 3.9. The JSON must hold exactly the vendored betterleaks.toml, converted by the sync script."""
 
     @unittest.skipIf(sys.version_info < (3, 11), "tomllib is Python 3.11+")
     def test_the_json_rules_equal_the_vendored_toml(self):
-        import tomllib
-        rules = Path(__file__).resolve().parent.parent / "maisecrets" / "rules"
-        self.assertEqual(json.loads((rules / "gitleaks.json").read_text(encoding="utf-8")),
-                         tomllib.loads((rules / "gitleaks.toml").read_text(encoding="utf-8")),
-                         "run scripts/sync_gitleaks.py: it writes both")
+        import importlib.util
+        root = Path(__file__).resolve().parent.parent
+        spec = importlib.util.spec_from_file_location("sync_betterleaks", root / "scripts" / "sync_betterleaks.py")
+        sync = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sync)
+        rules = root / "maisecrets" / "rules"
+        version = (rules / "BETTERLEAKS_VERSION").read_text(encoding="utf-8").strip()
+        self.assertEqual(json.loads((rules / "betterleaks.json").read_text(encoding="utf-8")),
+                         {"version": version, **sync.convert((rules / "betterleaks.toml").read_text(encoding="utf-8"))},
+                         "run scripts/sync_betterleaks.py: it writes both")

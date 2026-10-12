@@ -1094,10 +1094,15 @@ sends the rule name, never the value.
 
 Four sources, one scanner (`maisecrets/detect.py`):
 
-- **gitleaks** ruleset, vendored as data under `maisecrets/rules/` (MIT,
-  version in `GITLEAKS_VERSION`, refresh with `scripts/sync_gitleaks.py vX.Y.Z`):
-  ~220 secret shapes with keywords, entropy thresholds and allowlists. No
-  gitleaks binary is used.
+- **Betterleaks** ruleset, vendored as data under `maisecrets/rules/` (MIT,
+  version in `BETTERLEAKS_VERSION`, refresh with `scripts/sync_betterleaks.py vX.Y.Z`):
+  ~460 secret shapes with keywords and filter expressions, which the sync
+  converts to data and `maisecrets/filterexpr.py` evaluates. Four gitleaks
+  rules are carried in `rules/carried.json` (MIT): its generic-api-key in place
+  of Betterleaks' own, which raised false alarms, and three provider rules
+  Betterleaks lacks. Betterleaks' generic-password, generic-credential-uri and
+  gcp-service-account are off (`rules/overrides.txt`) until the benchmark shows
+  they cost no precision. No Betterleaks or gitleaks binary is used.
 - **Presidio** pattern recognizers, vendored as data under `maisecrets/rules/`
   (MIT, version in `PRESIDIO_VERSION`, refresh with `scripts/sync_presidio.py`):
   country-specific PII with scores and context words. The config key

@@ -6,8 +6,8 @@ Usage: scripts/check_vendored_rules.py
 Each generated file is a regular file (no symlink) of a sane size, every JSON file parses, each
 version file holds one version, and the JSON of detect-secrets and Presidio names the version its
 version file names: a commit that moves one of these two version files alone is red. Betterleaks
-is checked the same way (betterleaks.json names its version, and every rule has an id). gitleaks.json
-carries no version, so for gitleaks only the sync script keeps the two together.
+is checked the same way (betterleaks.json names its version, and every rule has an id). carried.json
+holds the rules kept from gitleaks (TASK-19.4): it names its source, and LICENSE-gitleaks stays with it.
 """
 from __future__ import annotations
 
@@ -18,12 +18,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RULES = "maisecrets/rules"
-GENERATED = ("GITLEAKS_VERSION", "gitleaks.toml", "gitleaks.json", "LICENSE-gitleaks",
+GENERATED = ("carried.json", "LICENSE-gitleaks",
              "DETECT_SECRETS_VERSION", "detect_secrets.json", "LICENSE-detect-secrets",
              "PRESIDIO_VERSION", "presidio.json", "LICENSE-presidio",
              "BETTERLEAKS_VERSION", "betterleaks.toml", "betterleaks.json", "LICENSE-betterleaks")
 MAX_BYTES = 2_000_000
-VERSION_RE = {"GITLEAKS_VERSION": r"v\d+\.\d+\.\d+", "DETECT_SECRETS_VERSION": r"v\d+\.\d+\.\d+",
+VERSION_RE = {"DETECT_SECRETS_VERSION": r"v\d+\.\d+\.\d+",
               "PRESIDIO_VERSION": r"\d+\.\d+\.\d+", "BETTERLEAKS_VERSION": r"v\d+\.\d+\.\d+(?:-rc\.\d+)?"}
 
 
@@ -55,9 +55,12 @@ def problems(root: Path = ROOT) -> list[str]:
         got = data.get(json_name, {}).get(key) if isinstance(data.get(json_name), dict) else None
         if got != version[version_name]:
             out.append(f"{json_name} is for {got!r}, {version_name} names {version[version_name]!r}")
-    for name in ("gitleaks.json", "betterleaks.json"):
+    for name in ("carried.json", "betterleaks.json"):
         if not isinstance(data.get(name), dict) or not data[name].get("rules"):
             out.append(f"{name}: no rules")
+    carried = data.get("carried.json")
+    if isinstance(carried, dict) and not str(carried.get("source", "")).startswith("gitleaks v"):
+        out.append("carried.json: names no gitleaks version as its source")
     bl = data.get("betterleaks.json")
     if isinstance(bl, dict) and any(not isinstance(r, dict) or not r.get("id") for r in bl.get("rules", [])):
         out.append("betterleaks.json: a rule without an id")

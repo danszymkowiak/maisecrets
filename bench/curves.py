@@ -3,9 +3,10 @@
 
     uv run --project bench python bench/curves.py [--run <dir>]
 
-Re-runs the detector with the gates open (gitleaks entropy thresholds at 0, Presidio context requirements off),
-scores every candidate, and writes curves.md into the run: per entropy rule the area under precision over retained
-true positives and the point at today's threshold; per context-gated rule the two points with and without the gate.
+Re-runs the detector with the gates open (the entropy thresholds of the carried gitleaks rules at 0, Presidio
+context requirements off), scores every candidate, and writes curves.md into the run: per entropy rule the area
+under precision over retained true positives and the point at today's threshold; per context-gated rule the two
+points with and without the gate.
 In the relaxed run a candidate can claim a span another rule would have taken, so the curves are approximate.
 """
 from __future__ import annotations
@@ -124,7 +125,7 @@ def main(argv: list[str]) -> int:
     out = ["# Precision-recall curves", "", *run.licence_notes(names), "",
            f"Relaxed run over {', '.join(names)} (baseline `{rdir.name}`). Approximate: with the gates open a "
            "candidate can take a span another rule would have claimed.", "",
-           "## Entropy rules (gitleaks)", "",
+           "## Entropy rules (carried from gitleaks)", "",
            "| rule | threshold today | TP / FP today | precision today | retained today | AUC | best precision "
            "at >= 90% retained |", "|---|---|---|---|---|---|---|"]
     for rid in sorted(ent_pts, key=lambda r: -len(ent_pts[r])):

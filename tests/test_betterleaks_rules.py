@@ -1,6 +1,6 @@
 """Betterleaks rules in the detector (TASK-19.2): the evaluator of the converted rule filters (filterexpr.py),
-the switch between the vendored gitleaks and Betterleaks sets, and the per-rule fixes of vendored rules, which sit in
-rules/overrides.txt keyed by the upstream rule ID.
+Betterleaks as the vendored set with the rules carried from gitleaks (TASK-19.4), and the per-rule fixes of vendored
+rules, which sit in rules/overrides.txt keyed by the upstream rule ID.
 
 Run: python3 -m unittest tests.test_betterleaks_rules -v
 Every token is generated at run time, so no literal sits in the tree.
@@ -101,12 +101,15 @@ class SwitchTests(unittest.TestCase):
     def ids(self) -> set:
         return {r.id for r in self.rs.rules}
 
-    def test_off_loads_gitleaks_and_no_betterleaks_rule(self):
-        self.use("gitleaks")
-        g = {r["id"] for r in json.loads((detect.RULES_DIR / "gitleaks.json").read_text(encoding="utf-8"))["rules"]
-             if "regex" in r}
-        self.assertLessEqual(g, self.ids())
-        self.assertNotIn("aikido-ci-token", self.ids())   # a Betterleaks-only rule, the premise below
+    def test_betterleaks_is_the_default_and_the_carried_rules_are_in_it(self):
+        self.assertIn("aikido-ci-token", {r.id for r in detect.rules()})   # a Betterleaks rule
+        carried = {r.id: r for r in detect._load_carried()}
+        self.assertEqual(set(carried),
+                         {"generic-api-key", "etsy-access-token", "jfrog-api-key", "jfrog-identity-token"})
+        default = {r.id: r for r in detect.rules()}
+        for rid, rule in carried.items():
+            with self.subTest(rule=rid):
+                self.assertEqual(default[rid].regex.pattern, rule.regex.pattern)
 
     def test_on_loads_betterleaks_without_its_component_only_rules(self):
         self.use("betterleaks")
@@ -149,12 +152,11 @@ class OverrideTests(unittest.TestCase):
         lines = "generic-api-key  rocket\n"
         self.assertIn("overrides.txt: generic-api-key names an unknown fix 'rocket'", detect.override_problems(lines))
 
-    def test_the_four_fixed_rules_carry_their_fixes_in_both_sets(self):
-        for name in ("gitleaks", "betterleaks"):
-            fixes = {r.id: r.fixes for r in detect.build(detect.Settings(secret_rules=name)).rules}
-            for rid in ("generic-api-key", "curl-auth-user", "aws-access-token", "hashicorp-tf-password"):
-                with self.subTest(name=name, rule=rid):
-                    self.assertTrue(fixes[rid])
+    def test_the_four_fixed_rules_carry_their_fixes(self):
+        fixes = {r.id: r.fixes for r in detect.rules()}
+        for rid in ("generic-api-key", "curl-auth-user", "aws-access-token", "hashicorp-tf-password"):
+            with self.subTest(rule=rid):
+                self.assertTrue(fixes[rid])
 
     def test_off_leaves_a_vendored_rule_out(self):
         # the user, 2026-10-12: two Betterleaks rules stay off until TASK-19.3 benches them

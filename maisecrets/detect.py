@@ -2,10 +2,12 @@
 
 Three rule sources, one scanner:
 
-1. **gitleaks** (`rules/gitleaks.toml`, vendored, MIT, version in
-   `rules/GITLEAKS_VERSION`): ~220 secret shapes with keywords, entropy
-   thresholds and allowlists. Consumed as data; no gitleaks binary. Refresh
-   with `scripts/sync_gitleaks.py vX.Y.Z`.
+1. **Betterleaks** (`rules/betterleaks.toml` and `betterleaks.json`, vendored,
+   MIT, version in `rules/BETTERLEAKS_VERSION`): ~460 secret shapes with
+   keywords and filter expressions (evaluated by `filterexpr.py`). Consumed as
+   data; no binary. Refresh with `scripts/sync_betterleaks.py vX.Y.Z`. Four
+   gitleaks rules are carried in `rules/carried.json` (MIT), among them
+   gitleaks' generic-api-key in place of Betterleaks' own (TASK-19.4).
 2. **Presidio** (`rules/presidio.json`, derived from Microsoft Presidio's
    pattern recognizers, MIT, version in `rules/PRESIDIO_VERSION`): country
    and generic PII shapes with scores and context words. Regions are
@@ -44,9 +46,8 @@ RULES_DIR = Path(__file__).resolve().parent / "rules"
 # normaliser stages (maisecrets/normalise.py) whose cleaned copy the shape rules scan as well: off until the bench has
 # judged them (TASK-11.25)
 NORMALISE: tuple[str, ...] = ()
-# the vendored secret rule set: "gitleaks" or "betterleaks" (TASK-19). The bench compares both (TASK-19.3); TASK-19.4
-# switches and removes gitleaks
-SECRET_RULES = "gitleaks"
+# the vendored secret rule set (TASK-19): Betterleaks, with the rules carried from gitleaks (rules/carried.json)
+SECRET_RULES = "betterleaks"
 
 
 @dataclass(frozen=True)
@@ -104,7 +105,7 @@ class Rule:
 
 # ----------------------------------------------------------------- helpers --
 def _re2_to_python(rx: str) -> str:
-    """gitleaks regexes are RE2. Python differs in two spots we hit."""
+    """The vendored regexes are RE2 (Go). Python differs in two spots we hit."""
     flags = ""
     if "(?i)" in rx:
         rx = rx.replace("(?i)", "")
@@ -541,7 +542,7 @@ def override_problems(text: str | None = None) -> list[str]:
     """What is wrong in rules/overrides.txt: a rule ID that no vendored set has (upstream renamed or dropped it, and
     the fix went stale) or a fix that FIXES does not know."""
     vendored = set()
-    for name in ("gitleaks.json", "betterleaks.json"):
+    for name in ("betterleaks.json", "carried.json"):
         path = RULES_DIR / name
         if path.exists():
             vendored |= {r["id"] for r in json.loads(path.read_text(encoding="utf-8")).get("rules", [])}
@@ -555,12 +556,14 @@ def override_problems(text: str | None = None) -> list[str]:
     return out
 
 
-def _load_gitleaks() -> list[Rule]:
+def _load_carried() -> list[Rule]:
+    """rules/carried.json: the gitleaks rules kept after the switch to Betterleaks (TASK-19.4), in gitleaks' format:
+    its generic-api-key (the bench accepted the switch only with it, TASK-19.8) and three provider rules Betterleaks
+    lacks (TASK-19.3). The file names their source and the reason for each."""
     fixes = _load_overrides()
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")   # "possible nested set" in two gitleaks regexes
-        # gitleaks.json is the same rules as JSON, for a Python without tomllib; a test keeps the two equal
-        cfg = json.loads((RULES_DIR / "gitleaks.json").read_text(encoding="utf-8"))
+        warnings.simplefilter("ignore")   # "possible nested set" in a gitleaks regex
+        cfg = json.loads((RULES_DIR / "carried.json").read_text(encoding="utf-8"))
         rules: list[Rule] = []
         for r in cfg.get("rules", []):
             if "regex" not in r or fixes.get(r["id"]) == ("off",):
@@ -588,6 +591,7 @@ def _load_betterleaks() -> list[Rule]:
     multipart rule) and the path prefilter (the scanner sees text, not files). Components do not gate their primary
     rule: a client secret is redacted with or without its client id nearby (TASK-19.3 benches the difference)."""
     fixes = _load_overrides()
+    carried = {r.id: r for r in _load_carried()}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         cfg = json.loads((RULES_DIR / "betterleaks.json").read_text(encoding="utf-8"))
@@ -603,11 +607,12 @@ def _load_betterleaks() -> list[Rule]:
             keywords=tuple(k.lower() for k in r.get("keywords", []) or ()),
             secret_group=int(r.get("secretGroup", 0) or 0), filter=tree, fixes=fixes.get(r["id"], ()),
         ))
-    return rules
+    # a carried rule takes the place of Betterleaks' rule of that id; the others follow
+    return [carried.pop(r.id, r) for r in rules] + list(carried.values())
 
 
 def _load_vendored_secrets(name: str) -> list[Rule]:
-    loaders = {"gitleaks": _load_gitleaks, "betterleaks": _load_betterleaks}
+    loaders = {"betterleaks": _load_betterleaks}
     if name not in loaders:
         raise ValueError(f"the vendored secret rules are {name!r}: not one of {sorted(loaders)}")
     return loaders[name]()
@@ -789,7 +794,7 @@ class Settings:
     normaliser stages. The defaults are the rules of no country."""
     regions: tuple[str, ...] = DEFAULT_PII_REGIONS
     languages: tuple[str, ...] = ("en",)
-    secret_rules: str = "gitleaks"
+    secret_rules: str = "betterleaks"
     normalise: tuple[str, ...] = ()
 
 

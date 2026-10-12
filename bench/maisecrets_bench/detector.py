@@ -49,9 +49,9 @@ def known_types() -> frozenset[str]:
 
 def rule_index() -> dict:
     """Every rule of every region by id: type, regex and the fields a mutation can set. What an agent reads before it
-    proposes a change; the rule sets are public (gitleaks, Presidio, detect-secrets, the plugin's own)."""
-    rules = (detect._load_own() + detect._load_detect_secrets(("en", "de")) + detect._load_gitleaks()
-             + detect._load_betterleaks()
+    proposes a change; the rule sets are public (Betterleaks with the carried gitleaks rules, Presidio, detect-secrets,
+    the plugin's own)."""
+    rules = (detect._load_own() + detect._load_detect_secrets(("en", "de")) + detect._load_betterleaks()
              + detect._load_regional(all_regions()) + detect._load_presidio(all_regions()))
     out = {}
     for r in rules:

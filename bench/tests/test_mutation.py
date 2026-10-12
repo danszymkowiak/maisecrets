@@ -112,22 +112,22 @@ class ApplyTests(unittest.TestCase):
         self.assertIn("aikido-ci-token", ids)
         self.assertNotIn("jwt", ids, "the later changes apply to the swapped set")
         self.assertIn("email", ids, "the other rules stay")
-        self.assertNotIn("aikido-ci-token", {r.id for r in D.rules()})
+        self.assertIn("aikido-ci-token", {r.id for r in D.rules()}, "Betterleaks is the default since TASK-19.4")
 
     def test_carry_takes_a_rule_from_the_other_vendored_set(self):
         # TASK-19.8: Betterleaks with gitleaks' generic-api-key in place of its own
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "betterleaks"\n'
-                  '[[change]]\nop = "carry"\nrule = "generic-api-key"\nfrom = "gitleaks"\n')
+                  '[[change]]\nop = "carry"\nrule = "generic-api-key"\nfrom = "carried"\n')
         mutation.validate(m)
         rules = mutation.ruleset(m, D.default_ruleset()).rules
         gak = [r for r in rules if r.id == "generic-api-key"]
         self.assertEqual(len(gak), 1)
-        gitleaks = next(r for r in D._load_gitleaks() if r.id == "generic-api-key")
+        gitleaks = next(r for r in D._load_carried() if r.id == "generic-api-key")
         self.assertEqual((gak[0].regex.pattern, gak[0].entropy, gak[0].filter), (gitleaks.regex.pattern, 3.5, None))
         self.assertIn("aikido-ci-token", {r.id for r in rules})
 
     def test_carry_of_an_unknown_rule_is_named(self):
-        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "carry"\nrule = "no-such"\nfrom = "gitleaks"\n')
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "carry"\nrule = "no-such"\nfrom = "carried"\n')
         with self.assertRaisesRegex(BenchError, "no-such"):
             mutation.validate(m)
 
