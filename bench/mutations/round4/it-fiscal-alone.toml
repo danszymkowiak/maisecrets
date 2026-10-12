@@ -1,0 +1,7 @@
+name = "it-fiscal-code: its check character, alone"
+why = "TASK-11.29. Round 2 judged it only together with it-vat-code, which failed on generated gold; this judges it alone."
+
+[[change]]
+op = "set"
+rule = "it-fiscal-code"
+validator = "bench:it_fiscal"
