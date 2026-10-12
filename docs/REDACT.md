@@ -83,6 +83,7 @@ text with those values already replaced and work on the 1,773 left.
 | rules, then the defaults, 2 of 3 agree | 83% | 89% | 97% | 100% | 98% | 6.0 | 25 |
 | rules, then the defaults, all 3 agree | 60% | 71% | 70% | 95% | 92% | 2.5 | 36 |
 | rules, then all four models, 2 of 4 agree | 88% | 90% | 100% | 100% | 98% | 7.2 | 25 |
+| the same, a span only privacy-filter found dropped, not reviewed | 88% | 90% | 100% | 100% | 98% | 7.2 | 9 |
 
 **Why these three models.** The vote is only worth something when the models fail on different
 values. Over the 1,773 values the rules leave, the misses of each pair correlate (phi):
