@@ -1,9 +1,10 @@
 ---
 id: TASK-36
 title: 'Bench: findocs labels its generated names, birth dates and street lines'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 15:06'
+updated_date: '2026-10-12 17:53'
 labels:
   - bench
 dependencies: []
@@ -19,6 +20,12 @@ Found by TASK-34.8 (2026-10-12): findocs writes a generated name into almost eve
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every generated name, company, birth date and street line of findocs is a pos span (OUT_OF_SCOPE), tested
-- [ ] #2 The dataset is rebuilt; the plugin baseline and redact's measurement are re-run on it
+- [x] #1 Every generated name, company, birth date and street line of findocs is a pos span (OUT_OF_SCOPE), tested
+- [x] #2 The dataset is rebuilt; the plugin baseline and redact's measurement are re-run on it
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+findocs labels its generated names, companies, birth dates and street lines as positives out of the plugin's scope (a90cfbd; texts unchanged). Rebuilt; redact re-scored (false redactions about halved, docs/REDACT.md) and the plugin baseline re-run: 20261012-194832, mean 84.4 %.
+<!-- SECTION:FINAL_SUMMARY:END -->
