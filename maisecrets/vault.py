@@ -35,6 +35,21 @@ CONFIG = HOME / "config.json"
 _DEFAULT_HOME = Path.home() / ".maisecrets"
 SERVICE = "maisecrets" if HOME == _DEFAULT_HOME else "maisecrets@" + hashlib.sha256(str(HOME).encode()).hexdigest()[:8]
 
+
+class WrongHome(RuntimeError):
+    """The vault was imported before a test run chose its own home, and still names another one."""
+
+
+def _check_home() -> None:
+    """A test run owns a temp home (tests/_isolate.py sets MAISECRETS_TEST_HOME_OWNED). HOME is bound at import, so a
+    runner that loaded the vault before the isolation kept the real home, and the suite's resets deleted the real
+    index, vault file and key (2026-10-12, TASK-25). Under that marker the user's own ~/.maisecrets is refused before a
+    read or a write; a second temp home that a test chooses on purpose stays allowed."""
+    owned = os.environ.get("MAISECRETS_TEST_HOME_OWNED")
+    if owned and HOME == Path.home() / ".maisecrets":
+        raise WrongHome(f"the vault names the user's own {HOME}, but this test run owns {owned}: import "
+                        "tests/_isolate.py before anything that imports maisecrets.vault")
+
 DEFAULT_CONFIG = {
     "backend": "keychain",          # keychain (macOS) | windows-vault | encrypted-file (Linux) | jsonfile (test)
     "report_url": "https://github.com/Mcpgate-de/maisecrets/issues",   # shown in the block notice
@@ -320,6 +335,7 @@ def _keep_the_stricter(cfg: dict, parsed: dict) -> None:
 
 
 def load_config() -> dict:
+    _check_home()
     """Defaults, then ~/.maisecrets/config.json, then CLAUDE_PLUGIN_OPTION_<KEY> if a client passes
     plugin options that way, then the machine policy file, whose keys win. The manifest declares
     no `userConfig`: Claude Code 2.1.223 rejects a manifest with that key as invalid and then
@@ -899,6 +915,7 @@ class WindowsVaultBackend:
 
 
 def make_backend(cfg: dict):
+    _check_home()
     """keychain on macOS; an openssl-encrypted file elsewhere; jsonfile only when asked (test mode)."""
     backend = cfg.get("backend", "keychain")
     if backend == "jsonfile":
@@ -951,6 +968,7 @@ class _Mutation:
 # ------------------------------------------------------------------- vault --
 class Vault:
     def __init__(self, cfg: dict | None = None) -> None:
+        _check_home()
         self.cfg = cfg or load_config()
         self.last_refused = 0      # deletes the store refused in the last expire sweep
         self.backend = make_backend(self.cfg)

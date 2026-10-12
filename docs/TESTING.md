@@ -18,7 +18,7 @@ What runs, where, and what makes it fail. The history of each finding is in the 
 | false alarms in a real tree | `python3 scripts/measure_false_alarms.py <dir> [--samples]` | by hand after a detector change: the hits a Read would act on, per rule, with the shape of each value and never the value; the regression corpus of normal work is `tests/fp_corpus.py` (`tests/test_fp_corpus.py`), a night of autonomous work is `tests/test_night_run.py` |
 | Windows end to end | `GITLAB_COM_TOKEN=… python3 scripts/windows_e2e.py [--rev REV]` | by hand before a release that touches the hooks, the launchers or the harness: GitLab-hosted Windows runners of a separate project, in three shapes (PowerShell 7, Windows PowerShell 5.1, Git Bash). Each job runs `harness/windows/shell_probe.py` (which shell runs a hook, and the `hooks.json` command in each shell) and `harness/run.py` with the shell tool the client offers (`MAISECRETS_HARNESS_SHELL_TOOL`) |
 
-1112 tests (`tests/test_*.py`), about 35 seconds on an M-series laptop. The GitHub matrix runs on
+1163 tests (`tests/test_*.py`), about 35 seconds on an M-series laptop. The GitHub matrix runs on
 the tested commit of a release (branch `ci`) and on a push to main without a release.
 
 ## What makes a test count
@@ -87,6 +87,14 @@ for `pbcopy`, `open`, `security` and `powershell` come first on `PATH`. Windows 
 `clip.exe` and `powershell.exe` in System32 before `PATH`, so a sitecustomize installs
 `tests/_platform_fakes.py` in every Python child on every platform. `tests/_hygiene.py` checks
 that no test left the process state changed or a value-serving child alive.
+
+A runner of your own (a script that switches a detector setting and then discovers the tests, a
+bench script) imports `tests/_isolate.py` before anything that imports `maisecrets`.
+`maisecrets.vault` binds its home at import, and `detect.rules()` imports it to read the config. On
+2026-10-12 a runner that loaded the rules first kept the real `~/.maisecrets`, and the resets of
+the suite deleted the real index, vault file and key. Two guards now stop that (TASK-25,
+`tests/test_isolation_order.py`): `_isolate` refuses to start when the vault already names
+another home, and under a test run's home the vault refuses the user's own `~/.maisecrets`.
 
 ## Coverage
 

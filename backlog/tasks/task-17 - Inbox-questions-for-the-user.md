@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 05:27'
+updated_date: '2026-10-12 06:03'
 labels:
   - inbox
 dependencies: []
@@ -59,5 +59,10 @@ INCIDENT (2026-10-12, TASK-19.2): to run the suite with Betterleaks on, I wrote 
 created: 2026-10-12 05:27
 ---
 TASK-19.2: with SECRET_RULES = 'betterleaks', in-process tests that pass under gitleaks fail (about 40). Most come from two rules only Betterleaks has: generic-password (flags 'testpass', 'continue', 'self._password', ...) and generic-credential-uri (flags '%24REDIS_PASSWORD', '2026-10-08', '443' in the password slot of a URL), values the detect-secrets and url-password-no-user fixes already drop. AC #1 asks that the existing tests pass in both modes. Options: (a) let overrides.txt switch a rule off ('generic-password  off') and switch these two off until TASK-19.3 benches them, then rerun to find what remains; (b) port the matching fixes to the two rules now (ds-value, the url-password checks); (c) narrow AC #1 to 'gitleaks mode unchanged', and the Betterleaks differences become TASK-19.3's input. I recommend (a): the epic keeps a new rule only when the bench shows no precision loss, so these two are off until TASK-19.3 shows otherwise, and the fixes in (b) can follow there with evidence. (I did not get a clean list of the remaining failures: that run was the faulty one above.)
+---
+
+created: 2026-10-12 06:03
+---
+TASK-25: the two guards are in (commit below): tests/_isolate refuses to start when maisecrets.vault was already imported with another home, and under a test run's home marker the vault refuses the user's own ~/.maisecrets (load_config, Vault(), make_backend). tests/test_isolation_order.py replays the 2026-10-12 runner in a child with a fake user home: refused, nothing written. AC #2 (no module binds the vault home at import) is left: HOME is imported by value in about 40 places (hooks, cli, events, settings, consent_store, ssh_approval, destinations, tips, terms, hooks/dispatch.py) and many tests patch vault.HOME. Options: (a) drop AC #2, the guards cover the failure; (b) do it: a home() function read per call, every import site and the tests that patch HOME changed; (c) narrow it to a grep test that no new module imports HOME by value. I recommend (a): both entry points of the incident (the import order and the real home under a test run) now fail loudly; (b) is a wide change for no further safety.
 ---
 <!-- COMMENTS:END -->

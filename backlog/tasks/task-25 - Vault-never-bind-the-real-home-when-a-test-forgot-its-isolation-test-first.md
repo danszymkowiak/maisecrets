@@ -4,11 +4,13 @@ title: 'Vault: never bind the real home when a test forgot its isolation (test f
 status: To Do
 assignee: []
 created_date: '2026-10-12 05:42'
+updated_date: '2026-10-12 06:03'
 labels:
   - tdd
   - safety
   - refactor
-dependencies: []
+dependencies:
+  - TASK-17
 references:
   - maisecrets/vault.py
   - tests/_isolate.py
@@ -26,7 +28,13 @@ Fix, test first: (1) when MAISECRETS_TEST_HOME_OWNED is set, vault refuses a hom
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A test imports maisecrets.detect and loads the rules before tests/_isolate, then runs a store write and a reset: nothing under the real home is touched (asserted with a fake HOME standing in for the user's home), and the call fails loudly
+- [x] #1 A test imports maisecrets.detect and loads the rules before tests/_isolate, then runs a store write and a reset: nothing under the real home is touched (asserted with a fake HOME standing in for the user's home), and the call fails loudly
 - [ ] #2 No module binds the vault home at import any more; a grep test or a belief keeps it so
-- [ ] #3 docs/TESTING.md says a runner must import tests/_isolate first, and why
+- [x] #3 docs/TESTING.md says a runner must import tests/_isolate first, and why
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12: guards done (vault.WrongHome/_check_home in load_config, Vault(), make_backend; the import-order check in tests/_isolate.py), tests/test_isolation_order.py, docs/TESTING.md Isolation. A first version refused any home other than the marker's: 15 tests that give a child or the vault a second temp home on purpose failed, so the vault guard refuses only the user's own ~/.maisecrets. AC #2 waits on the inbox (option a recommended: drop it).
+<!-- SECTION:NOTES:END -->
