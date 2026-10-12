@@ -3,9 +3,10 @@ id: TASK-30
 title: >-
   Bench data: clean the gold before more rule shaping (invalid values uncertain,
   label errors negative, generators fixed)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 07:16'
+updated_date: '2026-10-12 07:55'
 labels:
   - bench
   - data
@@ -31,9 +32,15 @@ Why not delete samples wholesale: they hold valid gold and negatives too. Why no
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 An audit report per dataset and type: how much gold fails each candidate validity rule, masked examples, and the rules chosen from it
-- [ ] #2 findocs and synthetic generate only valid values; tests check every generated positive against its type's rule
-- [ ] #3 validgold applies the chosen rules (REVISION bumped); the manifest counts uncertain gold per dataset and type
-- [ ] #4 bench/gold_exceptions.json exists with its schema, applied at setup, a test refuses a stale entry and an entry without a rationale
-- [ ] #5 A new baseline run recorded in docs/BENCHMARK.md, compared with 20261012-085837
+- [x] #1 An audit report per dataset and type: how much gold fails each candidate validity rule, masked examples, and the rules chosen from it
+- [x] #2 findocs and synthetic generate only valid values; tests check every generated positive against its type's rule
+- [x] #3 validgold applies the chosen rules (REVISION bumped); the manifest counts uncertain gold per dataset and type
+- [x] #4 bench/gold_exceptions.json exists with its schema, applied at setup, a test refuses a stale entry and an entry without a rationale
+- [x] #5 A new baseline run recorded in docs/BENCHMARK.md, compared with 20261012-085837
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Audit (bench/audit.py, maisecrets_bench/audit.py; run 20261012-094314): candidate validity rules for PHONE, EMAIL, IP and US_BANK_NUMBER, counts and shapes per dataset. Rules chosen from it went into validgold.py (gold valid3): phone digits, letters, repeated digit, North American plan for +1/US layouts (a leading 0 is a foreign trunk prefix, not judged); e-mail syntax and reserved domains; IP parse and public; bank digits and letters, a valid IBAN relabelled IBAN. Failing gold is uncertain; a span with nothing of its type (no digit, no @) is negative; trimming for these types takes only a whole pattern match. findocs and synthetic generate only NANP-valid phones (they had 59 and 35 reserved area codes), with a test over every generated positive. bench/gold_exceptions.json (empty) with exceptions.py: place + text hash + verdict + rationale, applied at setup, stale entries refused. New baseline 20261012-094904 recorded in docs/BENCHMARK.md: mean 79.9% to 81.4%; e-mail and IP misses were nearly all invalid gold; phone stays the gap. Follow-up TASK-31: Nemotron's valid IBANs labelled as bank numbers are missed (42 of 47).
+<!-- SECTION:FINAL_SUMMARY:END -->

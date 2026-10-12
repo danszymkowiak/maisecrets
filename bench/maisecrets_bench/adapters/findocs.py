@@ -119,7 +119,9 @@ class FinGen(Gen):
         return f"+41 {self.r.choice([21, 22, 31, 44, 61, 71])} {self.digits(3)} {self.digits(2)} {self.digits(2)}"
 
     def phone_us(self) -> str:
-        return f"({self.r.randrange(201, 990)}) {self.r.randrange(200, 999)}-{self.digits(4)}"
+        """North American numbering plan: area code N[0-8]X (a middle 9 is reserved), exchange NXX (TASK-30)."""
+        area = f"{self.r.randrange(2, 10)}{self.r.randrange(0, 9)}{self.r.randrange(0, 10)}"
+        return f"({area}) {self.r.randrange(200, 1000)}-{self.digits(4)}"
 
     def name(self) -> str:
         def word() -> str:

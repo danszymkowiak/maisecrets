@@ -18,7 +18,7 @@ from typing import Callable
 
 from .schema import Sample
 
-REVISION = "valid2"   # valid2 adds CH_AHV and CH_UID (TASK-20); part of every version: a change rebuilds them
+REVISION = "valid3"   # valid3: the audit's rules for phone, e-mail, IP, bank number (TASK-30); a change rebuilds
 
 
 def _digits(v: str) -> str:
@@ -48,11 +48,30 @@ def _checks() -> dict[str, tuple[re.Pattern | None, Callable[[str], bool]]]:
         "DE_HEALTH_INSURANCE": (None, v["de_health_insurance"]),
         "CH_AHV": (re.compile(r"756(?:\.?\d{4}){2}\.?\d{2}"), v["ch_ahv"]),
         "CH_UID": (re.compile(r"CHE[-\s]?\d{3}\.?\d{3}\.?\d{3}"), v["ch_uid"]),
+        # the types without a checksum: the validity rules the gold audit chose (audit.py, TASK-30)
+        "PHONE": (re.compile(r"\+?\(?\d[\d ().-]*\d(?:\s*(?:ext\.?|x)\s*\d{1,6})?"), _valid("PHONE")),
+        "EMAIL": (re.compile(r"[^\s@\[\]<>()\"']+@[^\s@\[\]<>()\"']+"), _valid("EMAIL")),
+        "IP": (re.compile(r"[0-9A-Fa-f:.]*[0-9A-Fa-f]"), _valid("IP")),
+        "US_BANK_NUMBER": (None, _valid("US_BANK_NUMBER")),    # a letter prefix (C82376415) is part of the id
     }
 
 
+def _valid(t: str) -> Callable[[str], bool]:
+    from . import audit
+    return lambda value: not audit.reasons(t, value)
+
+
+# a span with nothing of its type in it is a label error, not a hard value: "[Phone Number]", "adresse e-mail
+# professionnelle" (Gretel). It becomes negative: a detector that flags it raises a false alarm (TASK-30)
+NOT_THE_TYPE: dict[str, Callable[[str], bool]] = {
+    "PHONE": lambda v: not any(c.isdigit() for c in v),
+    "EMAIL": lambda v: "@" not in v,
+    "IP": lambda v: not any(c.isdigit() for c in v),
+}
+
+
 CHECKS = ("IBAN", "CARD", "US_SSN", "ABA_ROUTING_NUMBER", "DE_TAX_ID", "DE_SOCIAL_SECURITY", "DE_ID_CARD",
-          "DE_VAT_ID", "DE_HEALTH_INSURANCE", "CH_AHV", "CH_UID")
+          "DE_VAT_ID", "DE_HEALTH_INSURANCE", "CH_AHV", "CH_UID", "PHONE", "EMAIL", "IP", "US_BANK_NUMBER")
 
 
 def _ok(ok: Callable[[str], bool], value: str) -> bool:
@@ -62,7 +81,12 @@ def _ok(ok: Callable[[str], bool], value: str) -> bool:
         return False
 
 
-def check(text: str, start: int, end: int, rx: re.Pattern | None, ok: Callable[[str], bool]):
+# types whose rule is no checksum: a value cut short passes as easily as the whole one ((123) 456-78), so trimming
+# takes only a whole match of the pattern (brackets and labels off), never a shorter one
+NO_SHRINK = {"PHONE", "EMAIL", "IP"}
+
+
+def check(text: str, start: int, end: int, rx: re.Pattern | None, ok: Callable[[str], bool], shrink: bool = True):
     """("valid" | "trimmed" | "invalid", start, end): the value's bounds when one passes."""
     value = text[start:end]
     lead = len(value) - len(value.lstrip())
@@ -72,7 +96,7 @@ def check(text: str, start: int, end: int, rx: re.Pattern | None, ok: Callable[[
     if rx is not None:
         for m in rx.finditer(value):
             # a greedy match can take a character of the text after the value: shrink it from the right
-            for stop in range(m.end(), m.start(), -1):
+            for stop in range(m.end(), m.start() if shrink else m.end() - 1, -1):
                 cand = value[m.start():stop]
                 if cand != cand.strip() or not rx.fullmatch(cand):
                     continue
@@ -96,10 +120,24 @@ def mark(samples: list[Sample]) -> tuple[list[Sample], dict]:
                 spans.append(sp)
                 continue
             rx, ok = checks[sp.maisecrets_type]
-            verdict, a, b = check(s.text, sp.start, sp.end, rx, ok)
-            c = stats.setdefault(s.dataset, {}).setdefault(sp.maisecrets_type,
-                                                           {"pos": 0, "valid": 0, "invalid": 0, "trimmed": 0})
+            c = stats.setdefault(s.dataset, {}).setdefault(sp.maisecrets_type, {
+                "pos": 0, "valid": 0, "invalid": 0, "trimmed": 0, "negative": 0, "retyped": 0})
             c["pos"] += 1
+            not_the_type = NOT_THE_TYPE.get(sp.maisecrets_type)
+            if not_the_type and not_the_type(s.text[sp.start:sp.end]):
+                c["negative"] += 1
+                spans.append(dataclasses.replace(sp, gold="neg"))
+                changed = True
+                continue
+            verdict, a, b = check(s.text, sp.start, sp.end, rx, ok, sp.maisecrets_type not in NO_SHRINK)
+            if verdict == "invalid" and sp.maisecrets_type == "US_BANK_NUMBER":
+                # Nemotron labels account numbers in IBAN form (FR76 3000 ..., NL83 INGB ...) as a bank number
+                iban, ia, ib = check(s.text, sp.start, sp.end, *checks["IBAN"])
+                if iban != "invalid":
+                    c["retyped"] += 1
+                    spans.append(dataclasses.replace(sp, start=ia, end=ib, maisecrets_type="IBAN"))
+                    changed = True
+                    continue
             c[verdict] += 1
             if verdict == "invalid":
                 spans.append(dataclasses.replace(sp, gold="uncertain"))

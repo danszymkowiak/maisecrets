@@ -223,6 +223,50 @@ Every Mendeley card span is a block and is trimmed to its number. CredData, ai4p
 synthetic tool output have no checksummed in-scope gold. The equal-weight mean rises from 79.8% to
 80.5% because invalid gold no longer counts as missed.
 
+**Validity rules for the types without a checksum (TASK-30, gold revision valid3; baseline run
+20261012-094904, against 20261012-085837).** Decided 2026-10-12: clean the gold before more rule
+shaping. `bench/audit.py` counts, per dataset and type, the positives that fail each candidate rule
+(`maisecrets_bench/audit.py`; shapes only, never values; first run 20261012-094314), and the rules
+were chosen from it:
+
+- **Phone:** 7 to 15 digits (E.164; an `00` prefix and a `(0)` trunk do not count), no letters but
+  an extension, not one repeated digit, and a number with `+1`/`1-` or a US layout follows the
+  North American plan (area code and exchange start with 2-9, an area code's middle digit is not
+  9). A leading 0 is a trunk prefix elsewhere (`030-438-8690`, `(022) 739-3821`): not judged by the
+  US plan. Gretel's `(123) 456-7890`, `(800) 123-4567` and `555-555-5555` are placeholders.
+- **E-mail:** address syntax, and not a reserved domain (example.com/.net/.org, .test, .example,
+  .invalid, .localhost), which the plugin leaves alone on purpose.
+- **IP:** parses, and is public (the plugin redacts public addresses only).
+- **US bank number:** 4 to 17 digits, no letters. One that is a valid IBAN (Nemotron writes account
+  numbers as `FR76 3000 ...`) becomes IBAN.
+
+A failing value becomes *uncertain*. A span with nothing of its type in it (`[Phone Number]`,
+"adresse e-mail professionnelle", no digit or no `@`) is a label error and becomes *negative*.
+Trimming takes only a whole match of the pattern for these types (brackets and labels off): a
+shortened value passes a rule without a checksum as easily as the whole one. Our generators write
+only valid values (findocs and synthetic wrote a reserved area code: 59 and 35 phones; a test
+checks every generated positive). Cases no rule catches go into `bench/gold_exceptions.json`
+(`maisecrets_bench/exceptions.py`): place, a hash of the span's text, verdict (negative, uncertain,
+drop) and a rationale; setup applies them and refuses a stale entry. It is empty so far.
+
+| dataset | type | gold | invalid | trimmed | negative | recall before | recall on valid gold |
+|---|---|---|---|---|---|---|---|
+| Gretel | PHONE | 6,840 | 2,087 | 70 | 208 | 45.7% | 56.7% |
+| Gretel | EMAIL | 10,639 | 1,794 | 457 | 224 | 80.9% | 99.9% |
+| Gretel | IP | 2,319 | 246 | 0 | 0 | 83.4% | 93.1% |
+| Nemotron | EMAIL | 53,930 | 137 | 16 | 275 | 99.3% | 100.0% |
+| Nemotron | IP | 9,217 | 1,246 | 3 | 0 | 86.4% | 99.8% |
+| Nemotron | US_BANK_NUMBER | 16,693 | 4,986 | 0 | 0 | 47.8% | 67.1% |
+| ai4privacy | PHONE | 58,785 | 846 | 26 | 87 | 19.4% | 19.1% |
+| ai4privacy | EMAIL | 74,288 | 301 | 314 | 136 | 99.3% | 99.9% |
+| ai4privacy | IP | 65,569 | 2,888 | 46 | 65 | 91.4% | 95.7% |
+
+E-mail and IP misses were almost all invalid or reserved values; on valid gold both are near 100%
+on Nemotron. Phone stays the gap (Gretel 56.7%, Nemotron 23%, ai4privacy 19%). Nemotron's 47 bank
+numbers that are valid IBANs are mostly missed (5 found): TASK-31. Precision moves by at most 0.7
+points (Gretel 74.3% to 73.6%): detections of invalid gold were counted as found and are now
+neutral. The equal-weight mean rises from 79.9% to 81.4%.
+
 ## Synthetic tool output
 
 The file and prose corpora hold no terminal output: no `printenv`, `git diff`, `grep -n`, `cat -n`,

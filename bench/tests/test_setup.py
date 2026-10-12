@@ -76,7 +76,8 @@ class SetupTests(unittest.TestCase):
         self.assertEqual([sp.gold for sp in schema.read(self.out / "toy.parquet")[0].spans], ["uncertain", "pos"])
         m = json.loads((self.out / "manifest.json").read_text())["datasets"]["toy"]
         self.assertEqual(m["gold"], validgold.REVISION)
-        self.assertEqual(m["gold_check"]["IBAN"], {"pos": 2, "valid": 1, "invalid": 1, "trimmed": 0})
+        self.assertEqual(m["gold_check"]["IBAN"], {"pos": 2, "valid": 1, "invalid": 1, "trimmed": 0, "negative": 0,
+                                                  "retyped": 0})
 
     def test_an_entry_built_before_the_gold_check_is_built_again(self):
         src, calls = _source("toy", "v1")

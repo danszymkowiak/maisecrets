@@ -115,7 +115,9 @@ class Gen:
         return ".".join(str(x) for x in (first, self.r.randrange(256), self.r.randrange(256), self.r.randrange(1, 255)))
 
     def phone(self) -> str:
-        return f"+1 {self.r.randrange(201, 990)} {self.r.randrange(200, 999)} {self.r.randrange(1000, 9999)}"
+        """North American numbering plan: area code N[0-8]X (a middle 9 is reserved), exchange NXX (TASK-30)."""
+        area = f"{self.r.randrange(2, 10)}{self.r.randrange(0, 9)}{self.r.randrange(0, 10)}"
+        return f"+1 {area} {self.r.randrange(200, 1000)} {self.r.randrange(1000, 10000)}"
 
     # negatives
     def sha256(self) -> str:

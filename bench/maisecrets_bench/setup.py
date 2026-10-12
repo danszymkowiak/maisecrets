@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterator
 
-from . import schema, split, validgold
+from . import exceptions, schema, split, validgold
 from .labels import load as load_table
 from .paths import BenchError, data_dir
 from .schema import Sample
@@ -30,18 +30,23 @@ def _manifest(out: Path) -> dict:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"datasets": {}}
 
 
-def run(sources: list[Source], out: Path, log: Callable[[str], None] = lambda s: None) -> dict:
+def run(sources: list[Source], out: Path, log: Callable[[str], None] = lambda s: None,
+        exceptions_file: Path = exceptions.FILE) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     manifest = _manifest(out)
+    entries = exceptions.load(exceptions_file)
     for src in sources:
         version = src.version()
         known = manifest["datasets"].get(src.name, {})
         target = out / f"{src.name}.parquet"
-        if known.get("version") == version and known.get("gold") == validgold.REVISION and target.exists():
+        reviewed = exceptions.digest(entries, src.name)
+        if (known.get("version") == version and known.get("gold") == validgold.REVISION
+                and known.get("exceptions") == reviewed and target.exists()):
             log(f"{src.name}: up to date ({version})")
             continue
         log(f"{src.name}: building ({version})")
         rows, gold = validgold.mark(list(src.build()))
+        rows, applied = exceptions.apply(rows, entries)
         tmp = target.with_suffix(".parquet.tmp")
         schema.write(rows, tmp)
         os.replace(tmp, target)
@@ -49,7 +54,8 @@ def run(sources: list[Source], out: Path, log: Callable[[str], None] = lambda s:
         manifest["datasets"][src.name] = {
             "version": version, "samples": len(rows), "spans": dict(sorted(spans.items())),
             "split": dict(sorted(Counter(s.split for s in rows).items())), **src.stats(),
-            "gold": validgold.REVISION, "gold_check": gold.get(src.name, {})}
+            "gold": validgold.REVISION, "gold_check": gold.get(src.name, {}),
+            "exceptions": reviewed, "exceptions_applied": applied}
         log(f"{src.name}: {len(rows)} samples, spans {dict(spans)}")
     manifest["split_salt"] = split.SALT
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")

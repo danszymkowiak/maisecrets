@@ -1,0 +1,4 @@
+{
+  "about": "Reviewed gold exceptions (TASK-30, maisecrets_bench/exceptions.py): cases no validity rule of validgold.py catches. Each entry names a span by place and a hash of its text, never the value. verdict: negative (wrong label, no personal data), uncertain (PII-shaped but invalid), drop (a broken record). A rationale is required.",
+  "entries": []
+}

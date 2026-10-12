@@ -30,7 +30,8 @@ class CheckTests(unittest.TestCase):
     def test_a_valid_value_stays_pos(self):
         sp, text, stats = self.one(f"pay to {IBAN_OK} now", IBAN_OK, "IBAN")
         self.assertEqual((sp.gold, text[sp.start:sp.end]), ("pos", IBAN_OK))
-        self.assertEqual(stats["toy"]["IBAN"], {"pos": 1, "valid": 1, "invalid": 0, "trimmed": 0})
+        self.assertEqual(stats["toy"]["IBAN"], {"pos": 1, "valid": 1, "invalid": 0, "trimmed": 0, "negative": 0,
+                                                "retyped": 0})
 
     def test_a_failing_value_becomes_uncertain(self):
         sp, _, stats = self.one(f"pay to {IBAN_BAD} now", IBAN_BAD, "IBAN")
@@ -61,9 +62,9 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(self.one("aba 011000015 x", "011000015", "ABA_ROUTING_NUMBER")[0].gold, "pos")
         self.assertEqual(self.one("aba 011000016 x", "011000016", "ABA_ROUTING_NUMBER")[0].gold, "uncertain")
 
-    def test_a_type_without_a_checksum_and_neg_spans_are_left_alone(self):
-        (s,), stats = validgold.mark([Sample("toy", "s1", "s1", "en", "mail a@b.io and 123",
-                                             [Span(5, 11, "e", "EMAIL", "pos"), Span(16, 19, "n", "IBAN", "neg")])])
+    def test_a_type_without_a_check_and_neg_spans_are_left_alone(self):
+        (s,), stats = validgold.mark([Sample("toy", "s1", "s1", "en", "key abcdef and 123",
+                                             [Span(4, 10, "k", "SECRET", "pos"), Span(15, 18, "n", "IBAN", "neg")])])
         self.assertEqual([sp.gold for sp in s.spans], ["pos", "neg"])
         self.assertEqual(stats, {})
 
@@ -71,6 +72,50 @@ class CheckTests(unittest.TestCase):
         from maisecrets_bench.detector import known_types
         self.assertEqual(set(validgold.CHECKS), set(validgold._checks()))
         self.assertLessEqual(set(validgold.CHECKS), known_types())
+
+
+class ValidityTests(unittest.TestCase):
+    """TASK-30: types without a checksum get the validity rules the gold audit chose (maisecrets_bench/audit.py). A
+    span that is no value of its type at all becomes negative; an IBAN labelled as a bank number becomes IBAN."""
+
+    def one(self, text, value, t):
+        (s,), stats = validgold.mark([_sample(text, value, t)])
+        return s.spans[0], s.text, stats
+
+    def test_a_plausible_phone_stays_and_a_placeholder_number_becomes_uncertain(self):
+        self.assertEqual(self.one("call +41 44 668 18 00 now", "+41 44 668 18 00", "PHONE")[0].gold, "pos")
+        self.assertEqual(self.one("call 030-438-8690 now", "030-438-8690", "PHONE")[0].gold, "pos")
+        for v in ("(123) 456-7890", "555-555-5555", "(494) 360-7563", "12345"):
+            with self.subTest(v=v):
+                self.assertEqual(self.one(f"call {v} now", v, "PHONE")[0].gold, "uncertain")
+
+    def test_brackets_around_a_value_are_trimmed(self):
+        sp, text, stats = self.one("tel [+41 44 668 18 00] x", "[+41 44 668 18 00]", "PHONE")
+        self.assertEqual((sp.gold, text[sp.start:sp.end]), ("pos", "+41 44 668 18 00"))
+        sp, text, _ = self.one("mail [max@firma.ch] x", "[max@firma.ch]", "EMAIL")
+        self.assertEqual((sp.gold, text[sp.start:sp.end]), ("pos", "max@firma.ch"))
+
+    def test_a_span_with_nothing_of_its_type_becomes_negative(self):
+        for text, value, t in (("Tel: [Phone Number] x", "[Phone Number]", "PHONE"),
+                               ("die adresse e-mail professionnelle", "adresse e-mail professionnelle", "EMAIL"),
+                               ("ip [IP address] x", "[IP address]", "IP")):
+            with self.subTest(value=value):
+                sp, _, stats = self.one(text, value, t)
+                self.assertEqual(sp.gold, "neg")
+                self.assertEqual(stats["toy"][t]["negative"], 1)
+
+    def test_reserved_mail_and_non_public_addresses_become_uncertain(self):
+        self.assertEqual(self.one("mail max@example.com x", "max@example.com", "EMAIL")[0].gold, "uncertain")
+        self.assertEqual(self.one("ip 192.168.0.1 x", "192.168.0.1", "IP")[0].gold, "uncertain")
+        self.assertEqual(self.one("ip 93.184.216.34 x", "93.184.216.34", "IP")[0].gold, "pos")
+
+    def test_an_iban_labelled_as_a_bank_number_becomes_iban(self):
+        sp, text, stats = self.one(f"account {IBAN_OK} x", IBAN_OK, "US_BANK_NUMBER")
+        self.assertEqual((sp.gold, sp.maisecrets_type), ("pos", "IBAN"))
+        self.assertEqual(stats["toy"]["US_BANK_NUMBER"]["retyped"], 1)
+        self.assertEqual(self.one(f"account {IBAN_BAD} x", IBAN_BAD, "US_BANK_NUMBER")[0].gold, "uncertain")
+        self.assertEqual(self.one("account 000123456789 x", "000123456789", "US_BANK_NUMBER")[0].gold, "pos")
+        self.assertEqual(self.one("account C82376415 x", "C82376415", "US_BANK_NUMBER")[0].gold, "uncertain")
 
 
 if __name__ == "__main__":
