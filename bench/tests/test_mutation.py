@@ -114,6 +114,23 @@ class ApplyTests(unittest.TestCase):
         self.assertIn("email", ids, "the other rules stay")
         self.assertNotIn("aikido-ci-token", {r.id for r in D.rules()})
 
+    def test_carry_takes_a_rule_from_the_other_vendored_set(self):
+        # TASK-19.8: Betterleaks with gitleaks' generic-api-key in place of its own
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "betterleaks"\n'
+                  '[[change]]\nop = "carry"\nrule = "generic-api-key"\nfrom = "gitleaks"\n')
+        mutation.validate(m)
+        rules = mutation.ruleset(m, D.default_ruleset()).rules
+        gak = [r for r in rules if r.id == "generic-api-key"]
+        self.assertEqual(len(gak), 1)
+        gitleaks = next(r for r in D._load_gitleaks() if r.id == "generic-api-key")
+        self.assertEqual((gak[0].regex.pattern, gak[0].entropy, gak[0].filter), (gitleaks.regex.pattern, 3.5, None))
+        self.assertIn("aikido-ci-token", {r.id for r in rules})
+
+    def test_carry_of_an_unknown_rule_is_named(self):
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "carry"\nrule = "no-such"\nfrom = "gitleaks"\n')
+        with self.assertRaisesRegex(BenchError, "no-such"):
+            mutation.validate(m)
+
     def test_an_unknown_vendored_set_is_named(self):
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "trufflehog"\n')
         with self.assertRaisesRegex(BenchError, "trufflehog"):

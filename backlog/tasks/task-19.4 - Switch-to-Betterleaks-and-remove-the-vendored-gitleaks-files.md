@@ -4,7 +4,7 @@ title: Switch to Betterleaks and remove the vendored gitleaks files
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-12 10:43'
+updated_date: '2026-10-12 10:56'
 labels:
   - detection
   - plugin
@@ -35,4 +35,6 @@ Once TASK-19.3 accepts the change: make Betterleaks the only secret rule source 
 Gate from TASK-19.2: switch only when the unit suite passes with Betterleaks (run it in-process with tests/_isolate imported first; see TASK-19.3's notes for the 3 known differences).
 
 From TASK-19.3: switch only on an accepted verdict of TASK-19.8. When gitleaks goes: datadog-access-token is let go (Betterleaks' datadog-application-key takes the shape); etsy-access-token, jfrog-api-key and jfrog-identity-token are carried as our own rules (Betterleaks misses them with only a provider label).
+
+From TASK-19.8: the accepted configuration is Betterleaks + gitleaks' generic-api-key carried (with its allowlists and fixes), plus etsy-access-token, jfrog-api-key and jfrog-identity-token carried (TASK-19.3), with generic-password, generic-credential-uri and gcp-service-account off (rules/overrides.txt). The carried rules need a home when gitleaks.json goes: a carried-rules file in rules/ (from gitleaks v8.30.1, MIT) loaded with the Betterleaks set.
 <!-- SECTION:NOTES:END -->

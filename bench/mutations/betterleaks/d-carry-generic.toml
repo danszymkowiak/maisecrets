@@ -1,0 +1,11 @@
+name = "Betterleaks with gitleaks' generic-api-key"
+why = "TASK-19.8: Betterleaks' generic-api-key added about 420 false hits on CredData and lost the password keyword"
+
+[[change]]
+op = "vendored"
+set = "betterleaks"
+
+[[change]]
+op = "carry"
+rule = "generic-api-key"
+from = "gitleaks"

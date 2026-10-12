@@ -30,6 +30,11 @@
     set = "betterleaks"
 
     [[change]]
+    op = "carry"            # take one rule from a vendored set in place of the rule of that id (TASK-19.8)
+    rule = "generic-api-key"
+    from = "gitleaks"
+
+    [[change]]
     op = "unfix"            # switch off one named check that drops hits (detect.FIXES, TASK-26)
     fix = "code-value"
     rule = "ds-keyword-colon"   # optional: without it, every rule that takes the fix loses it
@@ -75,8 +80,9 @@ def load(path: Path) -> Mutation:
     if not changes:
         raise BenchError(f"{path}: no [[change]]")
     for c in changes:
-        if c.get("op") not in ("disable", "set", "add", "normalise", "unfix", "vendored"):
-            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add, normalise, unfix or vendored")
+        if c.get("op") not in ("disable", "set", "add", "normalise", "unfix", "vendored", "carry"):
+            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add, normalise, unfix, vendored "
+                             f"or carry")
     return Mutation(data.get("name", Path(path).stem), data.get("why", ""), changes)
 
 
@@ -129,6 +135,9 @@ def validate(m: Mutation) -> None:
             except ValueError:
                 raise BenchError(f"{where}: vendored set {c.get('set')!r} is not one the detector knows") from None
             continue
+        if c["op"] == "carry":
+            _carried(c, where)
+            continue
         if c["op"] == "unfix":
             from .detector import detect
             if c.get("fix") not in detect.FIXES:
@@ -153,6 +162,19 @@ def ruleset(m: Mutation, base, strict: bool = True):
         # the group's own settings (regions, labels) with the other vendored set
         base = detect.build(_dc.replace(detect.settings_from_config(), secret_rules=swap[-1]))
     return detect.RuleSet(tuple(apply(m, list(base.rules), strict)), stages(m))
+
+
+def _carried(c: dict, where: str):
+    """The rule `rule` of the vendored set `from`, as that set's loader builds it (fixes included)."""
+    from .detector import detect
+    try:
+        rules = detect._load_vendored_secrets(str(c.get("from")))
+    except ValueError:
+        raise BenchError(f"{where}: vendored set {c.get('from')!r} is not one the detector knows") from None
+    rule = next((r for r in rules if r.id == c.get("rule")), None)
+    if rule is None:
+        raise BenchError(f"{where}: rule {c.get('rule')!r} is not in the vendored set {c.get('from')!r}")
+    return rule
 
 
 def stages(m: Mutation) -> tuple:
@@ -182,6 +204,14 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector")
         if c["op"] in ("normalise", "vendored"):
             continue
+        elif c["op"] == "carry":
+            new = _carried(c, where)
+            at = next((i for i, r in enumerate(out) if r.id == new.id), None)
+            if at is None:
+                out.append(new)
+            else:
+                out[at] = new
+                out = [r for i, r in enumerate(out) if i == at or r.id != new.id]
         elif c["op"] == "unfix":
             out = [dataclasses.replace(r, fixes=tuple(f for f in r.fixes if f != c["fix"]))
                    if c.get("rule") in (None, r.id) else r for r in out]

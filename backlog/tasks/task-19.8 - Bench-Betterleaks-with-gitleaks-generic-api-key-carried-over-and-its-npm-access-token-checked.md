@@ -3,9 +3,10 @@ id: TASK-19.8
 title: >-
   Bench: Betterleaks with gitleaks' generic-api-key carried over, and its
   npm-access-token checked
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 10:43'
+updated_date: '2026-10-12 10:56'
 labels:
   - bench
   - detection
@@ -24,6 +25,12 @@ TASK-19.3 (docs/BENCHMARK.md, Betterleaks against gitleaks): the switch is rejec
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The cause of the 4 npm misses is named, with a fix or a carried rule
-- [ ] #2 A mutation with the carried generic-api-key and the npm fix is judged: accepted, or the remaining loss is named
+- [x] #1 The cause of the 4 npm misses is named, with a fix or a carried rule
+- [x] #2 A mutation with the carried generic-api-key and the npm fix is judged: accepted, or the remaining loss is named
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+npm: no miss. In the 4 synthetic package_lock documents Betterleaks finds the same npm tokens, but generic-api-key claims the span before npm-access-token, so the rule name differs. Bench op 'carry' (mutation.py, tests) takes a rule of one vendored set in place of the rule of that id. Mutation d-carry-generic (Betterleaks + gitleaks' generic-api-key) against the gitleaks baseline 20261012-113809: accepted (CredData +8 true, false unchanged; every other dataset identical; SECRET_PREFIXED gap narrowed; guards unchanged). Recorded in docs/BENCHMARK.md; TASK-19.4 switches to this configuration.
+<!-- SECTION:FINAL_SUMMARY:END -->

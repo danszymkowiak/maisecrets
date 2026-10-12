@@ -323,9 +323,13 @@ datadog-application-key takes the same shape. etsy-access-token, jfrog-api-key, 
 keep, carried as our own rules when gitleaks goes (TASK-19.4): with only a provider label Betterleaks
 misses all three, and old JFrog keys still sit in configuration files.
 
-**Next:** the set fails on two rules, not as a whole. TASK-19.8 benches Betterleaks with gitleaks'
-generic-api-key carried over and npm-access-token checked; TASK-19.4 switches only on an accepted
-verdict.
+**Betterleaks with gitleaks' generic-api-key (TASK-19.8, run 20261012-125555): accepted.** The bench op `carry`
+puts gitleaks' generic-api-key (regex, keywords, entropy 3.5, allowlists, our fixes) in place of
+Betterleaks' own. Against the gitleaks baseline: CredData 9,957 to 9,965 true hits with false hits
+unchanged (2,708), every other dataset identical, SECRET_PREFIXED gap narrowed, guards unchanged
+(`bench/mutations/betterleaks/d-carry-generic.toml`). The npm-access-token "losses" were no misses:
+in the four synthetic documents generic-api-key claims the same token first. TASK-19.4 switches to
+this configuration.
 
 ## Synthetic tool output
 
