@@ -19,13 +19,14 @@ class Result:
 
 def run_file(src: Path, target: Path, model_detectors: dict[str, Detector], regions: tuple[str, ...] | None,
              interactive: bool, ask: Callable[[review.Item], str] | None = None, no_review: bool = False,
-             drop_columns: frozenset[str] = frozenset(), names: rules.Placeholders | None = None) -> Result:
+             drop_columns: frozenset[str] = frozenset(), names: rules.Placeholders | None = None,
+             vote_k: int | None = None, not_reviewed: tuple[str, ...] = ()) -> Result:
     doc = extract.extract(src, drop_columns=set(drop_columns))
     rule_spans = rules.detector(regions=regions)(doc)
     # the models run after the rules: they read the text with every rule hit replaced (user, 2026-10-12)
     masked = pipeline.mask(doc, rule_spans)
     model_spans = {name: masked.back(d(masked.doc)) for name, d in model_detectors.items()}
-    decision = review.decide(doc, rule_spans, model_spans)
+    decision = review.decide(doc, rule_spans, model_spans, k=vote_k, not_reviewed=not_reviewed)
     redact = list(decision.redact)
     open_items = review.items(doc, decision, list(model_detectors))
     review_path = target.with_name(target.name + ".review.json")
@@ -79,7 +80,8 @@ def files_of(root: Path, recursive: bool) -> list[Path]:
 def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions: tuple[str, ...] | None,
             interactive: bool, recursive: bool = False, ask: Callable[[review.Item], str] | None = None,
             no_review: bool = False, drop_columns: frozenset[str] = frozenset(),
-            log: Callable[[str], None] = lambda line: None) -> DirSummary:
+            log: Callable[[str], None] = lambda line: None, vote_k: int | None = None,
+            not_reviewed: tuple[str, ...] = ()) -> DirSummary:
     """Every supported file of `src` into the mirrored tree `out`, one placeholder per value across the run. The
     source is never written; an output inside the source tree is refused; a symlink out of the tree is skipped."""
     if _inside(out, src):
@@ -101,7 +103,8 @@ def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions:
             summary.exists += 1
             continue
         try:
-            result = run_file(path, target, model_detectors, regions, interactive, ask, no_review, drop_columns, names)
+            result = run_file(path, target, model_detectors, regions, interactive, ask, no_review, drop_columns, names,
+                              vote_k, not_reviewed)
         except extract.NoText as exc:
             log(f"skip {rel}: {exc}")
             summary.skipped += 1

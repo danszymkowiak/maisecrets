@@ -75,10 +75,11 @@ class Score:
                 self.false_pos[(dataset, s.type)] += 1
 
 
-def vote(text: str, rule_spans: list[Span], per_model: dict[str, list[Span]]) -> tuple[list[Span], list[Span]]:
+def vote(text: str, rule_spans: list[Span], per_model: dict[str, list[Span]], k: int | None = None,
+         not_reviewed: tuple[str, ...] = ()) -> tuple[list[Span], list[Span]]:
     """What the tool redacts without asking, and what it sends to a person (review.decide, the tool's own vote)."""
     from .review import decide
-    d = decide(Document("bench", text), rule_spans, per_model)
+    d = decide(Document("bench", text), rule_spans, per_model, k=k, not_reviewed=not_reviewed)
     return list(d.redact), list(d.review)
 
 
@@ -156,7 +157,9 @@ def report(data: Path, out: Path, defaults: tuple[str, ...]) -> str:
                 configs[f"{m} alone"].add(ds, r["spans"], per[m], words)
                 configs[f"rules + {m}"].add(ds, r["spans"], per["rules"] + per[m], words)
             if voters:
-                redact, review = vote(r["text"], per["rules"], {m: per[m] for m in voters})
+                from . import models
+                redact, review = vote(r["text"], per["rules"], {m: per[m] for m in voters}, models.VOTE_K,
+                                      tuple(m for m in models.NOT_REVIEWED if m in voters))
                 configs["vote, no review"].add(ds, r["spans"], redact, words)
                 configs["vote, review all yes"].add(ds, r["spans"], redact + review, words)
     return _render(configs, seconds, docs, voters)

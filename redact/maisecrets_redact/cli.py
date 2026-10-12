@@ -43,6 +43,12 @@ def _ask(item: review.Item) -> str:
             return "keep"
 
 
+def _vote() -> dict:
+    """The default vote (models.VOTE_K, models.NOT_REVIEWED); without the model extra nothing votes."""
+    from . import models
+    return {"vote_k": models.VOTE_K, "not_reviewed": models.NOT_REVIEWED}
+
+
 def _model_detectors(args) -> dict:
     if args.rules_only:
         return {}
@@ -77,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         detectors = _model_detectors(args)
         result = app.run_file(src, target, detectors, regions, interactive=sys.stdin.isatty(), ask=_ask,
-                              no_review=args.no_review, drop_columns=frozenset(args.drop_column))
+                              no_review=args.no_review, drop_columns=frozenset(args.drop_column), **_vote())
     except RuntimeError as exc:      # no maisecrets checkout to take the rules from
         print(f"redact: {exc}; nothing is written", file=sys.stderr)
         return 2
@@ -101,7 +107,7 @@ def _run_dir(args, src: Path) -> int:
         summary = app.run_dir(src, out, _model_detectors(args), regions, interactive=sys.stdin.isatty(),
                               recursive=args.recursive, ask=_ask, no_review=args.no_review,
                               drop_columns=frozenset(args.drop_column),
-                              log=lambda line: print(f"redact: {line}", file=sys.stderr))
+                              log=lambda line: print(f"redact: {line}", file=sys.stderr), **_vote())
     except RuntimeError as exc:
         print(f"redact: {exc}; nothing is written", file=sys.stderr)
         return 2

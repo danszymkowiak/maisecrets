@@ -161,9 +161,13 @@ MODELS: dict[str, Model] = {
         "non-commercial, no derivatives: opt-in; weak on financial text (spec)"),
 }
 PERMISSIVE = frozenset({"apache-2.0", "mit", "bsd-3-clause", "bsd-2-clause"})
-# the three permissive models whose misses overlap least on the bench (TASK-34.8, docs/REDACT.md): a token
-# classifier (openai/privacy-filter) and two GLiNERs of different lineage; urchade misses what fastino misses
-DEFAULTS = ("knowledgator/gliner-pii-base-v1.0", "fastino/gliner2-privacy-filter-PII-multi", "openai/privacy-filter")
+# the default vote (user, 2026-10-12; TASK-34.8, docs/REDACT.md): all four permissive models, a span is redacted when
+# two of them find it, and a span only privacy-filter finds is dropped rather than asked about. On the bench: names
+# 88 %, addresses 90 %, birth dates 100 %, 7.2 false redactions and 9 review questions per 1,000 words
+DEFAULTS = ("urchade/gliner_multi_pii-v1", "knowledgator/gliner-pii-base-v1.0",
+            "fastino/gliner2-privacy-filter-PII-multi", "openai/privacy-filter")
+VOTE_K = 2
+NOT_REVIEWED = ("openai/privacy-filter",)
 
 
 class TermsNotAccepted(ValueError):

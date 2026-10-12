@@ -21,7 +21,11 @@ def _overlaps(a: Span, b: Span) -> bool:
     return a.start < b.end and b.start < a.end
 
 
-def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Span]]) -> Decision:
+def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Span]], k: int | None = None,
+           not_reviewed: tuple[str, ...] = ()) -> Decision:
+    """k: how many models must hold a span in a group to redact it (None: every configured model, of one type).
+    not_reviewed: models whose lone spans are dropped instead of asked about (TASK-34.8: privacy-filter's many lone
+    spans were most of the review questions)."""
     rules = sorted(rule_spans, key=lambda s: s.start)
     loose = sorted((s for spans in model_spans.values() for s in spans if not any(_overlaps(s, r) for r in rules)),
                    key=lambda s: (s.start, -s.end))
@@ -35,8 +39,13 @@ def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Sp
         types_by_model = {name: {s.type for s in group if s.source == name} for name in model_spans}
         common = set.intersection(*types_by_model.values()) if types_by_model else set()
         kind = sorted(common)[0] if common else Counter(s.type for s in group).most_common(1)[0][0]
-        span = Span(start, end, kind, "+".join(sorted({s.source for s in group})), min(s.score for s in group))
-        (redact if common else review).append(span)
+        sources = {s.source for s in group}
+        span = Span(start, end, kind, "+".join(sorted(sources)), min(s.score for s in group))
+        agreed = bool(common) if k is None else len(sources) >= min(k, len(model_spans))
+        if agreed:
+            redact.append(span)
+        elif not sources <= set(not_reviewed):
+            review.append(span)
 
     for s in loose:
         if group and s.start >= max(g.end for g in group):

@@ -26,8 +26,9 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    as names and free-form addresses (TASK-34.4, an optional extra). The models read the text
    with every rule hit already replaced by `[TYPE]`, so they never see a value the rules found;
    their spans map back to the original text.
-3. **Decide** (TASK-34.5): a deterministic hit is redacted; a model span is redacted when every
-   configured model agrees, and goes to a person's review otherwise.
+3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
+   when two of the four default models find it, and goes to a person's review otherwise, except a
+   span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).
 4. **Render** (TASK-34.6): `<file>.redacted.txt`, or a mirrored tree for a directory, with
    placeholders of the plugin's kind (one value, one placeholder, across the run).
 
@@ -97,12 +98,12 @@ values. Over the 1,773 values the rules leave, the misses of each pair correlate
 | knowledgator / fastino | 0.31 | 206 |
 | knowledgator / privacy-filter | 0.30 | 184 |
 
-The defaults are knowledgator, fastino (GLiNER2) and openai/privacy-filter: the set whose misses
-overlap least (mean phi 0.31; urchade, knowledgator and fastino: 0.43). privacy-filter is a token
-classifier, another architecture than the GLiNER models. Its low score on birth dates in the first
-measurement was a label the tool did not map (`private_date`), now fixed. urchade finds the most
-names alone but misses what fastino misses. Which vote is the default is the user's decision
-(TASK-17).
+The defaults are all four models with a 2-of-4 vote, and a span only openai/privacy-filter finds
+is dropped rather than asked about (the user's choice, 2026-10-12): the last row of the first
+table. privacy-filter is a token classifier, another architecture than the three GLiNER models,
+and its misses overlap least with theirs; it also makes the most false redactions, which alone
+were most of the review questions. Its low score on birth dates in the first measurement was a
+label the tool did not map (`private_date`), now fixed.
 
 ## Install
 

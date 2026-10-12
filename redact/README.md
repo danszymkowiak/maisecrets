@@ -30,9 +30,9 @@ Fastino's hosted API; the tool uses only its local model class. Licences as each
 
 | model | licence | default | note |
 |---|---|---|---|
-| [urchade/gliner_multi_pii-v1](https://huggingface.co/urchade/gliner_multi_pii-v1) | Apache-2.0 | no | multilingual GLiNER for PII; its misses overlap most with fastino's |
+| [urchade/gliner_multi_pii-v1](https://huggingface.co/urchade/gliner_multi_pii-v1) | Apache-2.0 | yes | multilingual GLiNER for PII; finds the most names alone |
 | [knowledgator/gliner-pii-base-v1.0](https://huggingface.co/knowledgator/gliner-pii-base-v1.0) | Apache-2.0 | yes | |
-| [openai/privacy-filter](https://huggingface.co/openai/privacy-filter) | Apache-2.0 | yes | token classifier, 1.5B parameters, 50M active: another architecture than the GLiNERs |
+| [openai/privacy-filter](https://huggingface.co/openai/privacy-filter) | Apache-2.0 | yes | token classifier, 1.5B parameters, 50M active: another architecture than the GLiNERs; a span only it finds is dropped, not reviewed |
 | [fastino/gliner2-privacy-filter-PII-multi](https://huggingface.co/fastino/gliner2-privacy-filter-PII-multi) | Apache-2.0 | yes | GLiNER2, asked in its own label names |
 | [gretelai/gretel-gliner-bi-large-v1.0](https://huggingface.co/gretelai/gretel-gliner-bi-large-v1.0) | Apache-2.0 | no | |
 | [nvidia/gliner-PII](https://huggingface.co/nvidia/gliner-PII) | NVIDIA Open Model License | opt-in | for clinical text; not an OSI licence |
