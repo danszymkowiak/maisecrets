@@ -7,6 +7,7 @@ import json
 import os
 import tempfile
 import time
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -230,6 +231,8 @@ def report(summary: dict, manifest: dict, seconds: float) -> str:
         if d["all"]["confusion"]:
             out += ["", "type mismatches (gold -> detected): " +
                     ", ".join(f"{c['gold']} -> {c['detected']} ({c['n']})" for c in d["all"]["confusion"])]
+    if summary.get("floors"):
+        out += floor_report(summary["floors"])
     top = sorted(summary["rules"].items(), key=lambda kv: -kv[1]["hits"])[:30]
     out += ["", "## Rules by hits (top 30)", "", "| rule | hits | TP | FP |", "|---|---|---|---|"]
     out += [f"| {r} | {v['hits']} | {v['tp']} | {v['fp']} |" for r, v in top]
@@ -243,6 +246,35 @@ def report(summary: dict, manifest: dict, seconds: float) -> str:
     return "\n".join(out) + "\n"
 
 
+def _floor_cell(floor) -> str:
+    return floor if isinstance(floor, str) else f"{floor:g}"
+
+
+def floor_report(fs: dict) -> list[str]:
+    """Recall per scoring type against its floor, false positives per 1,000 tokens, and the critical misses."""
+    out = ["", "## Recall floors (valid gold, scored datasets pooled)", "",
+           "| type | tier | floor | finds | recall | lower bound | status |", "|---|---|---|---|---|---|---|"]
+    order = {"critical": 0, "high": 1, "default": 2, "none": 3}
+    for t, e in sorted(fs["types"].items(), key=lambda kv: (order.get(kv[1]["tier"], 9), kv[0])):
+        out.append(f"| {t} | {e['tier']} | {_floor_cell(e['floor'])} | {e['found']} / {e['n']} | "
+                   f"{_pct(e['recall'])} | {_pct(e['lower'])} | {e['status']} |")
+    out += ["", f"Weighted false positives per 1,000 tokens (scored datasets): **{fs['objective']:.3f}**.", "",
+            "| dataset | role | weight | false positives | tokens | false positives per 1,000 tokens |",
+            "|---|---|---|---|---|---|"]
+    for ds, f in fs["fp"].items():
+        out.append(f"| {ds} | {f['role']} | {f['weight']:g} | {f['fp']} | {f['tokens']} | {f['per_1k']:.3f} |")
+    counts = fs.get("critical_miss_counts") or Counter(m["type"] for m in fs.get("critical_misses", []))
+    out += ["", "Misses of a critical type (positions in critical_misses.tsv): "
+            + (", ".join(f"{t} {n}" for t, n in sorted(counts.items())) or "none") + "."]
+    return out
+
+
+def write_critical_misses(fs: dict, path: Path) -> None:
+    rows = ["dataset\tsample\ttype\tstart\tend"]
+    rows += [f"{m['dataset']}\t{m['sample']}\t{m['type']}\t{m['start']}\t{m['end']}" for m in fs["critical_misses"]]
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+
 def run(parquet: Path, datasets: list[str], out: Path, jobs: int, limit: int | None = None) -> dict:
     import random
     samples: list[Sample] = []
@@ -254,10 +286,15 @@ def run(parquet: Path, datasets: list[str], out: Path, jobs: int, limit: int | N
     t0 = time.time()
     det, groups = detect_samples(samples, jobs)
     summary = summarise(score_all(samples, det), groups, score_tags(samples, det))
+    from . import floors, floorscore
+    fs = floorscore.summarise(samples, det, floors.load(), default_roles(datasets), UNLABELLED_NEGATIVE, JUDGED)
+    summary["floors"] = {k: v for k, v in fs.items() if k != "critical_misses"}
+    summary["floors"]["critical_miss_counts"] = dict(Counter(m["type"] for m in fs["critical_misses"]))
     seconds = time.time() - t0
     manifest = json.loads((parquet / "manifest.json").read_text(encoding="utf-8"))
     out.mkdir(parents=True, exist_ok=True)
     save_detections(det, out / "detections.parquet")
+    write_critical_misses(fs, out / "critical_misses.tsv")
     (out / "datasets.json").write_text(json.dumps({"datasets": datasets, "limit": limit}) + "\n", encoding="utf-8")
     (out / "metrics.json").write_text(json.dumps({**summary, "seconds": seconds, "limit": limit,
                                                   "manifest": manifest}, indent=2) + "\n", encoding="utf-8")

@@ -65,8 +65,11 @@ class RoundTests(unittest.TestCase):
         self.assertTrue(r["dev"]["accepted"])
         self.assertTrue(r["check"]["accepted"])
         self.assertTrue(r["accepted"])
-        self.assertEqual(r["verdict"], "strict")
+        self.assertEqual(r["verdict"], "accepted", "fewer false positives, every floor held")
+        self.assertEqual(r["dev"]["old_verdict"], "strict")
+        self.assertLess(r["dev"]["objective_delta"], 0)
         self.assertNotIn("datasets", r["check"], "check gives totals only")
+        self.assertNotIn("floors", r["check"])
 
 
 if __name__ == "__main__":

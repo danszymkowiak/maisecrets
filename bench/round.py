@@ -5,8 +5,9 @@
     uv run --project bench python bench/round.py judge <mutation.toml>... [--guard tab]
 
 `brief` writes <data>/rounds/<time>/brief.md from the dev split of a full run. `judge` scores proposals on dev and
-on check; its verdict (accepted, accepted within tolerance, rejected) is the worse of the two, and of check only the
-verdict and the mean change show.
+on check; its verdict (accepted, neutral, rejected: recall floors first, then weighted false positives per 1,000
+tokens) is the worse of the two, and of check only the verdict and the changes show. The earlier verdict (strict,
+within tolerance) is a comparison column.
 """
 from __future__ import annotations
 
@@ -57,19 +58,23 @@ def main(argv: list[str]) -> int:
     out.mkdir(parents=True, exist_ok=True)
     names = results[0]["dev"]["datasets"] if results else []
     lines = ["# Round verdicts", "", *run.licence_notes(names), "", f"Baseline `{rdir.name}`.", "",
-             "| proposal | verdict | dev mean change | check mean change | dev per dataset |", "|---|---|---|---|---|"]
+             "| proposal | verdict | dev FP/1k change | check FP/1k change | gaps narrowed (dev) | earlier verdict "
+             "(dev / check) | dev mean change |", "|---|---|---|---|---|---|---|"]
     for r in results:
-        per = ", ".join(f"{n} {100 * d['score_delta']:+.2f}" for n, d in r["dev"]["datasets"].items())
-        lines.append(f"| {r['name']} | {mutate.VERDICT_TEXT[r['verdict']]} | "
-                     f"{100 * r['dev']['overall_delta']:+.2f} | {100 * r['check']['overall_delta']:+.2f} | {per} |")
+        d, c = r["dev"], r["check"]
+        lines.append(f"| {r['name']} | {r['verdict']} | {d['objective_delta']:+.3f} | {c['objective_delta']:+.3f} | "
+                     f"{', '.join(d['gaps_narrowed']) or '-'} | {mutate.VERDICT_TEXT[d['old_verdict']]} / "
+                     f"{mutate.VERDICT_TEXT[c['old_verdict']]} | {100 * d['overall_delta']:+.2f} |")
     for r in results:
-        if r["dev"]["reasons"]:
-            lines.append(f"\n{r['name']}: dev worse: " + "; ".join(r["dev"]["reasons"]))
-        if r["dev"]["beyond"]:
-            lines.append(f"\n{r['name']}: dev beyond the tolerance: " + "; ".join(r["dev"]["beyond"]))
+        if r["dev"]["decided_by"]:
+            lines.append(f"\n{r['name']}: dev rejected by: " + "; ".join(r["dev"]["decided_by"]))
+        if r["check"]["decided_by"]:
+            lines.append(f"\n{r['name']}: check rejected by: " + "; ".join(r["check"]["decided_by"]))
         if r["check"]["verdict"] != r["dev"]["verdict"]:
-            lines.append(f"\n{r['name']}: check says {mutate.VERDICT_TEXT[r['check']['verdict']]}")
+            lines.append(f"\n{r['name']}: dev says {r['dev']['verdict']}, check says {r['check']['verdict']}")
     (out / "verdicts.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # dev only: per-type floor status, false positives per 1,000 tokens and critical misses of each proposal
+    (out / "dev-report.md").write_text(mutate.report([r["dev"] for r in results], rdir), encoding="utf-8")
     (out / "results.json").write_text(json.dumps(results, indent=2, default=str) + "\n", encoding="utf-8")
     print("\n".join(lines))
     return 0

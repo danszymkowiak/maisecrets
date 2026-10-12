@@ -3,9 +3,10 @@
 
     uv run --project bench python bench/mutate.py bench/mutations/*.toml [--baseline <run>] [--guard tab]
 
-Writes <data>/mutations/<time>/report.md and results.json: each mutation accepted, accepted within the recall
-tolerance or rejected, ranked by verdict and then by the change of the mean score of the scored datasets. A --guard
-dataset must not get worse but has no weight in the mean.
+Writes <data>/mutations/<time>/report.md and results.json: each mutation accepted, neutral or rejected (recall floors
+per type first, then weighted false positives per 1,000 tokens; docs/BENCHMARK.md), ranked by verdict and then by
+the change of the weighted false positives; the earlier strict / within-tolerance verdict is shown for comparison.
+A --guard dataset must not get worse but has no weight in the objective.
 """
 from __future__ import annotations
 

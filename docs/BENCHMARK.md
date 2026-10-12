@@ -349,8 +349,29 @@ type stays visible.
   or a gap narrows; the change of both is shown. *Neutral*: no effect, or more false positives with
   no gap narrowed (a trade the owner decides). Accepted changes rank by the change of the weighted
   objective.
-- **Critical misses.** At 0.999 the misses of a critical type are few enough to read one by one: the
-  report lists each (dataset, sample, type, masked context; `errors.py`).
+- **Critical misses.** At 0.999 the misses of a critical type are few enough to read one by one. A run
+  writes their positions to `critical_misses.tsv` (dataset, sample, type, offsets; no value) and counts
+  them per type in its report; `errors.py` exports the misses with their shape and the words before
+  them, masked. Today they number in the thousands (cards above all), so the counts come first.
+
+**Baseline, 2026-10-12 (run 20261012-020214; scored datasets pooled, valid gold).** Every type is
+below its floor, so every change today is judged by "no gap worse", and the gaps rank the work:
+
+| type | tier | finds | recall | to the floor |
+|---|---|---|---|---|
+| US_SSN | critical | 58,473 / 58,789 | 99.5% | 0.4 points |
+| IBAN | critical | 4,771 / 5,414 | 88.1% | 11.8 |
+| SECRET_PREFIXED | critical | 1,628 / 2,045 | 79.6% | 20.3 |
+| CARD | critical | 33,689 / 45,068 | 74.8% | 25.1 |
+| US_BANK_NUMBER | critical | 8,862 / 17,593 | 50.4% | 49.5 |
+| EMAIL | high | 137,470 / 140,357 | 97.9% | 1.1 |
+| ABA_ROUTING_NUMBER | high | 1,478 / 1,572 | 94.0% | 5.0 |
+| IP | high | 69,844 / 77,105 | 90.6% | 8.4 |
+| PHONE | high | 64,386 / 142,206 | 45.3% | 53.7 |
+| SECRET_GENERIC | default | 19,193 / 74,241 | 25.9% | no regression |
+
+Weighted false positives per 1,000 tokens: 0.291 (Gretel 0.784, ai4privacy 0.577, CredData 0.118,
+Nemotron 0.064, Mendeley and findocs 0).
 
 The verdicts below (strict, within tolerance) came first. They stay in the reports as a comparison
 column until TASK-21.10 has re-judged the mutations accepted under them.

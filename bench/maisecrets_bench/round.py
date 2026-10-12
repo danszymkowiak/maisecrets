@@ -1,16 +1,16 @@
 """An agent round (docs/BENCHMARK.md, Dev and check). brief() writes what an agent may read: dev scores, the rules
 with the most false alarms and their definitions, the misses by type, masked errors and the mutation format. judge()
-scores proposals on dev, then on check; of check only the verdict and the change of the mean come back, so a
-proposal cannot be fitted to it."""
+scores proposals on dev, then on check; of check only the verdicts, the reasons and the changes of the objective and
+the mean come back, so a proposal cannot be fitted to it."""
 from __future__ import annotations
 
 import json
 from collections import Counter
 from pathlib import Path
 
-from . import errors, mutate, run, schema, score
+from . import errors, floorscore, mutate, run, schema, score
 from .detector import rule_index
-from .mutation import RECALL_TOLERANCE, VERDICT_ORDER, Mutation
+from .mutation import RECALL_TOLERANCE, Mutation
 
 FORMAT = '''A mutation is a TOML file (one per proposal):
 
@@ -79,7 +79,8 @@ def brief(run_dir: Path, parquet: Path, top: int = 15) -> str:
 
 def judge(mutations: list[Mutation], run_dir: Path, parquet: Path, roles: dict, jobs: int,
           recall_tolerance: float = RECALL_TOLERANCE) -> list[dict]:
-    """Each proposal on dev and on check; its verdict is the worse of the two."""
+    """Each proposal on dev and on check; its verdict (floorscore's) is the worse of the two. Of check only the
+    verdicts and the changes of the objective and the mean come back."""
     out = []
     dev, det = _split_samples(run_dir, parquet, "dev")
     check, _ = _split_samples(run_dir, parquet, "check")
@@ -87,8 +88,9 @@ def judge(mutations: list[Mutation], run_dir: Path, parquet: Path, roles: dict, 
     check_r = {r["name"]: r for r in mutate.evaluate(mutations, check, det, roles, jobs, recall_tolerance)}
     for m in mutations:
         d, c = dev_r[m.name], check_r[m.name]
-        verdict = max(d["verdict"], c["verdict"], key=VERDICT_ORDER.get)
+        verdict = floorscore.worse(d["verdict"], c["verdict"])
         out.append({"name": m.name, "why": m.why, "dev": d,
-                    "check": {"verdict": c["verdict"], "accepted": c["accepted"], "overall_delta": c["overall_delta"]},
-                    "verdict": verdict, "accepted": verdict != "rejected"})
-    return sorted(out, key=lambda r: (VERDICT_ORDER[r["verdict"]], -r["dev"]["overall_delta"]))
+                    "check": {k: c[k] for k in ("verdict", "accepted", "objective_delta", "decided_by",
+                                                "old_verdict", "overall_delta")},
+                    "verdict": verdict, "accepted": verdict == "accepted"})
+    return sorted(out, key=lambda r: (floorscore.ORDER[r["verdict"]], r["dev"]["objective_delta"]))
