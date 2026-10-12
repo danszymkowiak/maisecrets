@@ -32,11 +32,11 @@ Fastino's hosted API; the tool uses only its local model class. Licences as each
 |---|---|---|---|
 | [urchade/gliner_multi_pii-v1](https://huggingface.co/urchade/gliner_multi_pii-v1) | Apache-2.0 | yes | multilingual GLiNER for PII |
 | [knowledgator/gliner-pii-base-v1.0](https://huggingface.co/knowledgator/gliner-pii-base-v1.0) | Apache-2.0 | yes | |
-| [openai/privacy-filter](https://huggingface.co/openai/privacy-filter) | Apache-2.0 | yes | token classifier, 1.5B parameters, 50M active |
-| [fastino/gliner2-privacy-filter-PII-multi](https://huggingface.co/fastino/gliner2-privacy-filter-PII-multi) | Apache-2.0 | no | GLiNER2, asked in its own label names |
+| [openai/privacy-filter](https://huggingface.co/openai/privacy-filter) | Apache-2.0 | no | token classifier, 1.5B parameters, 50M active; no date of birth found on the bench |
+| [fastino/gliner2-privacy-filter-PII-multi](https://huggingface.co/fastino/gliner2-privacy-filter-PII-multi) | Apache-2.0 | yes | GLiNER2, asked in its own label names |
 | [gretelai/gretel-gliner-bi-large-v1.0](https://huggingface.co/gretelai/gretel-gliner-bi-large-v1.0) | Apache-2.0 | no | |
 | [nvidia/gliner-PII](https://huggingface.co/nvidia/gliner-PII) | NVIDIA Open Model License | opt-in | for clinical text; not an OSI licence |
 | [iiiorg/piiranha-v1-detect-personal-information](https://huggingface.co/iiiorg/piiranha-v1-detect-personal-information) | CC BY-NC-ND 4.0 | opt-in | non-commercial, no derivatives |
 
 An opt-in model runs only with `--accept-model-terms <model id>`, after you have read its terms.
-The defaults are provisional: TASK-34.8 measures them on the bench and settles the set.
+The defaults were chosen on the bench datasets (TASK-34.8); `docs/REDACT.md` has the numbers.
