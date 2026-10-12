@@ -17,6 +17,8 @@ models = [
     # the mDeBERTa tokenizer of urchade/gliner_multi_pii-v1 does not load without them (measured 2026-10-12)
     "sentencepiece>=0.2",
     "protobuf>=4",
+    # gliner2's local model class (the [local] extra); its hosted-API client is never used
+    "gliner2[local]>=2.1",
 ]
 
 [tool.uv.sources]

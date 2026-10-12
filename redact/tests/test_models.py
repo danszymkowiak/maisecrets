@@ -75,6 +75,25 @@ class MergePiecesTests(unittest.TestCase):
         self.assertEqual([text[a:b] for a, b, _, _ in got], ["Erika", "Max", "Muster", "Bern"])
 
 
+class Gliner2Tests(unittest.TestCase):
+    """gliner2's extract_entities with spans and confidence (fastino/gliner2-privacy-filter-PII-multi, gliner2 2.1.0,
+    measured 2026-10-12): {"entities": {label: [{"text", "confidence", "start", "end"}]}}."""
+
+    def test_the_answer_becomes_spans_and_its_labels_map_to_the_tool_types(self):
+        result = {"entities": {"full_name": [{"text": "Erika Musterfrau", "confidence": 0.95, "start": 12, "end": 28}],
+                               "street_address": [{"text": "Hauptstrasse 12", "confidence": 0.99, "start": 30,
+                                                   "end": 45}],
+                               "iban": [],
+                               "phone_number": [{"text": "+41", "confidence": 0.9, "start": 66, "end": 69}]}}
+        spans = models.gliner2_spans(result)
+        self.assertEqual(sorted(spans), [(12, 28, "full_name", 0.95), (30, 45, "street_address", 0.99),
+                                         (66, 69, "phone_number", 0.9)])
+        self.assertEqual({models.LABELS[label] for _, _, label, _ in spans}, {"NAME", "ADDRESS", "PHONE"})
+
+    def test_every_label_asked_of_gliner2_maps_to_a_type(self):
+        self.assertEqual([q for q in models.GLINER2_QUERY_LABELS if q not in models.LABELS], [])
+
+
 class RegistryTests(unittest.TestCase):
     def test_every_model_names_its_licence_and_source(self):
         for mid, m in models.MODELS.items():

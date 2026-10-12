@@ -28,7 +28,14 @@ LABELS = {
     "email": "EMAIL", "email address": "EMAIL", "private_email": "EMAIL", "phone number": "PHONE", "phone": "PHONE",
     "private_phone": "PHONE", "date of birth": "DOB", "bank account number": "ACCOUNT", "account_number": "ACCOUNT",
     "national id number": "NATIONAL_ID", "passport number": "PASSPORT", "tax id": "TAX_ID",
+    # gliner2's own label names (fastino/gliner2-privacy-filter-PII-multi lists 42)
+    "full_name": "NAME", "street_address": "ADDRESS", "phone_number": "PHONE", "date_of_birth": "DOB",
+    "iban": "ACCOUNT", "bank_account": "ACCOUNT", "national_id_number": "NATIONAL_ID",
+    "passport_number": "PASSPORT", "tax_id": "TAX_ID", "tax_number": "TAX_ID",
 }
+# gliner2 is asked in its own label names: with "person" alone it found "Erika" and not "Erika Musterfrau" (2026-10-12)
+GLINER2_QUERY_LABELS = ("person", "full_name", "street_address", "email", "phone_number", "date_of_birth", "iban",
+                        "bank_account", "national_id_number", "passport_number", "tax_id")
 
 
 def detector_from(backend: Backend, name: str, chunk: int = 2000, overlap: int = 200) -> Detector:
@@ -99,12 +106,26 @@ class TokenClassificationBackend:
                                    for e in self.pipe(text)])
 
 
-def _gliner2(model_id: str):
-    raise NotImplementedError(f"{model_id}: the gliner2 backend is written once its API is measured (TASK-34.8)")
+def gliner2_spans(result: dict) -> list[tuple[int, int, str, float]]:
+    return [(int(e["start"]), int(e["end"]), label, float(e["confidence"]))
+            for label, found in result.get("entities", {}).items() for e in found]
+
+
+class Gliner2Backend:
+    """The gliner2 library (Apache-2.0), its local model class only: the package also holds a client for Fastino's
+    hosted API (GLiNER2API), which the tool never constructs, so no text leaves the machine."""
+
+    def __init__(self, model_id: str, threshold: float = 0.5) -> None:
+        from gliner2 import GLiNER2
+        self.model, self.threshold = GLiNER2.from_pretrained(model_id), threshold
+
+    def spans(self, text: str):
+        return gliner2_spans(self.model.extract_entities(text, list(GLINER2_QUERY_LABELS), threshold=self.threshold,
+                                                         include_confidence=True, include_spans=True))
 
 
 BACKENDS: dict[str, Callable[[str], Backend]] = {
-    "gliner": GlinerBackend, "token-classification": TokenClassificationBackend, "gliner2": _gliner2,
+    "gliner": GlinerBackend, "token-classification": TokenClassificationBackend, "gliner2": Gliner2Backend,
 }
 
 
@@ -128,7 +149,7 @@ MODELS: dict[str, Model] = {
                                    "1.5B parameters, 50M active; a bidirectional token classifier"),
     "fastino/gliner2-privacy-filter-PII-multi": Model("gliner2", "apache-2.0",
                                                       _hf("fastino/gliner2-privacy-filter-PII-multi"),
-                                                      "the spec's benchmark leader; its backend waits for TASK-34.8"),
+                                                      "the spec's benchmark leader"),
     "gretelai/gretel-gliner-bi-large-v1.0": Model("gliner", "apache-2.0", _hf("gretelai/gretel-gliner-bi-large-v1.0")),
     "nvidia/gliner-PII": Model("gliner", "nvidia-open-model-license", _hf("nvidia/gliner-PII"),
                                "for clinical text; NVIDIA's own terms, not an OSI licence: opt-in"),
@@ -155,7 +176,7 @@ def check_terms(model_ids: list[str], accepted: tuple[str, ...]) -> None:
                                    f"--accept-model-terms {mid} to use it")
 
 
-REQUIRED = ("torch", "transformers", "gliner")
+REQUIRED = ("torch", "transformers", "gliner", "gliner2")
 
 
 def unavailable_reason(has_module: Callable[[str], bool] = lambda name: find_spec(name) is not None) -> str | None:
