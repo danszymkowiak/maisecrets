@@ -88,6 +88,27 @@ class ApplyTests(unittest.TestCase):
         with self.assertRaisesRegex(BenchError, "'rot13'"):
             mutation.validate(_load('name = "x"\n[[change]]\nop = "normalise"\nstages = ["rot13"]\n'))
 
+    def test_unfix_switches_one_named_check_off(self):
+        # url-query-secret drops a template value ({...}) by its fix "template-braces" (TASK-26)
+        text = "GET https://api.example.org/x?token={SLACK_AUTO_TOKEN}"
+        self.assertEqual([(x.kind, x.type) for x in D.scan(text)], [])
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "unfix"\nfix = "template-braces"\n'
+                  'rule = "url-query-secret"\n')
+        self.assertEqual(self.scan_with(m, text), [("url-query-secret", "SECRET")])
+        self.assertIn("template-braces", next(r for r in D.rules() if r.id == "url-query-secret").fixes,
+                      "the plugin's rule keeps its fix")
+
+    def test_unfix_without_a_rule_takes_the_fix_off_every_rule(self):
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "unfix"\nfix = "code-value"\n')
+        rules = mutation.apply(m, self.base)
+        self.assertFalse([r.id for r in rules if "code-value" in r.fixes])
+        self.assertTrue([r.id for r in self.base if "code-value" in r.fixes])
+
+    def test_an_unknown_fix_is_named(self):
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "unfix"\nfix = "rocket"\n')
+        with self.assertRaisesRegex(BenchError, "rocket"):
+            mutation.validate(m)
+
     def test_a_disable_only_mutation_says_so(self):
         self.assertTrue(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n').disable_only)
         self.assertFalse(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\nentropy = 3.0\n').disable_only)

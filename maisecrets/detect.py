@@ -98,7 +98,8 @@ class Rule:
     whole_match: bool = False          # presidio: the entity is the whole match, never a sub-group
     quote_group: int = 0               # detect-secrets: group of the optional opening quote
     filter: object = None              # Betterleaks: the converted filter tree; true drops the hit (filterexpr.py)
-    fixes: tuple[str, ...] = ()        # our fixes of a vendored rule (rules/overrides.txt, FIXES below)
+    fixes: tuple[str, ...] = ()        # checks that drop a hit of this rule, by name (FIXES below; rules/overrides.txt)
+    value_after_anchor: bool = False   # detect-secrets keyword rules: `password: &pw <value>` takes the value after it
 
 
 # ----------------------------------------------------------------- helpers --
@@ -492,7 +493,7 @@ _SYSTEM_USERS = frozenset({"git", "root", "ubuntu", "ec2-user", "admin", "norepl
 # --------------------------------------------------------------- own rules --
 OWN_RULES: list[dict] = [
     # ?token=… / &api_key=… in a URL
-    {"id": "url-query-secret", "type": "SECRET", "secret_group": 2,
+    {"id": "url-query-secret", "type": "SECRET", "secret_group": 2, "fixes": ("template-braces",),
      "regex": r"(?i)[?&]((?:access_?)?token|api[_-]?key|apikey|secret|password|sig|signature)=([^&\s#\"']{8,})"},
     # an IBAN in lower case, plain or in groups of four, also after an MT940 subfield code (?31); its validator wants
     # the country's length too (TASK-22)
@@ -504,14 +505,15 @@ OWN_RULES: list[dict] = [
      # `python@3.14/3.14.7` are version pins, not addresses (review, 2026-09-26)
      "regex": r"(?:\b[\w.+-]{1,64}|(?<![\w.+-])[\w.+-]{64,}|[\w.+-]{64})"
               r"@[\w-]{1,63}(?:\.[\w-]{1,63})*\.[A-Za-z]{2,63}(?![\w-])"},
-    {"id": "phone", "type": "PHONE",
+    {"id": "phone", "type": "PHONE", "fixes": ("phone-implausible",),
      "regex": r"(?<![\w+])\+(?!0)\d{1,3}[ \-]?(?:\(?\d{1,5}\)?[ \-]?)\d{2,5}(?:[ \-]?\d{2,5}){1,4}(?![\w.]\d|\w)"},
     # bare token prefixes newer than the vendored rulesets live in rules/prefixes.txt (see _load_prefixes)
-    {"id": "auth-scheme", "type": "SECRET", "secret_group": 3,
+    {"id": "auth-scheme", "type": "SECRET", "secret_group": 3, "fixes": ("words-not-token",),
      "regex": r"(?<![\w-])(Bearer|Basic)([ \t]+)([A-Za-z0-9._~+/=-]{16,})"},
     # a password with no user in a URL: redis://:pw@host, the form Redis and some brokers use. ds-basic-auth needs a
     # user before the colon; same characters and the same value filter otherwise (corpus of 0.6.7)
     {"id": "url-password-no-user", "type": "SECRET", "secret_group": 1, "validator": "ds_value",
+     "fixes": ("url-password-reference",),
      "regex": r"://:([^:/?#\[\]@!$&'()*+,;=\s]+)@"},
     # the secret half of an AWS key pair has no prefix of its own; the console, a CSV export
     # and a chat paste show it within a few lines after the AKIA… id (field report, 2026-09-26)
@@ -749,10 +751,14 @@ def _load_detect_secrets(languages: tuple[str, ...] = ("en",)) -> list[Rule]:
         # `password : x` in every language; the vendored colon rules allowed none, so
         # `mot de passe : <value>` and `password : <value>` were no hit (2026-09-28)
         regex = regex.replace(_COLON_AFTER_LABEL, _COLON_AFTER_LABEL_SPACED, 1)
+        keyword_rule = r["id"].startswith("ds-keyword")
         out.append(Rule(id=r["id"], type="SECRET", regex=_Lazy(regex, flags),
                         keywords=() if r["id"] == "ds-basic-auth" else kws,
                         secret_group=int(r["group"]), validator="ds_value",
-                        quote_group=_DS_QUOTE_GROUP.get(r["id"], 0)))
+                        quote_group=_DS_QUOTE_GROUP.get(r["id"], 0),
+                        fixes=DS_KEYWORD_FIXES if keyword_rule else ("user-as-password",) if r["id"] == "ds-basic-auth"
+                        else (),
+                        value_after_anchor=keyword_rule))
     return out
 
 
@@ -771,7 +777,7 @@ def _load_prefixes() -> list[Rule]:
 
 def _load_own() -> list[Rule]:
     return [Rule(id=d["id"], type=d["type"], regex=_Lazy(d["regex"]),
-                 secret_group=d.get("secret_group", 0), validator=d.get("validator"))
+                 secret_group=d.get("secret_group", 0), validator=d.get("validator"), fixes=d.get("fixes", ()))
             for d in OWN_RULES] + _load_prefixes()
 
 
@@ -1290,8 +1296,42 @@ def _uuid_elided_or_derived(text: str, m, start: int, end: int, secret: str) -> 
                 or _DERIVED_LABEL_RE.search(text, max(_line_start(text, start), start - 60), start))
 
 
-# our fixes of vendored rules, by the name rules/overrides.txt gives them: (text, match, start, end, secret) -> drop?
+def _prose_in_table_cell(text: str, m, start: int, end: int, secret: str) -> bool:
+    """A sentence goes on after the first word: a table cell of prose (TASK-15)."""
+    return bool(secret.isalpha() and secret.islower() and _PROSE_AFTER_RE.match(text, end)
+                and _in_table_cell(text, start))
+
+
+def _label_on_next_line(text: str, m, start: int, end: int, secret: str) -> bool:
+    """The next line is a label of its own: `DB_PASSWORD=\nAPI_KEY=`, `Zugangsdaten:\nBenutzer:`."""
+    return bool(_LABEL_SHAPE.fullmatch(secret.strip()) and _NAME_LABEL_RE.fullmatch(secret.strip())
+                and "\n" in text[m.start():start])
+
+
+def _measure_number(text: str, m, start: int, end: int, secret: str) -> bool:
+    """A limit or a duration, such as a refresh token's TTL in seconds."""
+    return bool(secret.strip("\"' ").isdigit() and _MEASURE_LABEL_RE.search(_label_before(text, start)))
+
+
+# the checks that drop a hit, by name: (text, match, start, end, secret) -> drop? A rule lists the ones it takes
+# (Rule.fixes): its loader sets them, and rules/overrides.txt for a vendored rule by its upstream ID (TASK-19.2,
+# TASK-26). The bench switches one off by name (op = "unfix")
+DS_KEYWORD_FIXES = ("code-value", "names-its-label", "prose-in-table-cell", "label-on-next-line", "measure-number",
+                    "uuid-elided-or-derived")
 FIXES = {
+    "code-value": lambda text, m, start, end, secret: bool(
+        is_code_word(secret) or value_is_code(text, start, end, secret)),
+    "names-its-label": lambda text, m, start, end, secret: bool(_names_its_label(text, start, secret)),
+    "prose-in-table-cell": _prose_in_table_cell,
+    "label-on-next-line": _label_on_next_line,
+    "measure-number": _measure_number,
+    # a template: ?token={body['transfer_id']}, ?token={SLACK_AUTO_TOKEN}
+    "template-braces": lambda text, m, start, end, secret: secret.startswith("{"),
+    # words, not a token: Bearer test_access_token
+    "words-not-token": lambda text, m, start, end, secret: bool(
+        not any(c.isdigit() for c in secret) and re.fullmatch(r"[A-Za-z]+(?:[_-][A-Za-z]+)+", secret)),
+    "url-password-reference": lambda text, m, start, end, secret: _url_password_not_a_value(secret),
+    "phone-implausible": lambda text, m, start, end, secret: not _phone_ok(text, start, secret),
     "word-path": lambda text, m, start, end, secret: bool(_WORD_PATH_RE.fullmatch(secret.strip("'\""))),
     "uuid-elided-or-derived": _uuid_elided_or_derived,
     "user-as-password": lambda text, m, start, end, secret: _pass_equals_user(m.group(0), secret),
@@ -1344,7 +1384,7 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
                     end = start + len(secret)
                     if _CAPITALISED_WORD_RE.fullmatch(secret):
                         continue
-            if rule.id.startswith("ds-keyword") and _ANCHOR_OR_TAG_RE.fullmatch(secret.strip()):
+            if rule.value_after_anchor and _ANCHOR_OR_TAG_RE.fullmatch(secret.strip()):
                 # a quoted scalar is never an anchor: the colon must stand right before it (review of b4a7c54)
                 nxt = re.match(r"[ \t]+([^\s#]+)", text[end:end + 300])
                 if nxt:
@@ -1357,34 +1397,8 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
                     secret = text[start:end]
                 elif _before_value(text, start).rstrip(" \t").endswith(":"):
                     continue   # a YAML anchor or alias alone after a colon label: &gitlab_token_fields
-            if rule.id.startswith("ds-keyword") and (is_code_word(secret) or value_is_code(text, start, end, secret)):
-                continue
-            if rule.id.startswith("ds-keyword") and _names_its_label(text, start, secret):
-                continue
-            if (rule.id.startswith("ds-keyword") and secret.isalpha() and secret.islower()
-                    and _PROSE_AFTER_RE.match(text, end) and _in_table_cell(text, start)):
-                continue   # a sentence goes on after the first word: a table cell of prose (TASK-15)
-            if (rule.id.startswith("ds-keyword") and _LABEL_SHAPE.fullmatch(secret.strip())
-                    and _NAME_LABEL_RE.fullmatch(secret.strip()) and "\n" in text[m.start():start]):
-                continue   # the next line is a label of its own: `DB_PASSWORD=\nAPI_KEY=`, `Zugangsdaten:\nBenutzer:`
-            if (rule.id.startswith("ds-keyword") and secret.strip("\"' ").isdigit()
-                    and _MEASURE_LABEL_RE.search(_label_before(text, start))):
-                continue   # a limit or a duration: TTL_REFRESH_TOKEN = 2592000
-            if rule.id == "url-query-secret" and secret.startswith("{"):
-                continue   # a template: ?token={body['transfer_id']}, ?token={SLACK_AUTO_TOKEN}
-            if (rule.id == "auth-scheme" and not any(c.isdigit() for c in secret)
-                    and re.fullmatch(r"[A-Za-z]+(?:[_-][A-Za-z]+)+", secret)):
-                continue   # words, not a token: Bearer test_access_token
-            if rule.id.startswith("ds-keyword") and _uuid_elided_or_derived(text, m, start, end, secret):
-                continue
-            if rule.id == "ds-basic-auth" and _pass_equals_user(m.group(0), secret):
-                continue
             if rule.fixes and any(FIXES[f](text, m, start, end, secret) for f in rule.fixes):
-                continue   # our fixes of a vendored rule (rules/overrides.txt)
-            if rule.id == "url-password-no-user" and _url_password_not_a_value(secret):
-                continue
-            if rule.id == "phone" and not _phone_ok(text, start, secret):
-                continue
+                continue   # a named check of this rule says the hit is no value (FIXES)
             if rule.type == "IP" and _SECTION_BEFORE_RE.search(text, max(0, start - 24), start):
                 continue   # a section number: RFC 6749 4.1.2.1, OIDC Core 3.1.2.1, section 7.1.2.3
             if overlaps(start, end):

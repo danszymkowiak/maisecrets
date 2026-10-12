@@ -373,7 +373,8 @@ setup and runs leave it out by default. CredData and Gretel stay: each has rules
 
 ## Judging a change
 
-A mutation (add, disable or replace a rule, change a threshold or a word list) is applied inside
+A mutation (add, disable or replace a rule, change a threshold or a word list, or switch off one named check of
+the detector's `FIXES` with `op = "unfix"`, TASK-26) is applied inside
 the bench, never by editing the project, and scored against the baseline on the same data.
 
 ### Recall floors first, then false positives (TASK-21, decided 2026-10-11)

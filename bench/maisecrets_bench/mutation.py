@@ -25,6 +25,11 @@
     op = "normalise"        # the shape rules also scan a cleaned copy (maisecrets/normalise.py, TASK-11.25)
     stages = ["ansi", "invisible"]
 
+    [[change]]
+    op = "unfix"            # switch off one named check that drops hits (detect.FIXES, TASK-26)
+    fix = "code-value"
+    rule = "ds-keyword-colon"   # optional: without it, every rule that takes the fix loses it
+
 It is applied to a copy of the detector's rule list inside the bench; the plugin is never edited. judge() compares
 the scores of a mutated run with the baseline."""
 from __future__ import annotations
@@ -66,8 +71,8 @@ def load(path: Path) -> Mutation:
     if not changes:
         raise BenchError(f"{path}: no [[change]]")
     for c in changes:
-        if c.get("op") not in ("disable", "set", "add", "normalise"):
-            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add or normalise")
+        if c.get("op") not in ("disable", "set", "add", "normalise", "unfix"):
+            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add, normalise or unfix")
     return Mutation(data.get("name", Path(path).stem), data.get("why", ""), changes)
 
 
@@ -113,6 +118,14 @@ def validate(m: Mutation) -> None:
         if c["op"] == "normalise":
             _stages(c, where)
             continue
+        if c["op"] == "unfix":
+            from .detector import detect
+            if c.get("fix") not in detect.FIXES:
+                raise BenchError(f"{where}: fix {c.get('fix')!r} is not one of the detector's "
+                                 f"({', '.join(detect.FIXES)})")
+            if "rule" in c and c["rule"] not in known:
+                raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector in any region")
+            continue
         if c["op"] in ("disable", "set") and c.get("rule") not in known:
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector in any region")
         if c["op"] in ("set", "add"):
@@ -137,6 +150,9 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector")
         if c["op"] == "normalise":
             detect.NORMALISE = _stages(c, where)
+        elif c["op"] == "unfix":
+            out = [dataclasses.replace(r, fixes=tuple(f for f in r.fixes if f != c["fix"]))
+                   if c.get("rule") in (None, r.id) else r for r in out]
         elif c["op"] == "disable":
             out = [r for r in out if r.id != c["rule"]]
         elif c["op"] == "set":
