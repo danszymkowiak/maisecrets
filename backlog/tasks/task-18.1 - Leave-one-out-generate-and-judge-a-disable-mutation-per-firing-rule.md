@@ -4,7 +4,7 @@ title: 'Leave-one-out: generate and judge a disable mutation per firing rule'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 12:24'
 labels:
   - benchmark
 dependencies:
@@ -27,6 +27,12 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 - [x] #1 A script or mutate.py option generates the per-rule mutations from a run; a test covers it
 - [ ] #2 All firing rules judged; results.json and report.md in the data directory
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12 (TASK-19.7): run on baseline 20261012-141549 (bench/loo.py --baseline ~/.cache/maisecrets-bench/runs/20261012-141549): the rule set is now Betterleaks v1.9.0 + carried gitleaks rules + Veles; 95 rules fire, so 95 disable mutations, with Betterleaks/Veles rule IDs. The generator reads the rule IDs from that run, so no list needs editing.
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

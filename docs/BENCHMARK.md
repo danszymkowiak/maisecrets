@@ -4,6 +4,12 @@ How the detection rules are measured against public labelled datasets, and how a
 change is judged. The work is TASK-11 and its subtasks in `backlog/`. Nothing here ships with the
 plugin: `bench/` is developer-only, and the datasets never enter the repository.
 
+**Current baseline: run 20261012-141549** (TASK-19.7): Betterleaks v1.9.0 with the carried gitleaks rules
+and the Veles rules, the clean gold (valid4, TASK-30/31), ai4privacy continuation leads uncertain (TASK-33).
+95 rules fire, 429 never do; dataset scores: ai4privacy 76.6%, CredData 70.5%, findocs 100%, Gretel 77.8%,
+Mendeley 96.1%, Nemotron 83.5%, synthetic 99.3%; equal-weight mean 84.1%. The leave-one-out review (TASK-18)
+runs on this baseline, over Betterleaks rule IDs.
+
 ## Purpose
 
 - Score the rules as they are: precision and recall per dataset and per type, and the rules that
