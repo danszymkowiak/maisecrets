@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 21:29'
 labels:
   - benchmark
 dependencies:
@@ -38,4 +38,6 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12, tooling in 97b5373: maisecrets_bench/labelclass.py (one table: STRONG_LAST, STRONG_PAIRS, WEAK, NEGATIVE_LAST, NEGATIVE_WHOLE; passport, id and passage kept out of the negatives by dev evidence), filters bench:label_negative and bench:label_weak_entropy, mutations in bench/mutations/round3/. Provisional judge under the OLD verdict (round 20261012-000333): label-negative accepted strictly (dev +0.01, check +0.16, CredData +0.04); label-weak-entropy rejected (CredData recall 64.33% to 64.23%). Re-judge under TASK-21.8 on the new rule set.
+
+2026-10-12 late: a judge of wordlike-44, bigram-309, label-weak-entropy (with label-negative and wordlike-75) against 20261012-194832 was started and stopped when the user paused; rerun: uv run --project bench python bench/mutate.py bench/mutations/round3/{wordlike-44,bigram-309,label-weak-entropy,label-negative,wordlike-75}.toml --baseline ~/.cache/maisecrets-bench/runs/20261012-194832. Known so far (TASK-21.10): label-negative accepted, wordlike-75 rejected.
 <!-- SECTION:NOTES:END -->
