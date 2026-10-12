@@ -43,7 +43,8 @@ def default_roles(names) -> dict:
 # a dataset whose results stay local; its note goes into every report that includes it
 LOCAL_ONLY = {"ai4privacy": "ai4privacy: academic and non-commercial use only (AI4Privacy licence). Local "
                             "measurement; leave it out of anything sent upstream. The plugin's owner needs "
-                            "AI4Privacy's permission first (licensing@ai4privacy.com)."}
+                            "AI4Privacy's permission first (licensing@ai4privacy.com). Its precision is a lower "
+                            "bound: its generator also wrote values outside the labelled slots (TASK-33)."}
 
 
 def default_datasets(manifest: dict) -> list[str]:

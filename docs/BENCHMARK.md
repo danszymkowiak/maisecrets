@@ -282,6 +282,15 @@ numbers that looked like valid IBANs were mostly fragments of fake ones (see the
 points (Gretel 74.3% to 73.6%): detections of invalid gold were counted as found and are now
 neutral. The equal-weight mean rises from 79.9% to 81.4%.
 
+**ai4privacy continuation records (TASK-33, the user's decision of 2026-10-12; baseline run
+20261012-140543).** ai4privacy cut long texts into records `…A`, `…B`, `…C`; a continuation starts in
+the middle of a value its chunking left unlabelled. The adapter marks a continuation record's first
+token as uncertain (`continuation_lead`, revision cont1), so a detection there counts neither as found
+nor as a false alarm. Against 20261012-135603: ai4privacy false hits 6,140 to 4,199 (e-mail 2,498 to
+1,080, IP 1,650 to 1,206), precision 96.1% to 97.3%, true hits unchanged, no other dataset moves. Every
+report notes that ai4privacy's precision is a lower bound: its generator also wrote values outside the
+labelled slots, which cannot be told from real false alarms without reading the text.
+
 **No cut drops a group of the value (TASK-31, gold revision valid4; baseline run 20261012-100249).**
 Trimming shrank a value from the right until its checksum passed, to drop what a greedy pattern took
 after it (the ` 12` of an expiry after a card number). It also cut fake values at a group boundary

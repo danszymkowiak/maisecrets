@@ -159,7 +159,7 @@ def ai4privacy_source(cache: Path) -> Source:
 
     def version() -> str:
         from huggingface_hub import HfApi
-        return HfApi().dataset_info(ai4privacy.HF_ID).sha
+        return f"{HfApi().dataset_info(ai4privacy.HF_ID).sha}:{ai4privacy.REVISION}"
 
     return Source("ai4privacy", version,
                   lambda: ai4privacy.samples(ai4privacy.records(str(cache / "hf")), load_table("ai4privacy"), stats),
