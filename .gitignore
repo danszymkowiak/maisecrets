@@ -29,3 +29,7 @@ reports/
 
 # the redact tool's own environment (uv), like the bench's
 redact/.venv/
+
+# local secrets, such as the Kaggle token of the bench (TASK-11.36); never committed
+.env
+.env.*
