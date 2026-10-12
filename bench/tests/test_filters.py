@@ -10,12 +10,10 @@ SPACED = "pass" + "word: " + "Kx7Q" + "p2Zr9Lm4Wn"
 
 
 def _hits(text: str, m: mutation.Mutation | None) -> list:
-    saved = detect._RULES
     try:
-        detect._RULES = mutation.apply(m, detect.rules()) if m else saved
-        return [(x.kind, x.value) for x in detect.scan(text)]
+        rs = mutation.ruleset(m, detect.default_ruleset()) if m else None
+        return [(x.kind, x.value) for x in detect.scan(text, ruleset=rs)]
     finally:
-        detect._RULES = saved
         filters.ACTIVE.clear()
 
 

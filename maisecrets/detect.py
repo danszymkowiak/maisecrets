@@ -604,11 +604,11 @@ def _load_betterleaks() -> list[Rule]:
     return rules
 
 
-def _load_vendored_secrets() -> list[Rule]:
+def _load_vendored_secrets(name: str) -> list[Rule]:
     loaders = {"gitleaks": _load_gitleaks, "betterleaks": _load_betterleaks}
-    if SECRET_RULES not in loaders:
-        raise ValueError(f"SECRET_RULES is {SECRET_RULES!r}: not one of {sorted(loaders)}")
-    return loaders[SECRET_RULES]()
+    if name not in loaders:
+        raise ValueError(f"the vendored secret rules are {name!r}: not one of {sorted(loaders)}")
+    return loaders[name]()
 
 
 # entity -> placeholder type (short, stable); anything else keeps its entity name
@@ -781,20 +781,56 @@ def _load_own() -> list[Rule]:
             for d in OWN_RULES] + _load_prefixes()
 
 
-_RULES: list[Rule] | None = None
+@dataclass(frozen=True)
+class Settings:
+    """What a rule set is built from (TASK-27): the PII regions, the label languages, the vendored secret set and the
+    normaliser stages. The defaults are the rules of no country."""
+    regions: tuple[str, ...] = DEFAULT_PII_REGIONS
+    languages: tuple[str, ...] = ("en",)
+    secret_rules: str = "gitleaks"
+    normalise: tuple[str, ...] = ()
 
 
-def rules() -> list[Rule]:
-    """Own secret rules first (longer shapes win the span), then the vendored set (SECRET_RULES), then PII."""
-    global _RULES
-    if _RULES is None:
-        own = _load_own()
-        secrets = [r for r in own if r.type == "SECRET"]
-        pii = [r for r in own if r.type != "SECRET"]
-        active = active_regions()
-        _RULES = (secrets + _load_detect_secrets(active.languages) + _load_vendored_secrets()
-                  + _load_regional(active.regions) + _load_presidio(active.regions) + pii)
-    return _RULES
+@dataclass(frozen=True)
+class RuleSet:
+    """The rules scan() runs, in order, and the normaliser stages of its second pass. Immutable: a caller that wants
+    other rules builds another set (build(), or dataclasses.replace) and passes it to scan()."""
+    rules: tuple[Rule, ...]
+    normalise: tuple[str, ...] = ()
+
+
+def build(settings: Settings) -> RuleSet:
+    """Own secret rules first (longer shapes win the span), then detect-secrets, the vendored set, the country rules
+    and Presidio, then own PII."""
+    own = _load_own()
+    secrets = [r for r in own if r.type == "SECRET"]
+    pii = [r for r in own if r.type != "SECRET"]
+    return RuleSet(tuple(secrets + _load_detect_secrets(settings.languages)
+                         + _load_vendored_secrets(settings.secret_rules) + _load_regional(settings.regions)
+                         + _load_presidio(settings.regions) + pii), tuple(settings.normalise))
+
+
+def settings_from_config() -> Settings:
+    """The settings of this installation: the regions and label languages of the config, the vendored set and the
+    normaliser stages the plugin ships with (SECRET_RULES, NORMALISE)."""
+    active = active_regions()
+    return Settings(regions=tuple(active.regions), languages=tuple(active.languages), secret_rules=SECRET_RULES,
+                    normalise=tuple(NORMALISE))
+
+
+_DEFAULT: list[RuleSet] = []
+
+
+def default_ruleset() -> RuleSet:
+    """The rule set of the config, built once per process (a hook process reads its config once)."""
+    if not _DEFAULT:
+        _DEFAULT.append(build(settings_from_config()))
+    return _DEFAULT[0]
+
+
+def rules() -> tuple[Rule, ...]:
+    """The rules of the default set (default_ruleset)."""
+    return default_ruleset().rules
 
 
 def active_regions():
@@ -1342,10 +1378,13 @@ FIXES = {
 }
 
 
-def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False) -> list[Match]:
-    """Return non-overlapping matches, leftmost first; the first rule to claim a span wins."""
+def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
+         ruleset: RuleSet | None = None) -> list[Match]:
+    """Return non-overlapping matches, leftmost first; the first rule to claim a span wins. The rules are `ruleset`,
+    else the config's (default_ruleset)."""
     if not text:
         return []
+    rs = ruleset if ruleset is not None else default_ruleset()
     low = _lower(text)
     found: list[Match] = []
     taken_starts: list[int] = []
@@ -1356,7 +1395,7 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
         neighbours by start can; a scan over all of them was quadratic in the hits (review of b4a7c54)."""
         i = bisect.bisect_left(taken_starts, a)
         return (i > 0 and taken_ends[i - 1] > a) or (i < len(taken_starts) and taken_starts[i] < b)
-    for rule in rules():
+    for rule in rs.rules:
         if enabled is not None and rule.id not in enabled:
             continue
         if rule.keywords and not any(k in low for k in rule.keywords):
@@ -1464,13 +1503,13 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False)
             i = bisect.bisect_left(taken_starts, start)
             taken_starts.insert(i, start)
             taken_ends.insert(i, end)
-    if NORMALISE and not _shapes_only:
+    if rs.normalise and not _shapes_only:
         from .normalise import normalise
-        norm = normalise(text, NORMALISE)
+        norm = normalise(text, rs.normalise)
         if norm.text is not text:
             # a hit of the cleaned copy redacts the original range, hidden characters included; the raw text's own
             # hits came first and keep their spans
-            for m in scan(norm.text, enabled, _shapes_only=True):
+            for m in scan(norm.text, enabled, _shapes_only=True, ruleset=rs):
                 start, end = norm.span(m.start, m.end)
                 if overlaps(start, end):
                     continue

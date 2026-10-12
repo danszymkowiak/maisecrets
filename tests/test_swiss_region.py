@@ -76,17 +76,10 @@ class ValidatorTests(unittest.TestCase):
 
 
 class SwissRegionTests(unittest.TestCase):
-    def setUp(self):
-        active = regions.Active(regions=("generic", "ch"), languages=("en", "de", "fr", "it"), source="test")
-        patch = mock.patch.object(detect, "active_regions", return_value=active)
-        patch.start()
-        self.addCleanup(patch.stop)
-        saved = detect._RULES
-        detect._RULES = None
-        self.addCleanup(setattr, detect, "_RULES", saved)
+    SWISS = detect.build(detect.Settings(regions=("generic", "ch"), languages=("en", "de", "fr", "it")))
 
-    def kinds(self, text: str) -> list:
-        return [(m.kind, m.value) for m in detect.scan(text) if m.kind.startswith("ch-")]
+    def kinds(self, text: str, ruleset=SWISS) -> list:
+        return [(m.kind, m.value) for m in detect.scan(text, ruleset=ruleset) if m.kind.startswith("ch-")]
 
     def test_the_dotted_ahv_number_is_found_in_every_language(self):
         a = dotted(ahv())
@@ -116,15 +109,12 @@ class SwissRegionTests(unittest.TestCase):
 
     def test_a_swiss_iban_and_phone_number_are_already_covered(self):
         iban = "CH93 0076 2011 6238 5295 7"                # the IBAN registry's Swiss example
-        self.assertIn(("IBAN", iban), [(m.type, m.value) for m in detect.scan(f"IBAN {iban}")])
-        self.assertIn("PHONE", [m.type for m in detect.scan("Tel. +41 44 668 18 00")])
+        self.assertIn(("IBAN", iban), [(m.type, m.value) for m in detect.scan(f"IBAN {iban}", ruleset=self.SWISS)])
+        self.assertIn("PHONE", [m.type for m in detect.scan("Tel. +41 44 668 18 00", ruleset=self.SWISS)])
 
     def test_without_the_region_no_swiss_rule_runs(self):
-        active = regions.Active(regions=("generic", "de"), languages=("en", "de"), source="test")
-        with mock.patch.object(detect, "active_regions", return_value=active):
-            detect._RULES = None
-            self.assertEqual(self.kinds(f"AHV-Nr. {dotted(ahv())}"), [])
-        detect._RULES = None
+        german = detect.build(detect.Settings(regions=("generic", "de"), languages=("en", "de")))
+        self.assertEqual(self.kinds(f"AHV-Nr. {dotted(ahv())}", german), [])
 
 
 class ResolveTests(unittest.TestCase):

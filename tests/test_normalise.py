@@ -3,6 +3,7 @@ back to the original, so a span found in the copy redacts the true text. Off by 
 stages on. Every invisible character here is an escape."""
 from __future__ import annotations
 
+import dataclasses
 import os
 import sys
 import unittest
@@ -83,28 +84,26 @@ class StageTests(unittest.TestCase):
 
 class ScanTests(unittest.TestCase):
     def setUp(self):
-        saved = detect.NORMALISE
-        self.addCleanup(setattr, detect, "NORMALISE", saved)
+        self.rs = dataclasses.replace(detect.default_ruleset(), normalise=ALL)
 
     def found(self, text):
         return [(m.kind, text[m.start:m.end]) for m in detect.scan(text)]
 
     def test_off_by_default(self):
         self.assertEqual(detect.NORMALISE, ())
+        self.assertEqual(detect.default_ruleset().normalise, ())
         self.assertEqual(self.found("t " + GHP[:10] + "\u200b" + GHP[10:]), [])
 
     def test_a_split_token_is_found_and_its_true_span_redacted(self):
-        detect.NORMALISE = ALL
         text = "t " + GHP[:10] + "\u200b" + GHP[10:] + " end"
-        hits = detect.scan(text)
+        hits = detect.scan(text, ruleset=self.rs)
         self.assertEqual(len(hits), 1)
         self.assertEqual(text[hits[0].start:hits[0].end], GHP[:10] + "\u200b" + GHP[10:])
         self.assertEqual(hits[0].value, text[hits[0].start:hits[0].end])
 
     def test_a_hit_of_the_raw_text_wins_over_the_normalised_one(self):
-        detect.NORMALISE = ALL
         text = GHP + " and " + GHP[:10] + "\x1b[0m" + GHP[10:]
-        spans = [(m.start, m.end) for m in detect.scan(text)]
+        spans = [(m.start, m.end) for m in detect.scan(text, ruleset=self.rs)]
         self.assertEqual(spans[0], (0, len(GHP)))
         self.assertEqual(len(spans), 2)
 

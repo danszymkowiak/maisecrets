@@ -60,12 +60,13 @@ def licence_notes(names) -> list[str]:
 JUDGED = {"creddata": frozenset({"SECRET"})}
 
 _detect = None
+_RULESET = None     # this worker's rule set when a mutation is applied (bench only); None: the config's
 
 
 def _init_worker(regions: list[str], locale: str, mutation=None) -> None:
     """A fresh home with the test store and the group's regions; the locale fixed; the rules mutated when a mutation
     is given (bench only, the plugin is not edited). Runs before maisecrets loads."""
-    global _detect
+    global _detect, _RULESET
     home = Path(tempfile.mkdtemp(prefix="maisecrets-bench-run-"))
     (home / "config.json").write_text(json.dumps({"backend": "jsonfile", "allow_plaintext_store": True,
                                                   "regions": regions}))
@@ -74,12 +75,13 @@ def _init_worker(regions: list[str], locale: str, mutation=None) -> None:
     from . import detector
     _detect = detector.detect
     if mutation is not None:
-        from .mutation import apply
-        _detect._RULES = apply(mutation, _detect.rules(), strict=False)   # validated over all regions before
+        from .mutation import ruleset
+        _RULESET = ruleset(mutation, _detect.default_ruleset(), strict=False)   # validated over all regions before
 
 
 def _detections(text: str) -> list[score.Detection]:
-    return [score.Detection(m.start, m.end, m.type, m.kind) for m in _detect.scan(text) if m.type not in SKIP_TYPES]
+    return [score.Detection(m.start, m.end, m.type, m.kind) for m in _detect.scan(text, ruleset=_RULESET)
+            if m.type not in SKIP_TYPES]
 
 
 def _detect_chunk(chunk: list[Sample]) -> list[tuple[str, str, list[score.Detection]]]:
@@ -95,7 +97,7 @@ def _active(regions: list[str], locale: str, mutation=None) -> dict:
 def _describe() -> dict:
     a = _detect.active_regions()
     return {"regions": list(a.regions), "languages": list(a.languages),
-            "rules": sorted({r.id for r in _detect.rules()})}
+            "rules": sorted({r.id for r in (_RULESET or _detect.default_ruleset()).rules})}
 
 
 def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50, mutation=None) -> tuple[dict, dict]:

@@ -29,13 +29,8 @@ class ApplyTests(unittest.TestCase):
         self.base = list(D.rules())
 
     def scan_with(self, m: mutation.Mutation, text: str) -> list:
-        rules = mutation.apply(m, self.base)
-        old = D._RULES
-        D._RULES = rules
-        try:
-            return [(x.kind, x.type) for x in D.scan(text)]
-        finally:
-            D._RULES = old
+        rs = mutation.ruleset(m, D.default_ruleset())
+        return [(x.kind, x.type) for x in D.scan(text, ruleset=rs)]
 
     def test_disable_removes_the_rule(self):
         m = _load('name = "no email"\n[[change]]\nop = "disable"\nrule = "email"\n')
@@ -76,7 +71,6 @@ class ApplyTests(unittest.TestCase):
 
     def test_normalise_turns_the_normaliser_stages_on(self):
         # TASK-11.25: a token split by an ANSI reset is found once the stage is on
-        self.addCleanup(setattr, D, "NORMALISE", ())
         text = "use ghp_" + "A1b2C3d4E5f6G7h8I9" + "\x1b[0m" + "j0K1l2M3n4O5p6Q7r8"
         self.assertEqual(self.scan_with(mutation.Mutation("none", "", []), text), [])
         m = _load('name = "ansi"\n[[change]]\nop = "normalise"\nstages = ["ansi"]\n')

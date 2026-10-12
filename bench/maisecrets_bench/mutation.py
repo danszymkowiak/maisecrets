@@ -132,14 +132,30 @@ def validate(m: Mutation) -> None:
             _fields(c, where)
 
 
+def ruleset(m: Mutation, base, strict: bool = True):
+    """The detector's rule set with the mutation applied (TASK-27): its rules, and the normaliser stages of its last
+    `normalise` change (none without one). `base` is not changed; scan() takes the result as `ruleset`."""
+    from .detector import detect
+    return detect.RuleSet(tuple(apply(m, list(base.rules), strict)), stages(m))
+
+
+def stages(m: Mutation) -> tuple:
+    """The normaliser stages the mutation turns on: those of its last `normalise` change, else none."""
+    out: tuple = ()
+    for n, c in enumerate(m.changes, 1):
+        if c["op"] == "normalise":
+            out = _stages(c, f"{m.name}, change {n}")
+    return out
+
+
 def apply(m: Mutation, rules: list, strict: bool = True) -> list:
     """A new rule list with the mutation applied; `rules` itself is not changed. With strict=False a change to a rule
-    this list does not hold is skipped: the rules differ by region, and us-bank is not in the German group."""
+    this list does not hold is skipped: the rules differ by region, and us-bank is not in the German group. The
+    normaliser stages are not rules: ruleset() carries them."""
     from .detector import detect
     detect.VALIDATORS.update(validators.BENCH)
     filters.install(detect)
     filters.ACTIVE.clear()
-    detect.NORMALISE = ()
     out = list(rules)
     ids = {r.id for r in out}
     for n, c in enumerate(m.changes, 1):
@@ -149,7 +165,7 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
                 continue
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector")
         if c["op"] == "normalise":
-            detect.NORMALISE = _stages(c, where)
+            continue
         elif c["op"] == "unfix":
             out = [dataclasses.replace(r, fixes=tuple(f for f in r.fixes if f != c["fix"]))
                    if c.get("rule") in (None, r.id) else r for r in out]

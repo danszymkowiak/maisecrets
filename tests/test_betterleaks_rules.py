@@ -95,18 +95,11 @@ class EvaluatorTests(unittest.TestCase):
 
 
 class SwitchTests(unittest.TestCase):
-    def setUp(self):
-        self.saved = (detect.SECRET_RULES, detect._RULES)
-        self.addCleanup(self.restore)
-
-    def restore(self):
-        detect.SECRET_RULES, detect._RULES = self.saved
-
     def use(self, name: str):
-        detect.SECRET_RULES, detect._RULES = name, None
+        self.rs = detect.build(detect.Settings(secret_rules=name))
 
     def ids(self) -> set:
-        return {r.id for r in detect.rules()}
+        return {r.id for r in self.rs.rules}
 
     def test_off_loads_gitleaks_and_no_betterleaks_rule(self):
         self.use("gitleaks")
@@ -121,20 +114,20 @@ class SwitchTests(unittest.TestCase):
         reported = {r["id"] for r in bl if "regex" in r and not r.get("skipReport")}
         self.assertLessEqual(reported, self.ids())
         self.assertNotIn("aws-secret-access-key", self.ids(), "skipReport: only a component of aws-access-token")
-        self.assertTrue(any(r.filter for r in detect.rules() if r.id == "aws-access-token"))
+        self.assertTrue(any(r.filter for r in self.rs.rules if r.id == "aws-access-token"))
 
     def test_an_unknown_name_fails_loudly(self):
-        self.use("trufflehog")
         with self.assertRaises(ValueError):
-            detect.rules()
+            self.use("trufflehog")
 
     def test_a_token_is_found_and_the_rule_filter_drops_a_placeholder(self):
         self.use("betterleaks")
         kid = "AKIA" + rnd(16, string.ascii_uppercase + "234567")
-        self.assertIn(("aws-access-token", kid), [(m.kind, m.value) for m in detect.scan(f"id {kid} here")])
+        self.assertIn(("aws-access-token", kid),
+                      [(m.kind, m.value) for m in detect.scan(f"id {kid} here", ruleset=self.rs)])
         # the vendored filter: `.+EXAMPLE$` is AWS's documented example key
         ex = "AKIA" + rnd(9, string.ascii_uppercase + "234567") + "EXAMPLE"
-        self.assertNotIn("aws-access-token", [m.kind for m in detect.scan(f"id {ex} here")])
+        self.assertNotIn("aws-access-token", [m.kind for m in detect.scan(f"id {ex} here", ruleset=self.rs)])
 
     def test_the_global_filter_drops_a_template(self):
         self.use("betterleaks")
@@ -156,23 +149,19 @@ class OverrideTests(unittest.TestCase):
         self.assertIn("overrides.txt: generic-api-key names an unknown fix 'rocket'", detect.override_problems(lines))
 
     def test_the_four_fixed_rules_carry_their_fixes_in_both_sets(self):
-        saved = (detect.SECRET_RULES, detect._RULES)
-        self.addCleanup(lambda: (setattr(detect, "SECRET_RULES", saved[0]), setattr(detect, "_RULES", saved[1])))
         for name in ("gitleaks", "betterleaks"):
-            detect.SECRET_RULES, detect._RULES = name, None
-            fixes = {r.id: r.fixes for r in detect.rules()}
+            fixes = {r.id: r.fixes for r in detect.build(detect.Settings(secret_rules=name)).rules}
             for rid in ("generic-api-key", "curl-auth-user", "aws-access-token", "hashicorp-tf-password"):
                 with self.subTest(name=name, rule=rid):
                     self.assertTrue(fixes[rid])
 
     def test_the_fixes_still_apply_with_betterleaks(self):
-        saved = (detect.SECRET_RULES, detect._RULES)
-        self.addCleanup(lambda: (setattr(detect, "SECRET_RULES", saved[0]), setattr(detect, "_RULES", saved[1])))
-        detect.SECRET_RULES, detect._RULES = "betterleaks", None
+        rs = detect.build(detect.Settings(secret_rules="betterleaks"))
         kid = "AKIA" + rnd(16, string.ascii_uppercase + "234567")
         scope = f"{kid}/20261008/eu-central-1/s3/aws4_request"
-        self.assertEqual([m.kind for m in detect.scan(f"Authorization: AWS4-HMAC-SHA256 Credential={scope}")], [])
-        self.assertEqual([m.kind for m in detect.scan('tz_key = "Europe/Dublin"\n')], [])
+        self.assertEqual([m.kind for m in detect.scan(f"Authorization: AWS4-HMAC-SHA256 Credential={scope}",
+                                                      ruleset=rs)], [])
+        self.assertEqual([m.kind for m in detect.scan('tz_key = "Europe/Dublin"\n', ruleset=rs)], [])
 
 
 if __name__ == "__main__":
