@@ -103,6 +103,22 @@ class ApplyTests(unittest.TestCase):
         with self.assertRaisesRegex(BenchError, "rocket"):
             mutation.validate(m)
 
+    def test_vendored_swaps_the_vendored_secret_set(self):
+        # TASK-19.3: the switch to Betterleaks judged like any change
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "betterleaks"\n'
+                  '[[change]]\nop = "disable"\nrule = "jwt"\n')
+        mutation.validate(m)
+        ids = {r.id for r in mutation.ruleset(m, D.default_ruleset()).rules}
+        self.assertIn("aikido-ci-token", ids)
+        self.assertNotIn("jwt", ids, "the later changes apply to the swapped set")
+        self.assertIn("email", ids, "the other rules stay")
+        self.assertNotIn("aikido-ci-token", {r.id for r in D.rules()})
+
+    def test_an_unknown_vendored_set_is_named(self):
+        m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "trufflehog"\n')
+        with self.assertRaisesRegex(BenchError, "trufflehog"):
+            mutation.validate(m)
+
     def test_a_disable_only_mutation_says_so(self):
         self.assertTrue(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n').disable_only)
         self.assertFalse(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\nentropy = 3.0\n').disable_only)

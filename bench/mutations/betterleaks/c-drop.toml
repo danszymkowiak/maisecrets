@@ -1,0 +1,482 @@
+name = "Betterleaks without the rules that use tokenRatio"
+why = "TASK-19.3 (c): drop every rule whose filter uses tokenRatio"
+
+[[change]]
+op = "vendored"
+set = "betterleaks"
+
+[[change]]
+op = "disable"
+rule = "adafruit-api-key"
+
+[[change]]
+op = "disable"
+rule = "adobe-client-id"
+
+[[change]]
+op = "disable"
+rule = "airtable-api-key"
+
+[[change]]
+op = "disable"
+rule = "airtable-oauth-token"
+
+[[change]]
+op = "disable"
+rule = "airtable-personnal-access-token"
+
+[[change]]
+op = "disable"
+rule = "aiven-auth-token"
+
+[[change]]
+op = "disable"
+rule = "algolia-api-key"
+
+[[change]]
+op = "disable"
+rule = "alibaba-secret-key"
+
+[[change]]
+op = "disable"
+rule = "alibaba-sts-access-key-secret"
+
+[[change]]
+op = "disable"
+rule = "amplitude-secret-key"
+
+[[change]]
+op = "disable"
+rule = "apollo-api-key.1"
+
+[[change]]
+op = "disable"
+rule = "asana-client-secret"
+
+[[change]]
+op = "disable"
+rule = "assemblyai-api-key"
+
+[[change]]
+op = "disable"
+rule = "atlassian-api-token"
+
+[[change]]
+op = "disable"
+rule = "bitbucket-client-id"
+
+[[change]]
+op = "disable"
+rule = "bitbucket-client-secret"
+
+[[change]]
+op = "disable"
+rule = "bitbucket-data-center-token"
+
+[[change]]
+op = "disable"
+rule = "bitly-access-token"
+
+[[change]]
+op = "disable"
+rule = "bitrise-access-token"
+
+[[change]]
+op = "disable"
+rule = "bittrex-access-key"
+
+[[change]]
+op = "disable"
+rule = "bittrex-secret-key"
+
+[[change]]
+op = "disable"
+rule = "box-api-access-token"
+
+[[change]]
+op = "disable"
+rule = "circleci-personal-token"
+
+[[change]]
+op = "disable"
+rule = "circleci-project-token"
+
+[[change]]
+op = "disable"
+rule = "cisco-meraki-api-key"
+
+[[change]]
+op = "disable"
+rule = "civo-api-key"
+
+[[change]]
+op = "disable"
+rule = "cloudflare-api-key"
+
+[[change]]
+op = "disable"
+rule = "cloudflare-global-api-key"
+
+[[change]]
+op = "disable"
+rule = "cloudflare-origin-ca-key"
+
+[[change]]
+op = "disable"
+rule = "cloudinary-api-secret"
+
+[[change]]
+op = "disable"
+rule = "codecov-access-token"
+
+[[change]]
+op = "disable"
+rule = "cohere-api-token"
+
+[[change]]
+op = "disable"
+rule = "coinbase-access-token"
+
+[[change]]
+op = "disable"
+rule = "confluent-access-token"
+
+[[change]]
+op = "disable"
+rule = "confluent-secret-key"
+
+[[change]]
+op = "disable"
+rule = "contentful-delivery-api-token"
+
+[[change]]
+op = "disable"
+rule = "coveralls-personal-api-token"
+
+[[change]]
+op = "disable"
+rule = "datagov-api-key"
+
+[[change]]
+op = "disable"
+rule = "deepgram-api-key"
+
+[[change]]
+op = "disable"
+rule = "discord-api-token"
+
+[[change]]
+op = "disable"
+rule = "discord-client-secret"
+
+[[change]]
+op = "disable"
+rule = "disqus-api-key"
+
+[[change]]
+op = "disable"
+rule = "droneci-access-token"
+
+[[change]]
+op = "disable"
+rule = "dropbox-api-token"
+
+[[change]]
+op = "disable"
+rule = "dropbox-long-lived-api-token"
+
+[[change]]
+op = "disable"
+rule = "dropbox-short-lived-api-token"
+
+[[change]]
+op = "disable"
+rule = "facebook-access-token"
+
+[[change]]
+op = "disable"
+rule = "facebook-page-access-token"
+
+[[change]]
+op = "disable"
+rule = "facebook-secret"
+
+[[change]]
+op = "disable"
+rule = "fastly-api-token"
+
+[[change]]
+op = "disable"
+rule = "finicity-api-token"
+
+[[change]]
+op = "disable"
+rule = "finicity-client-secret"
+
+[[change]]
+op = "disable"
+rule = "finnhub-access-token"
+
+[[change]]
+op = "disable"
+rule = "flickr-access-token"
+
+[[change]]
+op = "disable"
+rule = "freshbooks-access-token"
+
+[[change]]
+op = "disable"
+rule = "gitea-access-token"
+
+[[change]]
+op = "disable"
+rule = "gitter-access-token"
+
+[[change]]
+op = "disable"
+rule = "greptile-api-key"
+
+[[change]]
+op = "disable"
+rule = "gumroad-access-token"
+
+[[change]]
+op = "disable"
+rule = "honeycomb-api-key"
+
+[[change]]
+op = "disable"
+rule = "influxdb-api-token"
+
+[[change]]
+op = "disable"
+rule = "infomaniak-api-token"
+
+[[change]]
+op = "disable"
+rule = "intercom-api-key"
+
+[[change]]
+op = "disable"
+rule = "jumpcloud-api-key"
+
+[[change]]
+op = "disable"
+rule = "kraken-access-token"
+
+[[change]]
+op = "disable"
+rule = "kucoin-access-token"
+
+[[change]]
+op = "disable"
+rule = "kucoin-secret-key"
+
+[[change]]
+op = "disable"
+rule = "lark-app-secret"
+
+[[change]]
+op = "disable"
+rule = "launchdarkly-access-token"
+
+[[change]]
+op = "disable"
+rule = "lighton-paradigm-api-key"
+
+[[change]]
+op = "disable"
+rule = "linear-api-key"
+
+[[change]]
+op = "disable"
+rule = "linear-client-secret"
+
+[[change]]
+op = "disable"
+rule = "linkedin-client-id"
+
+[[change]]
+op = "disable"
+rule = "linkedin-client-secret"
+
+[[change]]
+op = "disable"
+rule = "looker-client-id"
+
+[[change]]
+op = "disable"
+rule = "looker-client-secret"
+
+[[change]]
+op = "disable"
+rule = "mattermost-access-token"
+
+[[change]]
+op = "disable"
+rule = "messagebird-api-token"
+
+[[change]]
+op = "disable"
+rule = "messagebird-client-id"
+
+[[change]]
+op = "disable"
+rule = "mistral-api-key"
+
+[[change]]
+op = "disable"
+rule = "netlify-access-token"
+
+[[change]]
+op = "disable"
+rule = "new-relic-browser-api-token"
+
+[[change]]
+op = "disable"
+rule = "new-relic-insert-key"
+
+[[change]]
+op = "disable"
+rule = "new-relic-user-api-id"
+
+[[change]]
+op = "disable"
+rule = "new-relic-user-api-key"
+
+[[change]]
+op = "disable"
+rule = "nytimes-access-token"
+
+[[change]]
+op = "disable"
+rule = "openweather-api-key"
+
+[[change]]
+op = "disable"
+rule = "plaid-client-id"
+
+[[change]]
+op = "disable"
+rule = "plaid-secret-key"
+
+[[change]]
+op = "disable"
+rule = "plivo-auth-token"
+
+[[change]]
+op = "disable"
+rule = "privateai-api-token"
+
+[[change]]
+op = "disable"
+rule = "rapidapi-access-token"
+
+[[change]]
+op = "disable"
+rule = "sendbird-access-id"
+
+[[change]]
+op = "disable"
+rule = "sendbird-access-token"
+
+[[change]]
+op = "disable"
+rule = "sentry-access-token"
+
+[[change]]
+op = "disable"
+rule = "sentry-org-token"
+
+[[change]]
+op = "disable"
+rule = "sentry-user-token"
+
+[[change]]
+op = "disable"
+rule = "snowflake-programmatic-access-token.1"
+
+[[change]]
+op = "disable"
+rule = "sslmate-api-key.1"
+
+[[change]]
+op = "disable"
+rule = "sumologic-access-id"
+
+[[change]]
+op = "disable"
+rule = "sumologic-access-token"
+
+[[change]]
+op = "disable"
+rule = "travisci-access-token"
+
+[[change]]
+op = "disable"
+rule = "twitch-api-token"
+
+[[change]]
+op = "disable"
+rule = "twitter-access-secret"
+
+[[change]]
+op = "disable"
+rule = "twitter-access-token"
+
+[[change]]
+op = "disable"
+rule = "twitter-api-key"
+
+[[change]]
+op = "disable"
+rule = "twitter-api-secret"
+
+[[change]]
+op = "disable"
+rule = "twitter-bearer-token"
+
+[[change]]
+op = "disable"
+rule = "upstage-api-key"
+
+[[change]]
+op = "disable"
+rule = "vercel-ai-gateway-key"
+
+[[change]]
+op = "disable"
+rule = "vercel-api-token"
+
+[[change]]
+op = "disable"
+rule = "vercel-app-access-token"
+
+[[change]]
+op = "disable"
+rule = "vercel-app-refresh-token"
+
+[[change]]
+op = "disable"
+rule = "vercel-integration-token"
+
+[[change]]
+op = "disable"
+rule = "vercel-personal-access-token"
+
+[[change]]
+op = "disable"
+rule = "weatherstack-api-key.1"
+
+[[change]]
+op = "disable"
+rule = "weights-and-biases-api-key"
+
+[[change]]
+op = "disable"
+rule = "weights-and-biases-api-key-v1"
+
+[[change]]
+op = "disable"
+rule = "zendesk-secret-key"

@@ -17,3 +17,5 @@ hashicorp-tf-password  ds-value
 # values the detect-secrets fixes drop (test passwords, code words, %24VAR and dates in a URL's password)
 generic-password       off
 generic-credential-uri off
+# false hits and no true hit on the bench (TASK-19.3: CredData 2 false, 0 true)
+gcp-service-account    off

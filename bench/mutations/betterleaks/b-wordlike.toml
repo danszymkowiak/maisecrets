@@ -1,0 +1,601 @@
+name = "Betterleaks, tokenRatio replaced by the word-likeness filter"
+why = "TASK-19.3 (b): bench:wordlike_75 (TASK-11.22) on every rule whose filter uses tokenRatio"
+
+[[change]]
+op = "vendored"
+set = "betterleaks"
+
+[[change]]
+op = "set"
+rule = "adafruit-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "adobe-client-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "airtable-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "airtable-oauth-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "airtable-personnal-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "aiven-auth-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "algolia-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "alibaba-secret-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "alibaba-sts-access-key-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "amplitude-secret-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "apollo-api-key.1"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "asana-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "assemblyai-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "atlassian-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bitbucket-client-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bitbucket-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bitbucket-data-center-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bitly-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bitrise-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bittrex-access-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "bittrex-secret-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "box-api-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "circleci-personal-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "circleci-project-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "cisco-meraki-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "civo-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "cloudflare-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "cloudflare-global-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "cloudflare-origin-ca-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "cloudinary-api-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "codecov-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "cohere-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "coinbase-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "confluent-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "confluent-secret-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "contentful-delivery-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "coveralls-personal-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "datagov-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "deepgram-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "discord-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "discord-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "disqus-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "droneci-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "dropbox-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "dropbox-long-lived-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "dropbox-short-lived-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "facebook-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "facebook-page-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "facebook-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "fastly-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "finicity-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "finicity-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "finnhub-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "flickr-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "freshbooks-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "gitea-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "gitter-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "greptile-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "gumroad-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "honeycomb-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "influxdb-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "infomaniak-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "intercom-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "jumpcloud-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "kraken-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "kucoin-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "kucoin-secret-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "lark-app-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "launchdarkly-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "lighton-paradigm-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "linear-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "linear-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "linkedin-client-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "linkedin-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "looker-client-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "looker-client-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "mattermost-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "messagebird-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "messagebird-client-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "mistral-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "netlify-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "new-relic-browser-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "new-relic-insert-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "new-relic-user-api-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "new-relic-user-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "nytimes-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "openweather-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "plaid-client-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "plaid-secret-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "plivo-auth-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "privateai-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "rapidapi-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sendbird-access-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sendbird-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sentry-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sentry-org-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sentry-user-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "snowflake-programmatic-access-token.1"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sslmate-api-key.1"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sumologic-access-id"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "sumologic-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "travisci-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "twitch-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "twitter-access-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "twitter-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "twitter-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "twitter-api-secret"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "twitter-bearer-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "upstage-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "vercel-ai-gateway-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "vercel-api-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "vercel-app-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "vercel-app-refresh-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "vercel-integration-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "vercel-personal-access-token"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "weatherstack-api-key.1"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "weights-and-biases-api-key"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "weights-and-biases-api-key-v1"
+filter = "bench:wordlike_75"
+
+[[change]]
+op = "set"
+rule = "zendesk-secret-key"
+filter = "bench:wordlike_75"

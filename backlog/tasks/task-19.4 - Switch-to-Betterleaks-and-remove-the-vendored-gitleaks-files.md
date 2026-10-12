@@ -4,12 +4,13 @@ title: Switch to Betterleaks and remove the vendored gitleaks files
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-12 10:18'
+updated_date: '2026-10-12 10:43'
 labels:
   - detection
   - plugin
 dependencies:
   - TASK-19.3
+  - TASK-19.8
 parent_task_id: TASK-19
 priority: high
 ordinal: 57000
@@ -32,4 +33,6 @@ Once TASK-19.3 accepts the change: make Betterleaks the only secret rule source 
 
 <!-- SECTION:NOTES:BEGIN -->
 Gate from TASK-19.2: switch only when the unit suite passes with Betterleaks (run it in-process with tests/_isolate imported first; see TASK-19.3's notes for the 3 known differences).
+
+From TASK-19.3: switch only on an accepted verdict of TASK-19.8. When gitleaks goes: datadog-access-token is let go (Betterleaks' datadog-application-key takes the shape); etsy-access-token, jfrog-api-key and jfrog-identity-token are carried as our own rules (Betterleaks misses them with only a provider label).
 <!-- SECTION:NOTES:END -->

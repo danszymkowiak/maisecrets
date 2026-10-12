@@ -289,6 +289,44 @@ Nemotron IBAN 10.6% to 83.3% (5 of 6), Gretel IBAN 95.9% to 97.9%, Gretel CARD 3
 Mendeley CARD 80.5% to 81.1%. No false positive moved. The card gap of Nemotron was the artefact;
 Gretel's remains.
 
+### Betterleaks against gitleaks (TASK-19.3, 2026-10-12)
+
+The switch of the vendored secret rules, judged as mutations (`bench/mutations/betterleaks/`, op
+`vendored`) against baseline 20261012-113809 (gitleaks), run 20261012-123731. Betterleaks with
+generic-password and generic-credential-uri off (the user, 2026-10-12).
+
+| dataset | precision gitleaks | precision Betterleaks | recall gitleaks | recall Betterleaks |
+|---|---|---|---|---|
+| CredData | 78.62% | 76.13% | 63.77% | 63.92% |
+| Gretel | 73.61% | 73.61% | 80.67% | 80.68% |
+| Nemotron | 99.05% | 99.06% | 70.58% | 70.58% |
+| synthetic (guard) | 99.96% | 99.96% | 98.65% | 98.15% |
+| ai4privacy, findocs, Mendeley | unchanged | unchanged | unchanged | unchanged |
+
+Verdict: rejected (the synthetic guard loses 28 finds; SECRET_GENERIC loses one on Nemotron), though
+SECRET_PREFIXED gains 22 finds. Per rule (all datasets, true / false hits, gitleaks -> Betterleaks):
+
+| rule | gitleaks | Betterleaks | note |
+|---|---|---|---|
+| generic-api-key | 5,180 / 672 | 5,078 / 1,093 | CredData +420 false; no `password` keyword any more (Betterleaks moved it into generic-password) |
+| npm-access-token | 4 / 0 | 0 / 0 | the 4 synthetic tokens are missed |
+| github-pat, gitlab-pat, slack-bot-token, stripe-access-token, jwt | 643 / 12 | 757 / 12 | spans generic-api-key had found, now by their own rule |
+| mongodb-connection-string, posthog-project-api-key, docker-swarm-join-token, alibaba-secret-key, alibaba-sts-access-key-secret, gcp-api-key | 6 / 0 | 16 / 1 | new finds on CredData |
+| gcp-service-account | 0 / 0 | 0 / 2 | false hits only: off in rules/overrides.txt |
+
+**tokenRatio** (119 rules after the two off): (a) entropy fallback, (b) the word-likeness filter
+`bench:wordlike_75`, (c) the rules dropped gave identical numbers on every dataset: none of those
+rules decides a hit here. Chosen: (a), no extra machinery for no measured gain.
+
+**The 4 rules only gitleaks has:** none fired on any dataset. datadog-access-token: let go, Betterleaks'
+datadog-application-key takes the same shape. etsy-access-token, jfrog-api-key, jfrog-identity-token:
+keep, carried as our own rules when gitleaks goes (TASK-19.4): with only a provider label Betterleaks
+misses all three, and old JFrog keys still sit in configuration files.
+
+**Next:** the set fails on two rules, not as a whole. TASK-36 benches Betterleaks with gitleaks'
+generic-api-key carried over and npm-access-token checked; TASK-19.4 switches only on an accepted
+verdict.
+
 ## Synthetic tool output
 
 The file and prose corpora hold no terminal output: no `printenv`, `git diff`, `grep -n`, `cat -n`,

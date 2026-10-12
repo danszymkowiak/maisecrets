@@ -1,10 +1,10 @@
 ---
 id: TASK-19.3
 title: 'Bench: Betterleaks against gitleaks, and what to do about tokenRatio'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-12 10:18'
+updated_date: '2026-10-12 10:43'
 labels:
   - benchmark
   - false-positive
@@ -28,9 +28,9 @@ Decide tokenRatio for its 124 rules, by bench numbers: (a) fall back to entropy,
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A report with per-dataset precision and recall for both rule sets, and the new rules that fired, with their hits
-- [ ] #2 The tokenRatio choice is made from measured numbers and recorded in the report
-- [ ] #3 The 4 gitleaks-only rules each have a recorded decision
+- [x] #1 A report with per-dataset precision and recall for both rule sets, and the new rules that fired, with their hits
+- [x] #2 The tokenRatio choice is made from measured numbers and recorded in the report
+- [x] #3 The 4 gitleaks-only rules each have a recorded decision
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -38,3 +38,9 @@ Decide tokenRatio for its 124 rules, by bench numbers: (a) fall back to entropy,
 <!-- SECTION:NOTES:BEGIN -->
 From TASK-19.2 (2026-10-12): with Betterleaks on and generic-password / generic-credential-uri off, 3 unit tests lose a find: Betterleaks' generic-api-key has no password keyword, so 'password: <value>' after another label on the same line, or after a blank line, is missed (tests/test_core.py test_a_value_after_a_blank_line_is_found_in_long_text_too, tests/test_detect_rules.py test_the_label_decides_only_right_before_the_value). Bench both ways: generic-password on (with the detect-secrets fixes attached through overrides.txt) or a password keyword for generic-api-key.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Bench op 'vendored' (mutation.py, tests) swaps the vendored set; bench/mutations/betterleaks/ holds three variants. Run 20261012-123731 against gitleaks baseline 20261012-113809: rejected (synthetic guard -28 finds, CredData precision 78.6% -> 76.1%), SECRET_PREFIXED +22. Per-rule comparison over all datasets (detections scored per rule): generic-api-key +421 false (CredData) and no password keyword; npm-access-token 4 -> 0; provider rules +114 true; new rules mostly true, gcp-service-account 2 false and no true -> off in overrides.txt. tokenRatio: (a) entropy fallback, (b) word-likeness, (c) dropped give identical numbers; chose (a). The 4 gitleaks-only rules never fire on the bench: datadog let go (covered), etsy and both jfrog carried. All in docs/BENCHMARK.md (Betterleaks against gitleaks). Next: TASK-19.8 (carry gitleaks' generic-api-key, check npm), which gates TASK-19.4.
+<!-- SECTION:FINAL_SUMMARY:END -->

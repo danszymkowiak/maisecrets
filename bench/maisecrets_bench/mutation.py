@@ -26,6 +26,10 @@
     stages = ["ansi", "invisible"]
 
     [[change]]
+    op = "vendored"         # swap the vendored secret rules (TASK-19.3); the other changes apply to the new set
+    set = "betterleaks"
+
+    [[change]]
     op = "unfix"            # switch off one named check that drops hits (detect.FIXES, TASK-26)
     fix = "code-value"
     rule = "ds-keyword-colon"   # optional: without it, every rule that takes the fix loses it
@@ -71,8 +75,8 @@ def load(path: Path) -> Mutation:
     if not changes:
         raise BenchError(f"{path}: no [[change]]")
     for c in changes:
-        if c.get("op") not in ("disable", "set", "add", "normalise", "unfix"):
-            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add, normalise or unfix")
+        if c.get("op") not in ("disable", "set", "add", "normalise", "unfix", "vendored"):
+            raise BenchError(f"{path}: op {c.get('op')!r} is not disable, set, add, normalise, unfix or vendored")
     return Mutation(data.get("name", Path(path).stem), data.get("why", ""), changes)
 
 
@@ -118,6 +122,13 @@ def validate(m: Mutation) -> None:
         if c["op"] == "normalise":
             _stages(c, where)
             continue
+        if c["op"] == "vendored":
+            from .detector import detect
+            try:
+                detect._load_vendored_secrets(str(c.get("set")))
+            except ValueError:
+                raise BenchError(f"{where}: vendored set {c.get('set')!r} is not one the detector knows") from None
+            continue
         if c["op"] == "unfix":
             from .detector import detect
             if c.get("fix") not in detect.FIXES:
@@ -135,7 +146,12 @@ def validate(m: Mutation) -> None:
 def ruleset(m: Mutation, base, strict: bool = True):
     """The detector's rule set with the mutation applied (TASK-27): its rules, and the normaliser stages of its last
     `normalise` change (none without one). `base` is not changed; scan() takes the result as `ruleset`."""
+    import dataclasses as _dc
     from .detector import detect
+    swap = [c["set"] for c in m.changes if c["op"] == "vendored"]
+    if swap:
+        # the group's own settings (regions, labels) with the other vendored set
+        base = detect.build(_dc.replace(detect.settings_from_config(), secret_rules=swap[-1]))
     return detect.RuleSet(tuple(apply(m, list(base.rules), strict)), stages(m))
 
 
@@ -164,7 +180,7 @@ def apply(m: Mutation, rules: list, strict: bool = True) -> list:
             if not strict:
                 continue
             raise BenchError(f"{where}: rule {c.get('rule')!r} is not a rule of the detector")
-        if c["op"] == "normalise":
+        if c["op"] in ("normalise", "vendored"):
             continue
         elif c["op"] == "unfix":
             out = [dataclasses.replace(r, fixes=tuple(f for f in r.fixes if f != c["fix"]))

@@ -1,0 +1,6 @@
+name = "Betterleaks, tokenRatio falls back to the entropy limit"
+why = "TASK-19.3 (a): the loader of TASK-19.2 as it stands"
+
+[[change]]
+op = "vendored"
+set = "betterleaks"
