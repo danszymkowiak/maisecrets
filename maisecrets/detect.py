@@ -1536,7 +1536,16 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
             for m in scan(norm.text, enabled, _shapes_only=True, ruleset=rs):
                 start, end = norm.span(m.start, m.end)
                 if overlaps(start, end):
-                    continue
+                    inside = [f for f in found if f.start < end and start < f.end]
+                    if not all(start <= f.start and f.end <= end for f in inside) or \
+                            all((f.start, f.end) == (start, end) for f in inside):
+                        continue
+                    # the copy sees the whole of a value the raw text saw a part of (a token wrapped onto the next
+                    # line after `TOKEN=`): the whole replaces the part, or the rest of it reaches the model
+                    for f in inside:
+                        found.remove(f)
+                        i = bisect.bisect_left(taken_starts, f.start)
+                        del taken_starts[i], taken_ends[i]
                 found.append(Match(m.kind, m.type, text[start:end], start, end))
                 i = bisect.bisect_left(taken_starts, start)
                 taken_starts.insert(i, start)

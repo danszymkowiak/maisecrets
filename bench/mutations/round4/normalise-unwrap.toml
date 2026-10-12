@@ -1,0 +1,6 @@
+name = "Normalise: guarded line unwrap"
+why = "TASK-11.25, AC 3. A line break inside a token is removed in the cleaned copy only when a SECRET shape rule finds a token across it that the line before does not hold whole; .env lines must stay apart (README)."
+
+[[change]]
+op = "normalise"
+stages = ["unwrap"]

@@ -1,0 +1,6 @@
+name = "Normalise: the proposed set"
+why = "TASK-11.25. Every stage but escape (Gretel false hits +60 for one card) and unwrap (judged on its own)."
+
+[[change]]
+op = "normalise"
+stages = ["ansi", "cr", "invisible", "gutter", "entity", "fullwidth"]

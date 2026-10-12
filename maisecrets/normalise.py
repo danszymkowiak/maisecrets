@@ -15,7 +15,8 @@ from __future__ import annotations
 import html
 import re
 
-STAGES = ("ansi", "cr", "invisible", "gutter", "entity", "escape", "fullwidth")
+# unwrap last: it asks the shape rules whether a token runs across a line break, on text the other stages cleaned
+STAGES = ("ansi", "cr", "invisible", "gutter", "entity", "escape", "fullwidth", "unwrap")
 
 _ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]")
 _CR_RE = re.compile(r"\r(?!\n)")
@@ -130,6 +131,12 @@ def _stage(name: str, text: str) -> list:
     if name == "fullwidth":
         return [] if text.isascii() else [
             s for s in (_sub(text, _FULLWIDTH_RE, lambda m: chr(ord(m.group(0)) - 0xFEE0)),) if s]
+    if name == "unwrap":
+        if "\n" not in text:
+            return []
+        from .unwrap import unwrap
+        n = unwrap(text)
+        return [] if n.starts is None else [(n.text, n.starts, n.ends)]
     raise ValueError(f"unknown normaliser stage {name!r}")
 
 

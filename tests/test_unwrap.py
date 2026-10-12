@@ -49,5 +49,27 @@ class UnwrapTests(unittest.TestCase):
         self.assertIs(unwrap.unwrap(text).text, text)
 
 
+
+class UnwrapStageTests(unittest.TestCase):
+    """unwrap as the last normaliser stage (detect.NORMALISE, bench op normalise): after the other stages, so a wrapped
+    token in a coloured terminal capture is joined too, and the scan's span covers both lines of the original."""
+
+    def test_the_stage_joins_after_the_other_stages_and_maps_back(self):
+        from maisecrets import normalise
+        text = f"\x1b[32mexport TOKEN={TOKEN[:20]}\x1b[0m\n\x1b[32m{TOKEN[20:]}\x1b[0m\n"
+        n = normalise.normalise(text, ("ansi", "unwrap"))
+        a = n.text.index(TOKEN)
+        start, end = n.span(a, a + len(TOKEN))
+        self.assertEqual(text[start:end], TOKEN[:20] + "\x1b[0m\n\x1b[32m" + TOKEN[20:])
+
+    def test_a_scan_with_the_stage_redacts_both_lines(self):
+        import dataclasses
+        from maisecrets import detect
+        rs = dataclasses.replace(detect.default_ruleset(), normalise=("unwrap",))
+        text = f"export TOKEN={TOKEN[:20]}\n{TOKEN[20:]}\n"
+        spans = [(m.start, m.end) for m in detect.scan(text, ruleset=rs)]
+        self.assertTrue(any(text[a:b] == TOKEN[:20] + "\n" + TOKEN[20:] for a, b in spans), spans)
+
+
 if __name__ == "__main__":
     unittest.main()
