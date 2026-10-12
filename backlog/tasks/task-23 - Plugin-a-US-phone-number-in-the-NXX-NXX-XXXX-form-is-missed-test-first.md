@@ -4,11 +4,13 @@ title: 'Plugin: a US phone number in the (NXX) NXX-XXXX form is missed (test fir
 status: To Do
 assignee: []
 created_date: '2026-10-11 23:25'
+updated_date: '2026-10-12 07:16'
 labels:
   - plugin
   - benchmark
 dependencies:
   - TASK-21.8
+  - TASK-30
 priority: medium
 ordinal: 79000
 ---
@@ -24,3 +26,9 @@ Found by the findocs dataset (TASK-11.37, run 20261012-011327): every US phone o
 - [ ] #1 A unit test with a (NXX) NXX-XXXX number in prose goes red first, then green
 - [ ] #2 findocs and Nemotron PHONE recall before and after; no floor broken, weighted FP/1k not higher (TASK-21.8)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12: rule written test first (us-phone-paren, region us, (NXX) NXX-XXXX with area code and exchange starting 2-9; a reserved middle-9 area code still counts because findocs writes (494)). Bench run 20261012-090906 against 20261012-085837: findocs PHONE 600 -> 1200 of 1200, Gretel +307 TP / +22 FP, Nemotron +1994 TP / +17 FP, ai4privacy +1 FP. Paused by the user's decision to clean the bench data first (TASK-30): the FP rise cannot be judged on uncleaned gold, and the middle-9 choice should follow the cleaned findocs generator. Work in git stash 'wip TASK-23 us-phone-paren rule'.
+<!-- SECTION:NOTES:END -->

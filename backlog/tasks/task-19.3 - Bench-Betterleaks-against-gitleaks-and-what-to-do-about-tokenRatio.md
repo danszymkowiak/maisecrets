@@ -4,11 +4,13 @@ title: 'Bench: Betterleaks against gitleaks, and what to do about tokenRatio'
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
+updated_date: '2026-10-12 07:16'
 labels:
   - benchmark
   - false-positive
 dependencies:
   - TASK-19.2
+  - TASK-30
 references:
   - docs/BENCHMARK.md
 parent_task_id: TASK-19

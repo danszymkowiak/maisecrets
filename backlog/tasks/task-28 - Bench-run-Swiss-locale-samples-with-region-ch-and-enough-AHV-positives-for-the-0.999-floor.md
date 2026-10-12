@@ -6,9 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-12 06:27'
+updated_date: '2026-10-12 07:16'
 labels:
   - bench
-dependencies: []
+dependencies:
+  - TASK-30
 references:
   - bench/maisecrets_bench/run.py
   - bench/maisecrets_bench/adapters/findocs.py

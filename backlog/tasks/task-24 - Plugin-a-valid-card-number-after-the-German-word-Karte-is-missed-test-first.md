@@ -4,11 +4,13 @@ title: 'Plugin: a valid card number after the German word Karte is missed (test 
 status: To Do
 assignee: []
 created_date: '2026-10-11 23:25'
+updated_date: '2026-10-12 07:16'
 labels:
   - plugin
   - benchmark
 dependencies:
   - TASK-21.8
+  - TASK-30
 priority: medium
 ordinal: 80000
 ---
