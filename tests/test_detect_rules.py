@@ -133,6 +133,14 @@ class RuleLoaderTests(unittest.TestCase):
         self.assertNotIn("aba-routing", with_de)
         self.assertFalse(generic & detect.PRESIDIO_SKIP)
 
+    def test_a_uk_postcode_alone_is_no_hit(self):
+        # TASK-11.31: on the bench uk-postcode raised false alarms only (Gretel 360 in round 2, none true on any
+        # dataset); a postcode alone identifies no one
+        rs = detect.build(detect.Settings(regions=("generic", "uk")))
+        self.assertNotIn("uk-postcode", {r.id.split("#")[0] for r in rs.rules})
+        self.assertEqual([m for m in detect.scan("Ship to SW1A 1AA by Friday", ruleset=rs)
+                          if m.kind.startswith("uk-postcode")], [])
+
     def test_presidio_region_is_derived_from_the_recognizer_id(self):
         for rec, region in [("de-tax-id", "de"), ("us-ssn", "us"), ("nhs", "uk"), ("aba-routing", "us"),
                             ("iban", "generic"), ("credit-card", "generic"), ("abc-x", "generic")]:
