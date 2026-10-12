@@ -68,6 +68,25 @@ class GlinerBackend:
                 for e in self.model.predict_entities(text, list(QUERY_LABELS), threshold=self.threshold)]
 
 
+def merge_pieces(text: str, pieces: list[tuple[int, int, str, float]]) -> list[tuple[int, int, str, float]]:
+    """Trim whitespace off each piece, then join pieces of one label that touch or lie a space or tab apart on one
+    line (score: the lowest). openai/privacy-filter answers ' Erika Muster' and 'frau' for one name (2026-10-12)."""
+    out: list[tuple[int, int, str, float]] = []
+    for a, b, label, score in sorted(pieces):
+        while a < b and text[a].isspace():
+            a += 1
+        while b > a and text[b - 1].isspace():
+            b -= 1
+        if a == b:
+            continue
+        if out and out[-1][2] == label and out[-1][1] <= a and not text[out[-1][1]:a].strip(" \t"):
+            pa, _, _, ps = out[-1]
+            out[-1] = (pa, b, label, min(ps, score))
+        else:
+            out.append((a, b, label, score))
+    return out
+
+
 class TokenClassificationBackend:
     """A Hugging Face token-classification model (transformers, Apache-2.0), words merged into entities."""
 
@@ -76,7 +95,8 @@ class TokenClassificationBackend:
         self.pipe = pipeline("token-classification", model=model_id, aggregation_strategy="simple")
 
     def spans(self, text: str):
-        return [(e["start"], e["end"], str(e["entity_group"]), float(e["score"])) for e in self.pipe(text)]
+        return merge_pieces(text, [(e["start"], e["end"], str(e["entity_group"]), float(e["score"]))
+                                   for e in self.pipe(text)])
 
 
 def _gliner2(model_id: str):

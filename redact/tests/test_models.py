@@ -55,6 +55,26 @@ class ChunkTests(unittest.TestCase):
         self.assertEqual((s.source, s.score), ("fake-model", 0.9))
 
 
+class MergePiecesTests(unittest.TestCase):
+    """openai/privacy-filter answers in word pieces with a leading space (measured 2026-10-12, TASK-34.8):
+    ' Erika Muster' and 'frau' for one name."""
+
+    def test_touching_pieces_of_one_label_become_one_span_without_edge_spaces(self):
+        text = "an Erika Musterfrau, Tel. +41 44 555 01 23."
+        pieces = [(2, 15, "private_person", 1.0), (15, 19, "private_person", 0.9),
+                  (25, 40, "private_phone", 1.0), (40, 42, "private_phone", 0.8)]
+        got = models.merge_pieces(text, pieces)
+        self.assertEqual([(text[a:b], label, s) for a, b, label, s in got],
+                         [("Erika Musterfrau", "private_person", 0.9), ("+41 44 555 01 23", "private_phone", 0.8)])
+
+    def test_pieces_apart_or_of_another_label_or_on_another_line_stay_apart(self):
+        text = "Erika, Max Muster\nBern"
+        pieces = [(0, 5, "private_person", 1.0), (7, 10, "private_person", 1.0),
+                  (10, 17, "private_address", 1.0), (17, 22, "private_address", 1.0)]
+        got = models.merge_pieces(text, pieces)
+        self.assertEqual([text[a:b] for a, b, _, _ in got], ["Erika", "Max", "Muster", "Bern"])
+
+
 class RegistryTests(unittest.TestCase):
     def test_every_model_names_its_licence_and_source(self):
         for mid, m in models.MODELS.items():

@@ -85,7 +85,7 @@ class CommandTests(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         src = d / "notes.txt"
         src.write_text(f"deploy key {TOKEN}\nIBAN {IBAN}\n", encoding="utf-8")
-        r = self.run_cli(str(src))
+        r = self.run_cli(str(src), "--rules-only")   # the models are covered with fakes; this test needs no download
         self.assertEqual(r.returncode, 0, r.stderr)
         out = (d / "notes.txt.redacted.txt").read_text(encoding="utf-8")
         self.assertNotIn(TOKEN, out)
@@ -93,12 +93,20 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(src.read_text(encoding="utf-8"), f"deploy key {TOKEN}\nIBAN {IBAN}\n",
                          "the input is unchanged")
         self.assertNotIn(TOKEN, r.stdout + r.stderr, "the summary names counts, never a value")
-        from maisecrets_redact import models
-        if models.unavailable_reason():
-            self.assertEqual(r.stderr.count("only the rules run"), 1, "without the model extra it says so once")
-        r = self.run_cli(str(src))
+        r = self.run_cli(str(src), "--rules-only")
         self.assertNotEqual(r.returncode, 0, "an existing output is not overwritten")
         self.assertIn("exists", r.stderr)
+
+    @unittest.skipUnless(__import__("maisecrets_redact.models").models.unavailable_reason(),
+                         "the model extra is installed")
+    def test_without_the_model_extra_the_rules_run_and_it_says_so_once(self):
+        d = Path(tempfile.mkdtemp())
+        src = d / "notes.txt"
+        src.write_text(f"deploy key {TOKEN}\n", encoding="utf-8")
+        r = self.run_cli(str(src))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stderr.count("only the rules run"), 1)
+        self.assertNotIn(TOKEN, (d / "notes.txt.redacted.txt").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -14,6 +14,9 @@ models = [
     "torch>=2.3",
     "transformers>=4.44",
     "gliner>=0.2.13",
+    # the mDeBERTa tokenizer of urchade/gliner_multi_pii-v1 does not load without them (measured 2026-10-12)
+    "sentencepiece>=0.2",
+    "protobuf>=4",
 ]
 
 [tool.uv.sources]

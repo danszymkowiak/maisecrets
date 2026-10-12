@@ -57,7 +57,12 @@ def _model_detectors(args) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    from . import app
+    from . import app, paths
+    try:
+        paths.import_detector()      # the rules first: a missing checkout fails before minutes of model loading
+    except RuntimeError as exc:
+        print(f"redact: {exc}; nothing is written", file=sys.stderr)
+        return 2
     src = Path(args.path)
     if src.is_dir():
         return _run_dir(args, src)
