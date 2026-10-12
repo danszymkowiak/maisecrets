@@ -62,6 +62,34 @@ surrounding words, with every value masked. Without a terminal it writes
 `--no-review` redacts every disputed span. A review file belongs to one version of the document:
 if the document changes, it is refused as stale.
 
+## Models on the bench (TASK-34.8, 2026-10-12)
+
+`uv run --project redact --with pyarrow python -m maisecrets_redact.measure` runs the rules and
+each permissive model on 150 documents from each of four bench datasets (findocs, Gretel,
+Nemotron-PII, Mendeley; `docs/BENCHMARK.md`). It writes only offsets under the bench's data
+directory (run 20261012-161906, scored on findocs with names, birth dates and streets labelled,
+TASK-36). A value counts as hidden when redacted spans cover 80 % of it. A false redaction is a
+span that touches no positive gold value, counted per 1,000 words. CPU only.
+
+| configuration | names | addresses | birth dates | phones | false / 1k words | s / doc |
+|---|---|---|---|---|---|---|
+| rules alone | 0.2% | 0% | 0% | 79% | 0.3 | 0.002 |
+| rules + urchade/gliner_multi_pii-v1 | 87% | 73% | 100% | 99% | 5.6 | 0.62 |
+| rules + fastino/gliner2-privacy-filter-PII-multi | 84% | 54% | 100% | 100% | 7.4 | 0.63 |
+| rules + knowledgator/gliner-pii-base-v1.0 | 66% | 73% | 73% | 99% | 4.7 | 0.36 |
+| rules + openai/privacy-filter | 84% | 69% | 0% | 96% | 12.2 | 1.13 |
+| rules + gretelai/gretel-gliner-bi-large-v1.0 | 37% | 39% | 37% | 97% | 2.3 | 1.42 |
+| vote of the defaults, no review | 64% | 53% | 73% | 96% | 2.0 | 1.6 |
+| the same, every review answered yes | 90% | 91% | 100% | 98% | 10.7 | 1.6 |
+
+The rules find what has a shape (IBAN, AHV, SSN, e-mail, cards) and nearly nothing of names or
+addresses: the models are what this tool adds. The defaults are urchade, knowledgator and
+fastino. openai/privacy-filter found no date of birth, so in the vote it vetoed every one, and
+it took twice the time; gretel's bi-encoder finds too little. The models' false redactions are
+mostly ID-shaped numbers and dates in financial forms. A vote of two models out of three instead
+of all three hides 83 % of names and 85 % of addresses, at 4.4 false redactions per 1,000
+words. Which vote is the default is a question for the user (TASK-17).
+
 ## Install
 
 ```bash
