@@ -18,7 +18,7 @@ from typing import Callable
 
 from .schema import Sample
 
-REVISION = "valid3"   # valid3: the audit's rules for phone, e-mail, IP, bank number (TASK-30); a change rebuilds
+REVISION = "valid4"   # valid4: no cut drops a group of the value (TASK-31); a change builds the datasets again
 
 
 def _digits(v: str) -> str:
@@ -86,6 +86,20 @@ def _ok(ok: Callable[[str], bool], value: str) -> bool:
 NO_SHRINK = {"PHONE", "EMAIL", "IP"}
 
 
+_GROUP = re.compile(r"[A-Za-z0-9]+")
+
+
+def _cut_ok(kept: str, dropped: str) -> bool:
+    """A cut drops only what the pattern took after the value: it falls at a separator, and the first group it drops
+    differs in length from the last group it keeps (` 12` of an expiry after `1111`). A fake IBAN or card cut at a
+    group boundary passes its checksum by chance (1 in 97, 1 in 10): `FR72 2000 7011 5930| 2331 67` or
+    `4111 1111 1111 1111| 1234` would leave a fragment no detector reports (TASK-31)."""
+    if not dropped or dropped[0].isalnum():
+        return False
+    last, nxt = _GROUP.findall(kept), _GROUP.findall(dropped)
+    return not (last and nxt and len(last[-1]) == len(nxt[0]))
+
+
 def check(text: str, start: int, end: int, rx: re.Pattern | None, ok: Callable[[str], bool], shrink: bool = True):
     """("valid" | "trimmed" | "invalid", start, end): the value's bounds when one passes."""
     value = text[start:end]
@@ -99,6 +113,8 @@ def check(text: str, start: int, end: int, rx: re.Pattern | None, ok: Callable[[
             for stop in range(m.end(), m.start() if shrink else m.end() - 1, -1):
                 cand = value[m.start():stop]
                 if cand != cand.strip() or not rx.fullmatch(cand):
+                    continue
+                if stop < m.end() and not _cut_ok(cand, value[stop:]):
                     continue
                 if _ok(ok, cand):
                     if cand == core:

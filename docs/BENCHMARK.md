@@ -218,7 +218,8 @@ span with a label or a card block (holder, expiry, CVC) around a valid value is 
 Gretel's IBAN recall on valid gold is 96.0%; the 97.8% of the epic was measured on the 55,940
 records before the quality filter. Generated ABA numbers mostly fail their checksum (Gretel 89%,
 Nemotron 90%): the `aba-routing` rule has no validator and is gated by context instead, so a
-validator would cost no valid find. Cards stay a gap after the check: 32% on Gretel and Nemotron.
+validator would cost no valid find. Cards stayed a gap after the check, 32% on Gretel and Nemotron,
+until TASK-31 found most of Nemotron's gap to be fragments of fake numbers (below).
 Every Mendeley card span is a block and is trimmed to its number. CredData, ai4privacy and the
 synthetic tool output have no checksummed in-scope gold. The equal-weight mean rises from 79.8% to
 80.5% because invalid gold no longer counts as missed.
@@ -263,9 +264,21 @@ drop) and a rationale; setup applies them and refuses a stale entry. It is empty
 
 E-mail and IP misses were almost all invalid or reserved values; on valid gold both are near 100%
 on Nemotron. Phone stays the gap (Gretel 56.7%, Nemotron 23%, ai4privacy 19%). Nemotron's 47 bank
-numbers that are valid IBANs are mostly missed (5 found): TASK-31. Precision moves by at most 0.7
+numbers that looked like valid IBANs were mostly fragments of fake ones (see the cut rule below). Precision moves by at most 0.7
 points (Gretel 74.3% to 73.6%): detections of invalid gold were counted as found and are now
 neutral. The equal-weight mean rises from 79.9% to 81.4%.
+
+**No cut drops a group of the value (TASK-31, gold revision valid4; baseline run 20261012-100249).**
+Trimming shrank a value from the right until its checksum passed, to drop what a greedy pattern took
+after it (the ` 12` of an expiry after a card number). It also cut fake values at a group boundary
+until a prefix passed by chance (1 in 97 for an IBAN, 1 in 10 for a card): `FR72 2000 7011 5930|
+2331 67` became a "valid" IBAN fragment that no detector reports, and counted as a miss. A cut is now
+allowed only at a separator and when the first dropped group differs in length from the last kept
+one. Trimmed cards fell from 2,961 to 2 on Nemotron, 71 to 1 on Gretel and 39,411 to 39,060 on
+Mendeley; Gretel's trimmed IBANs from 31 to 7. Recall on valid gold: Nemotron CARD 32.8% to 95.7%,
+Nemotron IBAN 10.6% to 83.3% (5 of 6), Gretel IBAN 95.9% to 97.9%, Gretel CARD 32.0% to 36.3%,
+Mendeley CARD 80.5% to 81.1%. No false positive moved. The card gap of Nemotron was the artefact;
+Gretel's remains.
 
 ## Synthetic tool output
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import unittest
 
 from maisecrets_bench import validgold
+from maisecrets_bench.detector import detect
 from maisecrets_bench.schema import Sample, Span
 
 IBAN_OK = "CH93 0076 2011 6238 5295 7"          # the Swiss IBAN example
@@ -72,6 +73,54 @@ class CheckTests(unittest.TestCase):
         from maisecrets_bench.detector import known_types
         self.assertEqual(set(validgold.CHECKS), set(validgold._checks()))
         self.assertLessEqual(set(validgold.CHECKS), known_types())
+
+
+def _iban(country: str, bban: str) -> str:
+    """A valid IBAN for a made-up account: the check digits computed here."""
+    num = int("".join(str(ord(c) - 55) if c.isalpha() else c for c in bban + country + "00"))
+    return f"{country}{98 - num % 97:02d}{bban}"
+
+
+def _spaced(v: str) -> str:
+    return " ".join(v[i:i + 4] for i in range(0, len(v), 4))
+
+
+class ShrinkTests(unittest.TestCase):
+    """TASK-31: a cut may only drop text the pattern took after the value (an expiry after a card number), never a
+    group of the value itself: a fake IBAN or card cut at a group boundary passes its checksum by chance (1 in 97,
+    1 in 10) and the gold became a fragment no detector reports."""
+
+    def one(self, text, value, t):
+        (s,), _ = validgold.mark([_sample(text, value, t)])
+        return s.spans[0], s.text
+
+    def test_a_fake_iban_is_not_cut_to_a_prefix_that_passes(self):
+        n = 0
+        for k in range(2000):
+            head = _iban("FR", f"{k:016d}")                  # a valid 20-character IBAN
+            whole = _spaced(head + "233167")                  # the same with two more groups: almost always fake
+            if detect._iban_ok(whole):
+                continue
+            n += 1
+            with self.subTest(whole=whole):
+                sp, _ = self.one(f"account {whole} x", whole, "IBAN")
+                self.assertEqual(sp.gold, "uncertain")
+            if n == 20:
+                break
+
+    def test_a_fake_card_is_not_cut_to_a_prefix_that_passes(self):
+        sp, _ = self.one(f"card {CARD_OK} 1234 x", f"{CARD_OK} 1234", "CARD")
+        self.assertEqual(sp.gold, "uncertain")
+
+    def test_an_expiry_after_the_number_is_still_cut_off(self):
+        for value in (f"{CARD_OK} 12/25", f"{CARD_OK.replace(' ', '')} 12/25"):
+            with self.subTest(value=value):
+                sp, text = self.one(f"card {value} x", value, "CARD")
+                self.assertEqual((sp.gold, text[sp.start:sp.end].replace(" ", "")), ("pos", CARD_OK.replace(" ", "")))
+
+    def test_a_cut_inside_a_group_is_refused(self):
+        sp, _ = self.one("card 41111111111111112 x", "41111111111111112", "CARD")
+        self.assertEqual(sp.gold, "uncertain")
 
 
 class ValidityTests(unittest.TestCase):
