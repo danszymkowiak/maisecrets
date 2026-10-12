@@ -273,7 +273,9 @@ def judge(base: dict, mut: dict, roles: dict, recall_tolerance: float = RECALL_T
         beyond += _beyond_tolerance(name, b, m, recall_tolerance)
         datasets[name] = {"role": roles.get(name, "scored"), "base": b, "mutated": m,
                           "score_delta": m["score"] - b["score"], "tp": (base[name].tp, mut[name].tp),
-                          "fp": (base[name].fp, mut[name].fp), "found": (base[name].found, mut[name].found)}
+                          "fp": (base[name].fp, mut[name].fp), "found": (base[name].found, mut[name].found),
+                          # finds on personal data no type of the plugin's scores (passports, ID cards): TASK-18.2
+                          "oos_found": (base[name].oos_found, mut[name].oos_found)}
         if roles.get(name, "scored") == "scored":
             deltas.append(m["score"] - b["score"])
     verdict = "strict" if not reasons else "tolerance" if not beyond else "rejected"

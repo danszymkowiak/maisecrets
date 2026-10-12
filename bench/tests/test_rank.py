@@ -44,6 +44,13 @@ class RankTests(unittest.TestCase):
                                    WEIGHTS)
                 self.assertEqual(row.group, "protected")
 
+    def test_finds_on_unscored_personal_data_make_a_removal_a_trade_not_a_pure_win(self):
+        # es-passport found 5,542 labelled passports that no plugin type scores; its removal saved 89 false positives
+        r = result("Leave out es-passport", {"ai4privacy": (100, 11)})
+        r["datasets"]["ai4privacy"]["oos_found"] = [6000, 458]
+        (row,) = rank.rows([r], WEIGHTS)
+        self.assertEqual((row.group, row.unscored_lost, row.weighted_tp_lost), ("trade", 5542, 55420.0))
+
     def test_the_order_is_pure_wins_then_trades_by_ratio_then_protected(self):
         rows = rank.rows([
             result("p-small", {"gretel": (3, 2)}),

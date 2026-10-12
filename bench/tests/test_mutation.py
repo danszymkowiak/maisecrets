@@ -166,6 +166,13 @@ class JudgeTests(unittest.TestCase):
         self.assertIn("g: clean samples", " ".join(j["reasons"]))
         self.assertEqual(j["overall_delta"], 0.0, "the guard does not enter the mean")
 
+    def test_finds_on_unscored_personal_data_are_reported_before_and_after(self):
+        # TASK-18.2: a rule that finds passports, which no dataset scores, looked like a pure win when left out
+        base = dict(self.BASE, a=Counts(tp=80, fp=20, found=60, fn=40, samples=100, clean=90, oos_found=30,
+                                        oos_total=40))
+        mut = dict(base, a=Counts(tp=80, fp=20, found=60, fn=40, samples=100, clean=90, oos_found=5, oos_total=40))
+        self.assertEqual(mutation.judge(base, mut, {})["datasets"]["a"]["oos_found"], (30, 5))
+
     def test_no_change_is_accepted_with_zero_delta(self):
         j = mutation.judge(self.BASE, dict(self.BASE), {})
         self.assertTrue(j["accepted"])

@@ -7,6 +7,8 @@ find counts as lost only when no other rule picks it up, a false positive as sav
   sorted by weighted false positives saved per weighted find lost. Lost finds weigh by tier (critical 100, high 10,
   no regression 1), saved false positives by the objective's dataset weights (floors.toml). Fewer than five lost
   finds or saved false positives is flagged as weak evidence.
+- Finds on personal data no plugin type scores (passports, ID cards, licences labelled out of scope) count as lost
+  finds too, weighted 10: the floors cannot see them, and a country ID rule looked like a pure win without them.
 - no effect: nothing saved, nothing lost.
 """
 from __future__ import annotations
@@ -14,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 TIER_WEIGHT = {"critical": 100.0, "high": 10.0, "default": 1.0}
+UNSCORED_WEIGHT = 10.0
 WEAK = 5
 _PROTECTING = ("broken", "gap worse", "guard ")
 
@@ -28,6 +31,7 @@ class Row:
     weighted_tp_lost: float
     lost_by_type: dict
     reasons: list
+    unscored_lost: int = 0
 
     @property
     def ratio(self) -> float:
@@ -44,18 +48,22 @@ def rows(results: list[dict], weights: dict[str, float]) -> list[Row]:
         saved = {d: v["fp"][0] - v["fp"][1] for d, v in r["datasets"].items()}
         lost = {t: f["base"]["found"] - f["mutated"]["found"] for t, f in r.get("floors", {}).items()
                 if f["base"]["found"] > f["mutated"]["found"]}
-        w_lost = sum(TIER_WEIGHT.get(r["floors"][t]["base"].get("tier"), 0.0) * n for t, n in lost.items())
+        unscored = sum(max(0, v["oos_found"][0] - v["oos_found"][1])
+                       for v in r["datasets"].values() if "oos_found" in v)
+        w_lost = (sum(TIER_WEIGHT.get(r["floors"][t]["base"].get("tier"), 0.0) * n for t, n in lost.items())
+                  + UNSCORED_WEIGHT * unscored)
         w_saved = sum(weights.get(d, 1.0) * n for d, n in saved.items())
         reasons = list(r.get("decided_by", []))
         if any(p in reason for reason in reasons for p in _PROTECTING):
             group = "protected"
-        elif lost:
+        elif lost or unscored:
             group = "trade"
         elif sum(saved.values()) > 0:
             group = "pure"
         else:
             group = "none"
-        out.append(Row(r["name"], group, sum(saved.values()), w_saved, sum(lost.values()), w_lost, lost, reasons))
+        out.append(Row(r["name"], group, sum(saved.values()), w_saved, sum(lost.values()), w_lost, lost, reasons,
+                       unscored))
     return out
 
 
@@ -89,12 +97,12 @@ def report(rs: list[Row], baseline: str) -> str:
         if not sel:
             out += ["None.", ""]
             continue
-        out += ["| rule | false positives saved | weighted | finds lost | weighted | ratio | finds lost by type "
-                "| note |", "|---|---|---|---|---|---|---|---|"]
+        out += ["| rule | false positives saved | weighted | finds lost | unscored finds lost | weighted | ratio "
+                "| finds lost by type | note |", "|---|---|---|---|---|---|---|---|---|"]
         for r in sel:
             ratio = "-" if r.group == "pure" else f"{r.ratio:.1f}"
             types = ", ".join(f"{t} {n}" for t, n in sorted(r.lost_by_type.items())) or "-"
-            out.append(f"| {r.name} | {r.fp_saved} | {r.weighted_fp_saved:.0f} | {r.tp_lost} | "
+            out.append(f"| {r.name} | {r.fp_saved} | {r.weighted_fp_saved:.0f} | {r.tp_lost} | {r.unscored_lost} | "
                        f"{r.weighted_tp_lost:.0f} | {ratio} | {types} | {'weak' if r.weak else ''} |")
         out.append("")
     none = [r.name for r in rs if r.group == "none"]
