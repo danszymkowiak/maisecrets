@@ -33,6 +33,19 @@ Reversible mode (`--reversible`, a vault of the placeholder map) is TASK-34.7 an
 user's decision. A hook that redacts on read is out of scope: a post-read hook fires after the
 text is already in the model's context.
 
+## Use
+
+```bash
+redact statement.pdf                    # writes statement.pdf.redacted.txt next to it
+redact lohn.xlsx --regions ch --drop-column Name
+redact notes.txt --out ~/prep           # writes ~/prep/notes.txt.redacted.txt
+```
+
+Each value becomes a placeholder of its type (`⟦IBAN_1⟧`, `⟦SECRET_2⟧`); the same value keeps the
+same placeholder across a run. Without `--regions` the country rules of the person's maisecrets
+config apply (it is only read), and the plugin's personal terms file applies too. An existing output
+is never overwritten, and the input is never changed. The summary names counts per type, never a value.
+
 ## Install
 
 ```bash

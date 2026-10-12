@@ -32,17 +32,16 @@ class CommandTests(unittest.TestCase):
         r = run("--version")
         self.assertEqual((r.returncode, r.stdout.strip()), (0, f"redact {__version__}"))
 
-    def test_without_a_detector_nothing_is_written(self):
-        # an output named .redacted.txt that redacts nothing would be worse than none (TASK-34.3 adds the rules)
-        from maisecrets_redact import pipeline
-        if pipeline.available_detectors():
-            self.skipTest("a detector exists now")
+    def test_without_the_plugin_checkout_nothing_is_written(self):
+        # an output named .redacted.txt that redacts nothing would be worse than none
+        import os
         with tempfile.TemporaryDirectory() as d:
             src = Path(d) / "notes.txt"
             src.write_text("nothing here\n", encoding="utf-8")
-            r = run(str(src))
+            r = subprocess.run([sys.executable, "-m", "maisecrets_redact", str(src)], capture_output=True, text=True,
+                               timeout=60, env={**os.environ, "MAISECRETS_REPO": d})
             self.assertNotEqual(r.returncode, 0)
-            self.assertIn("no detector", r.stderr)
+            self.assertIn("no maisecrets checkout", r.stderr)
             self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["notes.txt"])
 
 
