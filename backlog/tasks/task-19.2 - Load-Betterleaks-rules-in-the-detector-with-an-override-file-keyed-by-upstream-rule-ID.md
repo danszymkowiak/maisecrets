@@ -3,10 +3,10 @@ id: TASK-19.2
 title: >-
   Load Betterleaks rules in the detector, with an override file keyed by
   upstream rule ID
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-12 09:53'
+updated_date: '2026-10-12 10:18'
 labels:
   - detection
   - tdd
@@ -28,8 +28,8 @@ Kingfisher's overlay pattern (crates/kingfisher-rules/data/imported-rules-capabi
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 With the switch on, the detector loads Betterleaks rules; with it off, nothing changes (existing tests pass in both modes)
-- [ ] #2 The per-rule fixes for vendored rules sit in the override file; a test fails when an override names a rule ID the vendored set lacks
-- [ ] #3 Load time and first-scan time measured in the hook interpreter against today (463 rules against 222)
+- [x] #2 The per-rule fixes for vendored rules sit in the override file; a test fails when an override names a rule ID the vendored set lacks
+- [x] #3 Load time and first-scan time measured in the hook interpreter against today (463 rules against 222)
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -39,3 +39,9 @@ Kingfisher's overlay pattern (crates/kingfisher-rules/data/imported-rules-capabi
 
 2026-10-12: user agreed to switch generic-password and generic-credential-uri off until TASK-19.3 benches them.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done earlier (b5b2cbd): filterexpr.py, the SECRET_RULES switch (now Settings.secret_rules, TASK-27), _load_betterleaks, rules/overrides.txt with the four moved fixes. Now: overrides.txt takes 'off' (alone on its line; override_problems refuses it mixed with fixes), and generic-password and generic-credential-uri are off by the user's decision of 2026-10-12. AC #1 NOT fully met: with Betterleaks on (an isolated in-process run, tests/_isolate first) 1196 tests give 4 failures: 1 expected (test_ruleset checks that the default is gitleaks) and 3 recall differences: Betterleaks' generic-api-key has no password keyword (Betterleaks moved password labels into generic-password, which is off), so 'password: <value>' after another label on the line, or after a blank line, is missed. Handed to TASK-19.3 (generic-password on with its false positives, or a password keyword for generic-api-key) and TASK-19.4 (switch only when the suite passes). With the switch off nothing changes (the full suite passes). AC #3, /usr/bin/python3, median of 15: gitleaks 269 rules, load 3.9 ms, first scan 27.4 ms; Betterleaks 465 rules, load 7.9 ms, first scan 27.5 ms.
+<!-- SECTION:FINAL_SUMMARY:END -->

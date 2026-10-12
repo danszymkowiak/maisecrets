@@ -111,7 +111,8 @@ class SwitchTests(unittest.TestCase):
     def test_on_loads_betterleaks_without_its_component_only_rules(self):
         self.use("betterleaks")
         bl = json.loads((detect.RULES_DIR / "betterleaks.json").read_text(encoding="utf-8"))["rules"]
-        reported = {r["id"] for r in bl if "regex" in r and not r.get("skipReport")}
+        off = {rid for rid, fixes in detect._load_overrides().items() if fixes == ("off",)}
+        reported = {r["id"] for r in bl if "regex" in r and not r.get("skipReport")} - off
         self.assertLessEqual(reported, self.ids())
         self.assertNotIn("aws-secret-access-key", self.ids(), "skipReport: only a component of aws-access-token")
         self.assertTrue(any(r.filter for r in self.rs.rules if r.id == "aws-access-token"))
@@ -154,6 +155,17 @@ class OverrideTests(unittest.TestCase):
             for rid in ("generic-api-key", "curl-auth-user", "aws-access-token", "hashicorp-tf-password"):
                 with self.subTest(name=name, rule=rid):
                     self.assertTrue(fixes[rid])
+
+    def test_off_leaves_a_vendored_rule_out(self):
+        # the user, 2026-10-12: two Betterleaks rules stay off until TASK-19.3 benches them
+        ids = {r.id for r in detect.build(detect.Settings(secret_rules="betterleaks")).rules}
+        for rid in ("generic-password", "generic-credential-uri"):
+            with self.subTest(rule=rid):
+                self.assertEqual(detect._load_overrides().get(rid), ("off",))
+                self.assertNotIn(rid, ids)
+        self.assertEqual(detect.override_problems("generic-password  off\n"), [])
+        self.assertIn("overrides.txt: generic-password: off stands alone",
+                      detect.override_problems("generic-password  off ds-value\n"))
 
     def test_the_fixes_still_apply_with_betterleaks(self):
         rs = detect.build(detect.Settings(secret_rules="betterleaks"))

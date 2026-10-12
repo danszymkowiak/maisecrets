@@ -4,7 +4,7 @@ title: 'Bench: Betterleaks against gitleaks, and what to do about tokenRatio'
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:31'
-updated_date: '2026-10-12 07:16'
+updated_date: '2026-10-12 10:18'
 labels:
   - benchmark
   - false-positive
@@ -32,3 +32,9 @@ Decide tokenRatio for its 124 rules, by bench numbers: (a) fall back to entropy,
 - [ ] #2 The tokenRatio choice is made from measured numbers and recorded in the report
 - [ ] #3 The 4 gitleaks-only rules each have a recorded decision
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+From TASK-19.2 (2026-10-12): with Betterleaks on and generic-password / generic-credential-uri off, 3 unit tests lose a find: Betterleaks' generic-api-key has no password keyword, so 'password: <value>' after another label on the same line, or after a blank line, is missed (tests/test_core.py test_a_value_after_a_blank_line_is_found_in_long_text_too, tests/test_detect_rules.py test_the_label_decides_only_right_before_the_value). Bench both ways: generic-password on (with the detect-secrets fixes attached through overrides.txt) or a password keyword for generic-api-key.
+<!-- SECTION:NOTES:END -->

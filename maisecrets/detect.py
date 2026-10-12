@@ -549,7 +549,9 @@ def override_problems(text: str | None = None) -> list[str]:
     for rule_id, fixes in _load_overrides(text).items():
         if rule_id not in vendored:
             out.append(f"overrides.txt: {rule_id} is in no vendored rule set")
-        out += [f"overrides.txt: {rule_id} names an unknown fix {f!r}" for f in fixes if f not in FIXES]
+        if "off" in fixes and fixes != ("off",):
+            out.append(f"overrides.txt: {rule_id}: off stands alone")
+        out += [f"overrides.txt: {rule_id} names an unknown fix {f!r}" for f in fixes if f not in FIXES and f != "off"]
     return out
 
 
@@ -561,7 +563,7 @@ def _load_gitleaks() -> list[Rule]:
         cfg = json.loads((RULES_DIR / "gitleaks.json").read_text(encoding="utf-8"))
         rules: list[Rule] = []
         for r in cfg.get("rules", []):
-            if "regex" not in r:
+            if "regex" not in r or fixes.get(r["id"]) == ("off",):
                 continue
             allow: list[tuple[re.Pattern[str], str]] = []
             stop: list[str] = []
@@ -592,7 +594,7 @@ def _load_betterleaks() -> list[Rule]:
     top = cfg.get("filter")
     rules: list[Rule] = []
     for r in cfg.get("rules", []):
-        if "regex" not in r or r.get("skipReport"):
+        if "regex" not in r or r.get("skipReport") or fixes.get(r["id"]) == ("off",):
             continue
         own = r.get("filter")
         tree = ["bin", "||", top, own] if top and own else (top or own)
