@@ -17,3 +17,8 @@ DATE = "OUT_OF_SCOPE"
 REF = "OUT_OF_SCOPE"
 POSTCODE = "OUT_OF_SCOPE"
 QR_REF = "OUT_OF_SCOPE"
+# personal data the plugin does not claim (TASK-36): what redact's models are measured on
+NAME = "OUT_OF_SCOPE"
+COMPANY = "OUT_OF_SCOPE"
+DOB = "OUT_OF_SCOPE"
+ADDRESS = "OUT_OF_SCOPE"

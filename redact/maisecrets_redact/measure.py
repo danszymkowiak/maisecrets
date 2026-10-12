@@ -35,7 +35,7 @@ GOLD_TYPES = {
     "name": "NAME", "first_name": "NAME", "last_name": "NAME",
     "street_address": "ADDRESS", "address": "ADDRESS",
     "email": "EMAIL", "phone": "PHONE", "phone_number": "PHONE", "fax_number": "PHONE",
-    "date_of_birth": "DOB",
+    "date_of_birth": "DOB", "dob": "DOB",
     "iban": "ACCOUNT", "bban": "ACCOUNT", "account": "ACCOUNT", "account_number": "ACCOUNT",
     "ahv": "NATIONAL_ID", "ssn": "NATIONAL_ID", "passport_number": "PASSPORT",
 }

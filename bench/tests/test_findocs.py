@@ -104,6 +104,43 @@ class DatasetTests(unittest.TestCase):
         rows = list(findocs.samples(load("findocs")))
         self.assertGreaterEqual(sum(sp.label == "AHV" for s in rows for sp in s.spans), 3000)
 
+    def test_every_generated_name_birth_date_company_and_street_is_a_positive_out_of_scope(self):
+        # TASK-36: the names were unlabelled, so redact's models were charged a false positive for each one found
+        names: list[str] = []
+        real = findocs.FinGen.name
+
+        def recording(g):
+            n = real(g)
+            names.append(n)
+            return n
+        from unittest import mock
+        with mock.patch.object(findocs.FinGen, "name", recording):
+            rows = _build(n=5)
+        labelled = {"NAME", "COMPANY", "DOB", "ADDRESS"}
+        for s in rows:
+            pos = [(sp.start, sp.end) for sp in s.spans if sp.gold == "pos" and sp.label in labelled]
+            for sp in s.spans:
+                if sp.label in labelled:
+                    self.assertEqual((sp.gold, sp.maisecrets_type), ("pos", OUT_OF_SCOPE), sp.label)
+            for n in names:
+                for form in (n, n.upper()):
+                    at = s.text.find(form)
+                    while at >= 0:
+                        self.assertTrue(any(a <= at and at + len(form) <= b for a, b in pos), (s.sample_id, "name"))
+                        at = s.text.find(form, at + 1)
+            for word in ("Geburtsdatum ", "Date de naissance "):
+                if word in s.text:
+                    at = s.text.index(word) + len(word)
+                    self.assertIn("DOB", [sp.label for sp in s.spans if sp.start == at], s.sample_id)
+            for street in ("Bahnhofstrasse 12", "Rue du Rhône 8", "400 Market St", "Rue de Lausanne 14"):
+                if street in s.text:
+                    at = s.text.index(street)
+                    self.assertTrue(any(sp.label == "ADDRESS" and sp.start <= at < sp.end for sp in s.spans), street)
+            for company in (" Treuhand AG", " SA, IDE", " Logistics Inc"):
+                if company in s.text:
+                    at = s.text.index(company)
+                    self.assertTrue(any(sp.label == "COMPANY" and sp.start < at < sp.end for sp in s.spans), company)
+
     def test_the_version_names_seed_and_size(self):
         self.assertIn(f"seed{findocs.SEED}-n{findocs.PER_TEMPLATE}-", findocs.version())
 

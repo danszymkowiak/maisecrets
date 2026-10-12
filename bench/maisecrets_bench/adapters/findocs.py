@@ -6,6 +6,8 @@ Positives carry valid checksums: CH IBAN (mod 97), AHV/AVS 756 numbers (EAN-13),
 (Luhn), ABA routing numbers, US SSNs of a valid shape. Negatives look like them: amounts, dates, invoice, control and
 personnel numbers, postal codes and QR references (mod 10 recursive). AHV, UID and EIN are labelled but out of scope
 until the detector claims them (TASK-20 adds the Swiss types). Names are random syllables; no real value anywhere.
+Names, companies, birth dates and street lines are positives out of the plugin's scope (TASK-36): neutral for its
+score, and what redact's models are measured on (TASK-34.8).
 
 Unlike the synthetic tool output, this set is scored (user, 2026-10-11), with the caveat that it is tuned to our own
 generator (docs/BENCHMARK.md)."""
@@ -148,10 +150,12 @@ class FinGen(Gen):
 
 
 def t_lohnausweis_de(g: FinGen) -> Doc:
-    d = Doc().add("Lohnausweis 2025 - Formular 11\nA  Arbeitgeber: ").add(g.name().split()[0] + " Treuhand AG, UID ")
-    d.pos(g.uid(), "CHE_UID").add("\n   Bahnhofstrasse 12, ").neg(g.plz(), "POSTCODE").add(" Zürich\n")
-    d.add(f"B  Arbeitnehmer: {g.name()}\n   AHV-Nr. ").pos(g.ahv(), "AHV").add("\n   Geburtsdatum ")
-    d.neg(g.date_ch(), "DATE").add("\n   Personalnummer ").neg(g.digits(6), "REF").add("\n")
+    d = Doc().add("Lohnausweis 2025 - Formular 11\nA  Arbeitgeber: ")
+    d.pos(g.name().split()[0] + " Treuhand AG", "COMPANY").add(", UID ")
+    d.pos(g.uid(), "CHE_UID").add("\n   ").pos("Bahnhofstrasse 12", "ADDRESS").add(", ").neg(g.plz(), "POSTCODE")
+    d.add(" Zürich\n")
+    d.add("B  Arbeitnehmer: ").pos(g.name(), "NAME").add("\n   AHV-Nr. ").pos(g.ahv(), "AHV").add("\n   Geburtsdatum ")
+    d.pos(g.date_ch(), "DOB").add("\n   Personalnummer ").neg(g.digits(6), "REF").add("\n")
     for label in ("1. Lohn", "9. Beiträge AHV/IV/EO/ALV/NBUV", "10. Berufliche Vorsorge", "11. Nettolohn"):
         d.add(f"{label:<34} CHF ").neg(g.chf(), "AMOUNT").add("\n")
     d.add("Rückfragen: ").pos(g.email(), "EMAIL").add(", Tel. ").pos(g.phone_ch(), "PHONE").add("\n")
@@ -159,10 +163,12 @@ def t_lohnausweis_de(g: FinGen) -> Doc:
 
 
 def t_certificat_fr(g: FinGen) -> Doc:
-    d = Doc().add("Certificat de salaire 2025 - formulaire 11\nA  Employeur : ").add(g.name().split()[1] + " SA, IDE ")
-    d.pos(g.uid(), "CHE_UID").add("\n   Rue du Rhône 8, ").neg(g.plz(), "POSTCODE").add(" Genève\n")
-    d.add(f"B  Employé : {g.name()}\n   N° AVS ").pos(g.ahv(), "AHV").add("\n   Date de naissance ")
-    d.neg(g.date_ch(), "DATE").add("\n   N° du personnel ").neg(g.digits(6), "REF").add("\n")
+    d = Doc().add("Certificat de salaire 2025 - formulaire 11\nA  Employeur : ")
+    d.pos(g.name().split()[1] + " SA", "COMPANY").add(", IDE ")
+    d.pos(g.uid(), "CHE_UID").add("\n   ").pos("Rue du Rhône 8", "ADDRESS").add(", ").neg(g.plz(), "POSTCODE")
+    d.add(" Genève\n")
+    d.add("B  Employé : ").pos(g.name(), "NAME").add("\n   N° AVS ").pos(g.ahv(), "AHV").add("\n   Date de naissance ")
+    d.pos(g.date_ch(), "DOB").add("\n   N° du personnel ").neg(g.digits(6), "REF").add("\n")
     for label in ("1. Salaire", "9. Cotisations AVS/AI/APG/AC/AANP", "10. Prévoyance professionnelle",
                   "11. Salaire net"):
         d.add(f"{label:<36} CHF ").neg(g.chf(), "AMOUNT").add("\n")
@@ -172,7 +178,7 @@ def t_certificat_fr(g: FinGen) -> Doc:
 
 def t_steuererklaerung_de(g: FinGen) -> Doc:
     d = Doc().add("Steuererklärung 2025 - natürliche Personen\nGemeinde-Nr. ").neg(str(g.r.randrange(1, 300)), "REF")
-    d.add(f"\nSteuerpflichtige Person: {g.name()}, AHV-Nr. ").pos(g.ahv(), "AHV")
+    d.add("\nSteuerpflichtige Person: ").pos(g.name(), "NAME").add(", AHV-Nr. ").pos(g.ahv(), "AHV")
     d.add("\nEinkommen aus unselbständiger Erwerbstätigkeit CHF ").neg(g.chf(), "AMOUNT")
     d.add("\nWertschriftenertrag CHF ").neg(g.chf(10, 5000), "AMOUNT")
     d.add("\nAbzug Säule 3a CHF ").neg(g.chf(1000, 7300), "AMOUNT")
@@ -182,10 +188,10 @@ def t_steuererklaerung_de(g: FinGen) -> Doc:
 
 
 def t_releve_fr(g: FinGen) -> Doc:
-    d = Doc().add(f"Relevé de compte\nTitulaire : {g.name()}\nIBAN ").pos(g.iban_ch(), "IBAN")
+    d = Doc().add("Relevé de compte\nTitulaire : ").pos(g.name(), "NAME").add("\nIBAN ").pos(g.iban_ch(), "IBAN")
     d.add("\nPériode du ").neg(g.date_ch(), "DATE").add(" au ").neg(g.date_ch(), "DATE").add("\n\n")
     for _ in range(g.r.randrange(2, 5)):
-        d.neg(g.date_ch(), "DATE").add(f"  Virement à {g.name()}, IBAN ").pos(g.iban_ch(), "IBAN")
+        d.neg(g.date_ch(), "DATE").add("  Virement à ").pos(g.name(), "NAME").add(", IBAN ").pos(g.iban_ch(), "IBAN")
         d.add("  CHF -").neg(g.chf(10, 9000), "AMOUNT").add("\n")
     d.neg(g.date_ch(), "DATE").add("  Paiement QR, référence ").neg(g.qr_ref(), "QR_REF").add("  CHF -")
     d.neg(g.chf(10, 2000), "AMOUNT").add("\nSolde final CHF ").neg(g.chf(), "AMOUNT").add("\n")
@@ -193,10 +199,12 @@ def t_releve_fr(g: FinGen) -> Doc:
 
 
 def t_kontoauszug_de(g: FinGen) -> Doc:
-    d = Doc().add(f"Kontoauszug Privatkonto\nKontoinhaber: {g.name()}\nIBAN ").pos(g.iban_ch(), "IBAN")
+    d = Doc().add("Kontoauszug Privatkonto\nKontoinhaber: ").pos(g.name(), "NAME").add("\nIBAN ")
+    d.pos(g.iban_ch(), "IBAN")
     d.add("\nBuchungsdatum  Text  Betrag CHF\n")
     for _ in range(g.r.randrange(2, 5)):
-        d.neg(g.date_ch(), "DATE").add(f"  Gutschrift {g.name()}  ").neg(g.chf(10, 9000), "AMOUNT").add("\n")
+        d.neg(g.date_ch(), "DATE").add("  Gutschrift ").pos(g.name(), "NAME").add("  ")
+        d.neg(g.chf(10, 9000), "AMOUNT").add("\n")
     d.neg(g.date_ch(), "DATE").add("  Zahlung QR-Rechnung, Referenz ").neg(g.qr_ref(), "QR_REF")
     d.add("  -").neg(g.chf(10, 3000), "AMOUNT").add("\nKarte ").pos(g.card(), "CARD").add(" Bezug Bancomat  -")
     d.neg(g.chf(20, 1000), "AMOUNT").add("\n")
@@ -214,7 +222,7 @@ def t_mt940(g: FinGen) -> Doc:
         d.add("\n:61:2510").add(f"{g.r.randrange(1, 29):02d}").add("D").neg(_mt940_amount(g), "AMOUNT")
         d.add("NTRFNONREF//").neg(g.digits(10), "REF")
         d.add(f"\n:86:?20Zahlung Rechnung {g.r.randrange(2024, 2026)}-{g.r.randrange(1, 999):03d}?31")
-        d.pos(g.iban_ch(spaced=False), "IBAN").add(f"?32{g.name().upper()}")
+        d.pos(g.iban_ch(spaced=False), "IBAN").add("?32").pos(g.name().upper(), "NAME")
     d.add("\n:62F:C251031CHF").neg(_mt940_amount(g), "AMOUNT").add("\n-\n")
     return d
 
@@ -222,7 +230,8 @@ def t_mt940(g: FinGen) -> Doc:
 def t_bank_csv(g: FinGen) -> Doc:
     d = Doc().add("Datum;Buchungstext;Gegenkonto IBAN;Betrag;Saldo\n")
     for _ in range(g.r.randrange(3, 6)):
-        d.neg(g.date_ch(), "DATE").add(f";Zahlung an {g.name()};").pos(g.iban_ch(spaced=False), "IBAN").add(";-")
+        d.neg(g.date_ch(), "DATE").add(";Zahlung an ").pos(g.name(), "NAME").add(";")
+        d.pos(g.iban_ch(spaced=False), "IBAN").add(";-")
         d.neg(g.chf(10, 9000).replace("'", ""), "AMOUNT").add(";").neg(g.chf().replace("'", ""), "AMOUNT").add("\n")
     return d
 
@@ -230,9 +239,10 @@ def t_bank_csv(g: FinGen) -> Doc:
 def t_w2(g: FinGen) -> Doc:
     d = Doc().add("Form W-2 Wage and Tax Statement 2025\na Employee's social security number  ").pos(g.ssn(), "SSN")
     d.add("\nb Employer identification number (EIN)  ").pos(g.ein(), "EIN")
-    d.add(f"\nc Employer's name, address, and ZIP code  {g.name().split()[0]} Logistics Inc, 400 Market St, "
-          f"San Francisco, CA ").neg(f"{g.r.randrange(10000, 99950)}", "POSTCODE")
-    d.add("\nd Control number  ").neg(g.digits(8), "REF").add(f"\ne Employee's name  {g.name()}")
+    d.add("\nc Employer's name, address, and ZIP code  ").pos(g.name().split()[0] + " Logistics Inc", "COMPANY")
+    d.add(", ").pos("400 Market St", "ADDRESS").add(", San Francisco, CA ")
+    d.neg(f"{g.r.randrange(10000, 99950)}", "POSTCODE")
+    d.add("\nd Control number  ").neg(g.digits(8), "REF").add("\ne Employee's name  ").pos(g.name(), "NAME")
     for label in ("1 Wages, tips, other compensation", "2 Federal income tax withheld", "3 Social security wages",
                   "4 Social security tax withheld"):
         d.add(f"\n{label}  ").neg(g.usd(), "AMOUNT")
@@ -241,7 +251,7 @@ def t_w2(g: FinGen) -> Doc:
 
 def t_1099(g: FinGen) -> Doc:
     d = Doc().add("Form 1099-INT Interest Income 2025\nPAYER'S TIN  ").pos(g.ein(), "EIN")
-    d.add("\nRECIPIENT'S TIN  ").pos(g.ssn(), "SSN").add(f"\nRECIPIENT'S name  {g.name()}")
+    d.add("\nRECIPIENT'S TIN  ").pos(g.ssn(), "SSN").add("\nRECIPIENT'S name  ").pos(g.name(), "NAME")
     d.add("\nAccount number (see instructions)  ").pos(g.account_us(), "ACCOUNT")
     d.add("\n1 Interest income  $").neg(g.usd(10, 20000), "AMOUNT")
     d.add("\n4 Federal income tax withheld  $").neg(g.usd(0, 3000), "AMOUNT")
@@ -252,7 +262,7 @@ def t_1099(g: FinGen) -> Doc:
 
 def t_invoice_en(g: FinGen) -> Doc:
     d = Doc().add("INVOICE  No. ").neg(f"INV-{g.r.randrange(2024, 2026)}-{g.digits(5)}", "REF").add("\nDate: ")
-    d.neg(g.date_us(), "DATE").add(f"\nBill to: {g.name()}\n")
+    d.neg(g.date_us(), "DATE").add("\nBill to: ").pos(g.name(), "NAME").add("\n")
     for _ in range(g.r.randrange(2, 4)):
         d.add(f"  Consulting services, {g.r.randrange(1, 40)} h  $").neg(g.usd(100, 9000), "AMOUNT").add("\n")
     d.add("Total due: $").neg(g.usd(500, 30000), "AMOUNT").add("\nPaid by card ").pos(g.card(), "CARD")
@@ -263,7 +273,8 @@ def t_invoice_en(g: FinGen) -> Doc:
 
 def t_qr_bill_fr(g: FinGen) -> Doc:
     d = Doc().add("Section paiement\nCompte / Payable à\n").pos(g.iban_ch(qr=True), "IBAN")
-    d.add(f"\n{g.name()}\nRue de Lausanne 14\n").neg(g.plz(), "POSTCODE").add(" Lausanne\nRéférence\n")
+    d.add("\n").pos(g.name(), "NAME").add("\n").pos("Rue de Lausanne 14", "ADDRESS").add("\n")
+    d.neg(g.plz(), "POSTCODE").add(" Lausanne\nRéférence\n")
     d.neg(g.qr_ref(), "QR_REF").add("\nInformations supplémentaires\nFacture ")
     d.neg(f"{g.r.randrange(2024, 2026)}-{g.digits(4)}", "REF").add(" du ").neg(g.date_ch(), "DATE")
     d.add("\nMonnaie  Montant\nCHF  ").neg(g.chf(10, 5000), "AMOUNT").add("\n")

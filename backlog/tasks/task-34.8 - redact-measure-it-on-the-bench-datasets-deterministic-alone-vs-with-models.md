@@ -1,9 +1,10 @@
 ---
 id: TASK-34.8
 title: 'redact: measure it on the bench datasets (deterministic alone vs with models)'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 10:06'
+updated_date: '2026-10-12 14:36'
 labels:
   - redact
   - bench
@@ -25,3 +26,9 @@ The bench (bench/, TASK-30 clean gold) already labels names and addresses, which
 - [ ] #1 A report per configuration (deterministic, each model, vote) with recall and false positives per type and time per document
 - [ ] #2 docs/REDACT.md records the default model set chosen from it
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-12: the model extra installed and each backend checked on the real libraries: urchade needed sentencepiece+protobuf (added), openai/privacy-filter answered word pieces (merge_pieces), gliner2 backend written for fastino (local class only; asked in its own labels). Measurement: python -m maisecrets_redact.measure (redact/maisecrets_redact/measure.py), 150 dev samples per dataset (findocs, gretel, nemotron, mendeley), 6 detectors; run 20261012-161906 under ~/.cache/maisecrets-bench/redact/. User 2026-10-12: models only in this tool, never the plugin.
+<!-- SECTION:NOTES:END -->
