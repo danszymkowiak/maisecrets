@@ -26,6 +26,7 @@ import time
 from collections import Counter
 from pathlib import Path
 
+from . import pipeline
 from .pipeline import Document, Span
 
 DATASETS = ("findocs", "gretel", "nemotron", "mendeley")
@@ -106,9 +107,14 @@ def _detect(data: Path, out: Path, per_dataset: int, model_ids: list[str]) -> No
         for name in DATASETS:
             for r in _samples(data, name, per_dataset):
                 doc = Document(r["sample_id"], r["text"])
-                for det_name, det in detectors.items():
+                masked = None
+                for det_name, det in detectors.items():   # the rules first: the models read the masked text, as in app
                     t = time.perf_counter()
-                    spans = det(doc)
+                    if det_name == "rules":
+                        spans = det(doc)
+                        masked = pipeline.mask(doc, spans)
+                    else:
+                        spans = masked.back(det(masked.doc))
                     f.write(json.dumps({"dataset": name, "sample_id": r["sample_id"], "detector": det_name,
                                         "seconds": round(time.perf_counter() - t, 4),
                                         "spans": [[s.start, s.end, s.type, round(s.score, 3)] for s in spans]})

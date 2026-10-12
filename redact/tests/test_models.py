@@ -75,6 +75,21 @@ class MergePiecesTests(unittest.TestCase):
         self.assertEqual([text[a:b] for a, b, _, _ in got], ["Erika", "Max", "Muster", "Bern"])
 
 
+class PrivacyFilterLabelTests(unittest.TestCase):
+    """openai/privacy-filter's labels (its config, 2026-10-12): account_number, private_address, private_date,
+    private_email, private_person, private_phone, private_url, secret. private_date was not mapped, so every date it
+    found was dropped and the bench showed 0 % of birth dates for it (TASK-34.8)."""
+
+    def test_its_date_label_maps_to_the_birth_date_type(self):
+        det = models.detector_from(FakeBackend({"14.03.1987": "private_date"}), "fake")
+        self.assertEqual([s.type for s in det(Document("t.txt", "Geburtsdatum 14.03.1987"))], ["DOB"])
+
+    def test_every_personal_label_it_emits_maps_to_a_type(self):
+        for label in ("account_number", "private_address", "private_date", "private_email", "private_person",
+                      "private_phone"):
+            self.assertIn(label, models.LABELS, label)
+
+
 class Gliner2Tests(unittest.TestCase):
     """gliner2's extract_entities with spans and confidence (fastino/gliner2-privacy-filter-PII-multi, gliner2 2.1.0,
     measured 2026-10-12): {"entities": {label: [{"text", "confidence", "start", "end"}]}}."""

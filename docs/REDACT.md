@@ -23,7 +23,9 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    source (PDF page; sheet, row and column). Digital PDFs only, no OCR.
 2. **Detect**: the plugin's deterministic rules first (TASK-34.3: secrets, IBAN, cards, e-mail,
    phone, country IDs, the terms file), then local PII models for what rules cannot find, such
-   as names and free-form addresses (TASK-34.4, an optional extra).
+   as names and free-form addresses (TASK-34.4, an optional extra). The models read the text
+   with every rule hit already replaced by `[TYPE]`, so they never see a value the rules found;
+   their spans map back to the original text.
 3. **Decide** (TASK-34.5): a deterministic hit is redacted; a model span is redacted when every
    configured model agrees, and goes to a person's review otherwise.
 4. **Render** (TASK-34.6): `<file>.redacted.txt`, or a mirrored tree for a directory, with

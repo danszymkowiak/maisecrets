@@ -26,7 +26,10 @@ LABELS = {
     "person": "NAME", "name": "NAME", "per": "NAME", "private_person": "NAME", "first_name": "NAME",
     "last_name": "NAME", "street address": "ADDRESS", "address": "ADDRESS", "private_address": "ADDRESS",
     "email": "EMAIL", "email address": "EMAIL", "private_email": "EMAIL", "phone number": "PHONE", "phone": "PHONE",
-    "private_phone": "PHONE", "date of birth": "DOB", "bank account number": "ACCOUNT", "account_number": "ACCOUNT",
+    "private_phone": "PHONE", "date of birth": "DOB",
+    # openai/privacy-filter's private_date: a date about a person, in documents mostly a birth date; unmapped until
+    # 2026-10-12, so every date it found was dropped (TASK-34.8)
+    "private_date": "DOB", "bank account number": "ACCOUNT", "account_number": "ACCOUNT",
     "national id number": "NATIONAL_ID", "passport number": "PASSPORT", "tax id": "TAX_ID",
     # gliner2's own label names (fastino/gliner2-privacy-filter-PII-multi lists 42)
     "full_name": "NAME", "street_address": "ADDRESS", "phone_number": "PHONE", "date_of_birth": "DOB",

@@ -22,7 +22,9 @@ def run_file(src: Path, target: Path, model_detectors: dict[str, Detector], regi
              drop_columns: frozenset[str] = frozenset(), names: rules.Placeholders | None = None) -> Result:
     doc = extract.extract(src, drop_columns=set(drop_columns))
     rule_spans = rules.detector(regions=regions)(doc)
-    model_spans = {name: d(doc) for name, d in model_detectors.items()}
+    # the models run after the rules: they read the text with every rule hit replaced (user, 2026-10-12)
+    masked = pipeline.mask(doc, rule_spans)
+    model_spans = {name: masked.back(d(masked.doc)) for name, d in model_detectors.items()}
     decision = review.decide(doc, rule_spans, model_spans)
     redact = list(decision.redact)
     open_items = review.items(doc, decision, list(model_detectors))

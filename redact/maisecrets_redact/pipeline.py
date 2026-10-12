@@ -59,3 +59,55 @@ def render(doc: Document, spans: Iterable[Span], placeholder: Callable[[Span, st
         at = s.end
     out.append(doc.text[at:])
     return "".join(out)
+
+
+@dataclass(frozen=True)
+class Masked:
+    """The text the models read after the rules (user, 2026-10-12): each rule hit replaced by [TYPE]. segments maps
+    it back: (masked start, masked end, original start, is a placeholder)."""
+    doc: Document
+    segments: tuple[tuple[int, int, int, bool], ...] = ()
+    original: str = ""
+
+    def back(self, spans: Iterable[Span]) -> list[Span]:
+        """Model spans of the masked text in original offsets; the part of a span on a placeholder is dropped (the
+        rules hold that value), and what is left on either side is kept when it holds more than blanks and
+        punctuation."""
+        if not self.segments:
+            return list(spans)
+        out = []
+        for s in spans:
+            for ms, me, os_, placeholder in self.segments:
+                a, b = max(s.start, ms), min(s.end, me)
+                if a >= b or placeholder:
+                    continue
+                a, b = a - ms + os_, b - ms + os_
+                text = self.original[a:b]
+                lead = len(text) - len(text.lstrip(" \t,;:"))
+                trail = len(text) - len(text.rstrip(" \t,;:"))
+                if b - trail > a + lead:
+                    out.append(Span(a + lead, b - trail, s.type, s.source, s.score))
+        return out
+
+
+def mask(doc: Document, rule_spans: Iterable[Span]) -> Masked:
+    rules = sorted(rule_spans, key=lambda s: (s.start, -s.end))
+    if not rules:
+        return Masked(doc)
+    parts, segments, at, pos = [], [], 0, 0
+    for s in rules:
+        if s.start < at:
+            continue
+        if s.start > at:
+            parts.append(doc.text[at:s.start])
+            segments.append((pos, pos + s.start - at, at, False))
+            pos += s.start - at
+        ph = f"[{s.type}]"
+        parts.append(ph)
+        segments.append((pos, pos + len(ph), s.start, True))
+        pos += len(ph)
+        at = s.end
+    if at < len(doc.text):
+        parts.append(doc.text[at:])
+        segments.append((pos, pos + len(doc.text) - at, at, False))
+    return Masked(Document(doc.path, "".join(parts), doc.positions), tuple(segments), doc.text)

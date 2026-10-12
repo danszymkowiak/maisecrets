@@ -75,6 +75,28 @@ class RulesTests(unittest.TestCase):
         self.assertEqual(sorted(os.listdir(_home.HOME)), before)
 
 
+class ModelsAfterRulesTests(unittest.TestCase):
+    """The models run after the rules (user, 2026-10-12): they never read a value the rules found."""
+
+    def test_a_model_reads_the_text_with_rule_hits_replaced_and_its_spans_land_on_the_original(self):
+        from maisecrets_redact import app
+        seen = []
+
+        def model(doc):
+            seen.append(doc.text)
+            at = doc.text.index("Erika Muster")
+            return [pipeline.Span(at, at + 12, "NAME", "m")]
+        d = Path(tempfile.mkdtemp())
+        src = d / "a.txt"
+        src.write_text(f"deploy key {TOKEN} for Erika Muster, IBAN {IBAN}\n", encoding="utf-8")
+        result = app.run_file(src, d / "a.txt.redacted.txt", {"m": model}, ("ch",), interactive=False)
+        self.assertNotIn(TOKEN, seen[0])
+        self.assertNotIn(IBAN, seen[0])
+        self.assertIn("[SECRET]", seen[0])
+        out = (d / "a.txt.redacted.txt").read_text(encoding="utf-8")
+        self.assertEqual((result.status, "Erika" in out), ("written", False))
+
+
 class CommandTests(unittest.TestCase):
     def run_cli(self, *args):
         env = {**os.environ, "MAISECRETS_HOME": _home.HOME}
