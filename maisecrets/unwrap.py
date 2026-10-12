@@ -1,0 +1,64 @@
+"""Guarded line unwrap (TASK-11.25, AC 3): a secret a terminal or a narrow pane wrapped onto the next line is joined in
+a cleaned copy, with a map back to the original, so the redaction covers both lines.
+
+A plain next-line join failed on .env files (README): `API_KEY=…` and the next `DB_HOST=…` became one token. So a
+break is removed only when a shape rule (prefix-anchored, no label rule, type SECRET) finds a token across it that the
+line before the break does not already hold whole. Pure apart from the detector it asks; off until the bench has
+judged it (detect.NORMALISE, stage "unwrap")."""
+from __future__ import annotations
+
+import re
+from typing import Callable
+
+from .normalise import Normalised
+
+# a break between two token characters, the only place a wrapped token can continue
+_BREAK = re.compile(r"(?<=[A-Za-z0-9_+/=.-])\r?\n(?=[A-Za-z0-9_+/=-])")
+
+Hits = Callable[[str], list[tuple[int, int]]]
+
+
+def _shape_secrets(text: str) -> list[tuple[int, int]]:
+    from . import detect
+    return [(m.start, m.end) for m in detect.scan(text, enabled=detect._shape_rule_ids(), _shapes_only=True)
+            if m.type == "SECRET"]
+
+
+def _line(text: str, a: int, b: int) -> tuple[int, int]:
+    """The start of the line that ends at the break [a, b) and the end of the line that follows it."""
+    start = text.rfind("\n", 0, a) + 1
+    end = text.find("\n", b)
+    return start, len(text) if end < 0 else end
+
+
+def unwrap(text: str, shape_hits: Hits | None = None) -> Normalised:
+    if "\n" not in text:
+        return Normalised(text)
+    hits = shape_hits or _shape_secrets
+    joins: list[tuple[int, int]] = []
+    for m in _BREAK.finditer(text):
+        a, b = m.span()
+        ls, le = _line(text, a, b)
+        left = text[ls:a]
+        brk = len(left)
+        across = [h for h in hits(left + text[b:le]) if h[0] < brk < h[1]]
+        if not across:
+            continue
+        if any(s <= across[0][0] and e >= brk for s, e in hits(left)):
+            continue   # the line before already ends in a whole token: what follows is something else
+        joins.append((a, b))
+    if not joins:
+        return Normalised(text)
+    out: list[str] = []
+    starts: list[int] = []
+    ends: list[int] = []
+    pos = 0
+    for a, b in joins:
+        out.append(text[pos:a])
+        starts.extend(range(pos, a))
+        ends.extend(range(pos + 1, a + 1))
+        pos = b
+    out.append(text[pos:])
+    starts.extend(range(pos, len(text)))
+    ends.extend(range(pos + 1, len(text) + 1))
+    return Normalised("".join(out), starts, ends)
