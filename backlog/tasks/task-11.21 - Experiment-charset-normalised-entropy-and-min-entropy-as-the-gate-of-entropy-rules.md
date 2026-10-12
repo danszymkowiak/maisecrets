@@ -3,10 +3,10 @@ id: TASK-11.21
 title: >-
   Experiment: charset-normalised entropy and min-entropy as the gate of entropy
   rules
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-12 20:59'
 labels:
   - benchmark
 dependencies:
@@ -29,9 +29,9 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 curves.py reports area and today's point for raw, normalised and min-entropy per entropy rule of the new rule set
-- [ ] #2 The best variant per charset is a mutation judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens); the threshold is chosen on dev only
-- [ ] #3 Result recorded in docs/BENCHMARK.md or as a final summary, including a negative result
+- [x] #1 curves.py reports area and today's point for raw, normalised and min-entropy per entropy rule of the new rule set
+- [x] #2 The best variant per charset is a mutation judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens); the threshold is chosen on dev only
+- [x] #3 Result recorded in docs/BENCHMARK.md or as a final summary, including a negative result
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -39,3 +39,9 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12, tooling in 97b5373: maisecrets_bench/entropy.py (charset; raw, normalised, length_corrected, min entropy) and curves.py's 'Entropy variants' tables (area per variant and rule; per charset a threshold chosen on dev to keep today's dev share of true positives, read on check). curves.py has not been run with it yet; run it on the new rule set after TASK-19.7.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Variants measured (curves 20261012-194832): normalised has the best single-threshold area, but per charset it equals raw; raw per charset (dev-chosen) accepted: +112 secrets, -11 false positives. Length-corrected and min lose on check. docs/BENCHMARK.md, Entropy variants; plugin change TASK-41.
+<!-- SECTION:FINAL_SUMMARY:END -->

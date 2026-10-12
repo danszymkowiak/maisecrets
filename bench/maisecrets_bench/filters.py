@@ -96,7 +96,19 @@ def label_weak_entropy(value: str, text: str, start: int, end: int) -> bool:
     return cls != "negative" and not (cls == "weak" and entropy.raw(value) < 3.0)
 
 
+# TASK-11.21: raw entropy per charset, each threshold chosen on dev to keep today's dev share of true positives
+# (bench/curves.py, baseline 20261012-194832; normalised entropy picks the same cut, it is raw over a constant)
+ENTROPY_BY_CHARSET = {"hex": 3.449, "base32": 3.584, "base62": 3.322, "base64": 3.252, "base64url": 3.426,
+                      "printable": 3.594}
+
+
+def entropy_charset(value: str, text: str, start: int, end: int) -> bool:
+    from . import entropy
+    return entropy.raw(value) >= ENTROPY_BY_CHARSET[entropy.charset(value)]
+
+
 FILTERS: dict[str, Filter] = {
+    "bench:entropy_charset": entropy_charset,
     "bench:drop_all": lambda value, text, start, end: False,
     "bench:digest_label": digest_label,
     "bench:digest_prefix": digest_prefix,

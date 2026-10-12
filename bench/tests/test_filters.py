@@ -133,3 +133,19 @@ class WordlikeFilterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EntropyCharsetFilterTests(unittest.TestCase):
+    """TASK-11.21: one raw-entropy threshold per charset, chosen on dev (curves of 20261012-194832)."""
+
+    def test_a_value_keeps_when_its_entropy_reaches_its_charset_threshold(self):
+        keep = filters.FILTERS["bench:entropy_charset"]
+        self.assertTrue(keep("a1B2c3D4e5F6g7H8i9J0kLmN", "", 0, 0))      # base62, high entropy
+        self.assertFalse(keep("aaaaaaaabbbbbbbb", "", 0, 0))              # hex alphabet? no: base62, low entropy
+        self.assertFalse(keep("abab-abab-abab-abab!!", "", 0, 0))         # printable, below 3.594
+
+    def test_every_charset_has_a_threshold(self):
+        from maisecrets_bench import entropy
+        self.assertEqual(set(filters.ENTROPY_BY_CHARSET),
+                         {"hex", "base32", "base62", "base64", "base64url", "printable"})
+        self.assertTrue(all(entropy.charset(v) in filters.ENTROPY_BY_CHARSET for v in ("ab12", "AB==", "a_b-")))

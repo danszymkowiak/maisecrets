@@ -150,7 +150,10 @@ class LoadTests(unittest.TestCase):
         os.chmod(self.path, 0o600)
         with self.assertRaises(TermsError) as cm:
             terms.load(self.path)
-        self.assertNotIn("0x", str(cm.exception))
+        # the path is left out of the check: a temp directory named ...-0xk2svyy failed it (TASK-14, 2026-10-12)
+        detail = str(cm.exception).replace(str(self.path), "<path>")
+        self.assertNotIn("0x", detail)
+        self.assertNotIn("position", detail, "the decoder's detail names the byte's place and value")
 
     def test_parse_errors_pass_through_load(self):
         self.write("PERSON_A  Jan\nPERSON_A  Nowak\n")

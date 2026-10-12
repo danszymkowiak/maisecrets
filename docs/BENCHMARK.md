@@ -573,6 +573,20 @@ Nemotron 0.064, Mendeley and findocs 0).
 The verdicts below (strict, within tolerance) came first. They stay in the reports as a comparison
 column until TASK-21.10 has re-judged the mutations accepted under them.
 
+### Entropy variants (TASK-11.21, 2026-10-12)
+
+`bench/curves.py` on baseline 20261012-194832 sweeps raw, normalised (raw over the alphabet's bits), length-corrected
+and min-entropy for the one entropy rule left, generic-api-key. Area under precision over retained: raw 89.7 %,
+normalised 92.8 %, length-corrected 85.8 %, min 90.4 %. Normalised wins as one threshold for every value, but with
+one threshold per charset it makes exactly the cuts raw makes (it is raw divided by a constant per charset), so the
+candidate is raw entropy per charset, each threshold chosen on dev: hex 3.449, base32 3.584, base62 3.322, base64
+3.252, base64url 3.426, printable 3.594 (today one 3.5). Length-corrected and min-entropy lose on check (base64url
+24 to 31 false positives where raw keeps 4) and are not taken.
+
+Judged (`bench:entropy_charset`, run 20261012-225924): accepted, SECRET_GENERIC +112 finds and 11 false positives fewer
+(CredData -11, ai4privacy -1, Gretel +1). It gains finds and removes false positives at once, where a flat 3.3
+(TASK-21.9) gains 259 finds for 101 more false positives. Applying it waits for the user (TASK-41).
+
 ### Operating points (TASK-21.9, 2026-10-12)
 
 From the curves of baseline 20261012-194832 (`bench/curves.py`): one entropy rule is left (generic-api-key, 3.5)

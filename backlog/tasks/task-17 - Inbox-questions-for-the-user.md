@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 20:49'
+updated_date: '2026-10-12 20:59'
 labels:
   - inbox
 dependencies: []
@@ -40,6 +40,8 @@ TASK-34.8, your variant (all four, 2 of 4, privacy-filter's lone spans dropped, 
 Answered by the user 2026-10-12: redact's vote is all four models, 2 of 4, privacy-filter's lone spans not reviewed; implemented as the default (55bfff7). The TASK-34.8 vote questions above are settled.
 
 TASK-40 (operating points, TASK-21.9): credit-card without its context-word gate and generic-api-key's entropy bar from 3.5 to 3.3. Together on the bench: +325 card numbers, +259 generic secrets, +12 bank numbers, for 167 more false positives (+0.003 weighted per 1,000 tokens). Options: (a) both, (b) cards only, (c) neither. I recommend (a): the floors put recall first, and card numbers are critical.
+
+TASK-41 (TASK-11.21): generic-api-key's entropy bar per charset instead of one 3.5: +112 generic secrets AND 11 fewer false positives. It competes with TASK-40's flat 3.3 for that rule (more finds, +101 false positives). Options: (a) per charset (41) plus cards from 40, (b) 40 as proposed, (c) neither. I recommend (a); I would judge the combination before applying.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
