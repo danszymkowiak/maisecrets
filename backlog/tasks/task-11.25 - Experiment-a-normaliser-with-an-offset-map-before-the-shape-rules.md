@@ -1,10 +1,10 @@
 ---
 id: TASK-11.25
 title: 'Experiment: a normaliser with an offset map before the shape rules'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-12 14:35'
+updated_date: '2026-10-12 16:46'
 labels:
   - benchmark
 dependencies:
@@ -28,8 +28,8 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Recall per transform before and after, on the perturbation suite, for each normaliser stage
-- [ ] #2 Judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens): no floor broken, no gap worse, weighted FP/1k not higher; added hook time on 25 KB and 120 KB synthetic input reported
-- [ ] #3 The guarded-unwrap variant judged separately against .env-shaped neg spans
+- [x] #2 Judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens): no floor broken, no gap worse, weighted FP/1k not higher; added hook time on 25 KB and 120 KB synthetic input reported
+- [x] #3 The guarded-unwrap variant judged separately against .env-shaped neg spans
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -42,4 +42,12 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 Bench result (mutation run 20261012-150659 against baseline 20261012-141549, TASK-21.8 verdict): entity accepted and clean (CredData +4 true, SECRET_PREFIXED 1634 -> 1636, no false positive anywhere). escape 'accepted' only because CARD gains 1 find, but Gretel false hits 5583 -> 5643 (+60): a bad trade by the true/false ratio the user asked for (TASK-18.2); do not switch it on. all = entity + escape costs. ansi, cr, fullwidth, gutter, invisible: neutral (the datasets hold none of those disguises); their value is for the perturbation suite to show. Next: perturb.py --mutation per stage (recall per transform), hook time on 25 KB and 120 KB, then propose switching on entity (and the neutral stages if perturbation shows gains and the time is small); escape stays off.
 
 2026-10-12, run 4: AC 1 done (docs/BENCHMARK.md, Normaliser stages): each stage restores its transform to 88-89 % (87.8 % untouched), none changes another transform. Time (bench/normtime.py, idle): plain +0/+2 ms; a changed 25 KB text +19 ms, 120 KB +95 ms (the second full pass). unwrap wired as the last stage (07acd99); a whole value found in the copy now replaces the part the raw text found. Queued: mutate.py current-code (TASK-35 alone), normalise-unwrap, normalise-proposed (ansi cr invisible gutter entity fullwidth) against 20261012-141549, then perturb.py --mutation normalise-unwrap. Then: AC 2/3 verdicts, and the switch is an inbox question.
+
+unwrap judged (AC 3): perturbation wrap recall 30.6 % -> 32.1 % (+141, perturb 20261012-174412, nothing else moves); .env lines stay apart (tests); but +107 ms on 25 KB and +517 ms on 120 KB of plain prose (busy machine). Stays off; cheaper guard filed as TASK-37. Dataset verdict in the queued clean run (mutate-r6).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Measured and judged: maisecrets/normalise.py stages and the guarded unwrap (maisecrets/unwrap.py, the last stage). Proposed set (ansi, cr, invisible, gutter, entity, fullwidth) accepted on clean gold, each restores its perturbation to ~88 % recall, +19 ms/+95 ms on 25/120 KB when the text changes (bench/normtime.py); escape and unwrap stay off (TASK-37 for a cheaper unwrap). docs/BENCHMARK.md, Normaliser stages. Switching on is an inbox question (TASK-17).
+<!-- SECTION:FINAL_SUMMARY:END -->

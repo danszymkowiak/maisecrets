@@ -4,7 +4,7 @@ title: 'Bench: Kaggle PII Data Detection as a real-text check'
 status: To Do
 assignee: []
 created_date: '2026-10-11 21:40'
-updated_date: '2026-10-12 09:27'
+updated_date: '2026-10-12 16:46'
 labels:
   - benchmark
   - dataset
@@ -31,4 +31,8 @@ The Learning Agency Lab's Kaggle competition data: student essays, labelled by p
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12: blocked on the user's Kaggle account and acceptance of the competition terms (inbox TASK-17). No work started.
+
+2026-10-12: token present (.env, read only by the setup at run time); competition listed; download 403 until the rules are accepted (inbox). Building the opt-in adapter against the published format (train.json: document, full_text, tokens, trailing_whitespace, BIO labels) with a synthetic fixture.
+
+Adapter built and committed (df89b9f): bench/maisecrets_bench/adapters/kagglepii.py, labels/kagglepii.toml, setup.py --with-kaggle-pii, guard and local-only in run.py, terms in bench/README.md; tests with made-up records. The real run waits on the inbox: accept the competition rules with your Kaggle account, and paste the data licence. Then: uv run --project bench python bench/setup.py --only kagglepii, and the usefulness check (AC 2).
 <!-- SECTION:NOTES:END -->

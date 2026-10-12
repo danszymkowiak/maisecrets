@@ -465,6 +465,16 @@ changes the text the second pass scans it again in full, 25 KB +19 ms (19 to 38 
 (95 to 190 ms), with a gutter or ANSI colour on every line. Scanning only the changed lines would cut
 that.
 
+**Guarded unwrap** (`maisecrets/unwrap.py`, the last stage): a line break inside a token is removed only
+when a SECRET shape rule finds a token across it that the line before does not hold whole, so `.env`
+lines stay apart. Neutral on the datasets; on the perturbation suite the line wrap rises from 30.6 % to
+32.1 % (perturb 20261012-174412). It asks the rules at every break between word characters: +107 ms on
+25 KB and +517 ms on 120 KB of plain prose. It stays off; TASK-37 is a cheaper guard.
+
+On clean gold (mutation runs of 2026-10-12 against 20261012-141549) the set of ansi, cr, invisible,
+gutter, entity and fullwidth is accepted and narrows the SECRET_PREFIXED gap. Whether to switch it on
+is the user's call (TASK-17).
+
 ## Is a dataset worth keeping
 
 A dataset earns its weight only if it can tell a good rule change from a bad one. After the first

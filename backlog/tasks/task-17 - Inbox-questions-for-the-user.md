@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 10:06'
+updated_date: '2026-10-12 17:42'
 labels:
   - inbox
 dependencies: []
@@ -17,6 +17,20 @@ ordinal: 44000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 Questions from the unattended run. Answer in a comment here, then mark this task Done; every task waiting on it becomes ready again.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TASK-34.8 (redact, not the plugin): which vote should redact use without asking? Measured on 600 bench documents with the new defaults (urchade, knowledgator, fastino): all three must agree (today, TASK-34.5): names 67 %, addresses 62 %, birth dates 81 %, 4.1 false redactions per 1,000 words, the rest goes to review. Two of three: names 82 %, addresses 82 %, birth dates 100 %, 8.4 per 1,000 words, and fewer review prompts. Options: (a) two of three, (b) keep all three. I recommend (a): redact runs before data goes to Claude, so a missed name is the costly error and an extra redaction is cheap; the review still catches what only one model sees. (Numbers before the findocs relabel of TASK-36, which lowers the false redactions of both.)
+
+TASK-34.8 vote, corrected numbers after the findocs relabel (TASK-36), defaults urchade+knowledgator+fastino: all three agree: names 64 %, addresses 53 %, birth dates 73 %, 2.0 false redactions per 1,000 words. Two of three: names 83 %, addresses 85 %, birth dates 100 %, 4.4 per 1,000 words, and fewer review prompts (6.3 vs 8.7 per 1,000 words would be false if all answered yes). Recommendation unchanged: (a) two of three.
+
+TASK-11.36 (Kaggle): the token in .env works (the competition and its files are listed; .env is now git-ignored, 8825cbf). The download is refused (403) until your account accepts the competition rules: open kaggle.com/competitions/pii-detection-removal-from-educational-data, Join Competition / I Understand and Accept. Please also paste the data licence line from its Data tab (the page needs a browser; I could not read it). Then the adapter (built meanwhile, opt-in) runs. Options: (a) accept and paste the licence, (b) drop the dataset. I recommend (a): it is the only real, human-written, human-labelled text in the bench.
+
+TASK-11.25 (plugin normaliser): switch on ansi, cr, invisible, gutter, entity, fullwidth? Bench (clean gold, mutate-r6): accepted, narrows the SECRET_PREFIXED gap, no false positive added. Perturbation: each restores its disguise from 9-35 % to about 88 % recall. Cost: nothing on plain text; when a stage changes the text the second pass scans it again: +19 ms on 25 KB, +95 ms on 120 KB. escape stays off (+60 Gretel false alarms); unwrap stays off (too slow, TASK-37). Options: (a) switch on all six, (b) entity only (the only one the datasets themselves reward), (c) none. I recommend (a): the disguises they undo (ANSI colour, zero-width characters, CR progress lines, cat -n/grep gutters) are exactly what tool output carries, and 95 ms at 120 KB happens only when one is present.
+
+TASK-34.8 vote, superseding my two notes above (new defaults knowledgator + fastino + privacy-filter, models run after the rules, run 20261012-191234). Gain of the model step over rules alone (names 0 %, addresses 0 %, birth dates 0 %, phones 79 %, accounts 89 %, 0.3 false/1k words): (a) 2 of 3 agree: 83 %, 89 %, 97 %, 100 %, 98 %; 6.0 false/1k words; 25 review prompts/1k words. (b) all 3 agree (today): 60 %, 71 %, 70 %, 95 %, 92 %; 2.5 false/1k; 36 prompts/1k. (c) all four models, 2 of 4: 88 %, 90 %, 100 %, 100 %, 98 %; 7.2 false/1k; 25 prompts/1k. I recommend (a): a missed name is the costly error before data reaches Claude, and (a) also asks fewer review questions than (b). (c) adds 5 points on names for 1.2 more false redactions per 1,000 words, if you prefer recall further. Either way about 25 review prompts per 1,000 words is a lot; most are privacy-filter's lone spans.
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

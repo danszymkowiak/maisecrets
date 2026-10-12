@@ -1,10 +1,10 @@
 ---
 id: TASK-11.31
 title: 'Plugin: drop the uk-postcode rule (or require its context)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:44'
-updated_date: '2026-10-12 10:04'
+updated_date: '2026-10-12 16:13'
 labels:
   - plugin
   - benchmark
@@ -25,8 +25,8 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 uk-postcode removed, or gated so that it no longer fires without a postcode word
-- [ ] #2 A can-fail belief or corpus case covers it; unit tests, replay_can_fail and the bench rerun pass
+- [x] #1 uk-postcode removed, or gated so that it no longer fires without a postcode word
+- [x] #2 A can-fail belief or corpus case covers it; unit tests, replay_can_fail and the bench rerun pass
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -34,3 +34,9 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12: approved by the user (inbox TASK-17 #1). Re-judge on the clean gold (TASK-30/31) under the floor verdict (TASK-21.8) before it lands.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+uk-postcode is in PRESIDIO_SKIP (8842bb8): on clean gold the drop is accepted (mutation run 20261012-173742: Gretel false hits 5,583 -> 5,320, no find lost anywhere). Test: tests/test_detect_rules.py test_a_uk_postcode_alone_is_no_hit.
+<!-- SECTION:FINAL_SUMMARY:END -->

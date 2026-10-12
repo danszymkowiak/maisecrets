@@ -3,10 +3,10 @@ id: TASK-11.30
 title: >-
   Plugin: keyword rules skip an UPPER-UPPER-..._ identifier value and a
   digits:word value
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:44'
-updated_date: '2026-10-12 10:04'
+updated_date: '2026-10-12 16:25'
 labels:
   - plugin
   - benchmark
@@ -27,8 +27,8 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ds-keyword-* and generic-api-key skip the two shapes; NO_HIT corpus cases
-- [ ] #2 A can-fail belief or corpus case covers it; unit tests, replay_can_fail and the bench rerun pass
+- [x] #1 ds-keyword-* and generic-api-key skip the two shapes; NO_HIT corpus cases
+- [x] #2 A can-fail belief or corpus case covers it; unit tests, replay_can_fail and the bench rerun pass
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -36,3 +36,9 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12: approved by the user (inbox TASK-17 #1). Re-judge on the clean gold (TASK-30/31) under the floor verdict (TASK-21.8) before it lands.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fixes upper-dash-identifier (ds-keyword-colon, ds-keyword-equal-signs, generic-api-key via overrides.txt) and time-or-ratio (ds-keyword-colon), f2c9ee2. Re-judged on clean gold first: both accepted (mutate-r6 against 20261012-141549). Unit tests, NO_HIT corpus cases (red without the fix), replay_can_fail 108/108.
+<!-- SECTION:FINAL_SUMMARY:END -->

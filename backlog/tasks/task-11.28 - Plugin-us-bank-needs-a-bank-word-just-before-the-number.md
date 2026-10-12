@@ -1,10 +1,10 @@
 ---
 id: TASK-11.28
 title: 'Plugin: us-bank needs a bank word just before the number'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:44'
-updated_date: '2026-10-12 10:04'
+updated_date: '2026-10-12 15:58'
 labels:
   - plugin
   - benchmark
@@ -33,4 +33,12 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-12: approved by the user (inbox TASK-17 #1). Re-judge on the clean gold (TASK-30/31) under the floor verdict (TASK-21.8) before it lands.
+
+2026-10-12, re-judged on clean gold (mutation run 20261012-173742 against 20261012-141549, floor verdict): REJECTED on its own merits. US_BANK_NUMBER finds 8,719 -> 6,372 of 12,560 (Nemotron), and the ABA, CARD, PHONE, IBAN, US_SSN gaps get worse (fewer finds on findocs, Gretel, Mendeley, Nemotron); weighted FP/1k -0.085. The round-2 approval rested on the blended score; on the floors it loses too much. Not applied.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Not applied: on the clean gold and the floor verdict the near-context us-bank rule loses 2,347 US bank numbers and widens five gaps (mutation run 20261012-173742).
+<!-- SECTION:FINAL_SUMMARY:END -->
