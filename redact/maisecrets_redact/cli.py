@@ -1,11 +1,13 @@
-"""The redact command: the only place that reads and writes files (docs/REDACT.md)."""
+"""The redact command: parses arguments, builds the detectors and asks at a terminal (docs/REDACT.md). The work is in
+app.run_file. Nothing it prints holds a value: summaries are counts, a review shows the position and the masked
+context, because the command may run where its output reaches a language model."""
 from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, extract, pipeline
+from . import __version__, extract, review
 
 
 def parser() -> argparse.ArgumentParser:
@@ -19,16 +21,41 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--drop-column", metavar="HEADER", action="append", default=[],
                     help="leave a CSV or Excel column out by its header (repeatable)")
     ap.add_argument("--rules-only", action="store_true", help="the plugin's rules alone, no local models")
+    ap.add_argument("--models", metavar="LIST", help="model ids, comma-separated (default: the permissive defaults)")
+    ap.add_argument("--accept-model-terms", metavar="MODEL", action="append", default=[],
+                    help="use a model with restrictive terms after reading them (repeatable)")
+    ap.add_argument("--no-review", "--accept-all", dest="no_review", action="store_true",
+                    help="redact every span the models disagree on instead of asking")
     ap.add_argument("--version", action="version", version=f"redact {__version__}")
     return ap
 
 
+def _ask(item: review.Item) -> str:
+    print(f"\n{item.where or 'text'}: {item.span.type}? found by {', '.join(item.agreed)}, "
+          f"not by {', '.join(item.missing) or '-'}\n  {item.context}", file=sys.stderr)
+    while True:
+        answer = input("  redact it? [y]es / [n]o: ").strip().lower()
+        if answer in ("y", "yes"):
+            return "redact"
+        if answer in ("n", "no"):
+            return "keep"
+
+
+def _model_detectors(args) -> dict:
+    if args.rules_only:
+        return {}
+    from . import models
+    reason = models.unavailable_reason()
+    if reason:
+        print(f"redact: {reason}", file=sys.stderr)
+        return {}
+    ids = [m.strip() for m in args.models.split(",") if m.strip()] if args.models else list(models.DEFAULTS)
+    return dict(zip(ids, models.load(ids, tuple(args.accept_model_terms))))
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    from . import rules  # noqa: F401  registers the deterministic pass
-    if not pipeline.available_detectors():
-        print("redact: no detector is available, so nothing is written", file=sys.stderr)
-        return 2
+    from . import app
     src = Path(args.path)
     if not src.is_file():
         print(f"redact: {src}: not a file (directories come with TASK-34.6)", file=sys.stderr)
@@ -39,25 +66,19 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     regions = tuple(r.strip().lower() for r in args.regions.split(",") if r.strip()) if args.regions else None
     try:
-        doc = extract.extract(src, drop_columns=set(args.drop_column))
-    except (extract.Unsupported, extract.NoText) as exc:
-        print(f"redact: {exc}", file=sys.stderr)
-        return 1
-    try:
-        find = rules.detector(regions=regions)
+        detectors = _model_detectors(args)
+        result = app.run_file(src, target, detectors, regions, interactive=sys.stdin.isatty(), ask=_ask,
+                              no_review=args.no_review, drop_columns=frozenset(args.drop_column))
     except RuntimeError as exc:      # no maisecrets checkout to take the rules from
         print(f"redact: {exc}; nothing is written", file=sys.stderr)
         return 2
-    if not args.rules_only:
-        from . import models
-        reason = models.unavailable_reason()
-        if reason:
-            print(f"redact: {reason}", file=sys.stderr)
-    names = rules.Placeholders()
-    spans = pipeline.detect(doc, [find])
-    text = pipeline.render(doc, spans, names.placeholder)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(text, encoding="utf-8")
-    found = ", ".join(f"{t} {n}" for t, n in sorted(names.counts().items())) or "nothing found"
+    except (extract.Unsupported, extract.NoText, review.StaleReview, KeyError, ValueError) as exc:
+        print(f"redact: {exc}", file=sys.stderr)
+        return 1
+    if result.status == "review":
+        print(f"redact: {result.open_items} span(s) need a decision: set each to \"redact\" or \"keep\" in "
+              f"{target.name}.review.json and run again (or --no-review); nothing is written yet", file=sys.stderr)
+        return 3
+    found = ", ".join(f"{t} {n}" for t, n in sorted(result.counts.items())) or "nothing found"
     print(f"redact: {src.name} -> {target} ({found})", file=sys.stderr)
     return 0

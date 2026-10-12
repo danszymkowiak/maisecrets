@@ -46,6 +46,16 @@ same placeholder across a run. Without `--regions` the country rules of the pers
 config apply (it is only read), and the plugin's personal terms file applies too. An existing output
 is never overwritten, and the input is never changed. The summary names counts per type, never a value.
 
+## Review
+
+With the model extra installed, a span the models disagree on goes to you. At a terminal `redact`
+asks for each (redact or keep), showing its position, its type, which models found it and the
+surrounding words, with every value masked. Without a terminal it writes
+`<output>.review.json` with the same items and `"decision": null`; set each to `"redact"` or
+`"keep"` and run again. Nothing is written while a decision is open (exit code 3), unless
+`--no-review` redacts every disputed span. A review file belongs to one version of the document:
+if the document changes, it is refused as stale.
+
 ## Install
 
 ```bash
