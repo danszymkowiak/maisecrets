@@ -99,6 +99,11 @@ class DatasetTests(unittest.TestCase):
                     a, g, n = s.text[sp.start:sp.end].split("-")
                     self.assertTrue(a not in ("000", "666") and a[0] != "9" and g != "00" and n != "0000")
 
+    def test_enough_ahv_numbers_for_the_critical_floor(self):
+        # TASK-28: 0.999 needs about 3,000 positives with no miss to show it (one-sided Wilson bound)
+        rows = list(findocs.samples(load("findocs")))
+        self.assertGreaterEqual(sum(sp.label == "AHV" for s in rows for sp in s.spans), 3000)
+
     def test_the_version_names_seed_and_size(self):
         self.assertIn(f"seed{findocs.SEED}-n{findocs.PER_TEMPLATE}-", findocs.version())
 

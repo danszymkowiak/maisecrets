@@ -118,5 +118,41 @@ class RunTests(unittest.TestCase):
         self.assertIn("Overall score", (self.out / "report.md").read_text(encoding="utf-8"))
 
 
+class LocaleGroupTests(unittest.TestCase):
+    """TASK-28: a sample tagged with a locale whose country has rules of its own (locale:de_CH) runs in a group with
+    that region; every other sample keeps its language's group."""
+
+    AHV = "756.9217.0769.85"        # the ZAS example
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        d = Path(cls.tmp.name)
+        swiss = f"AHV-Nr. {cls.AHV} des Arbeitnehmers"
+        a = swiss.index(cls.AHV)
+        samples = [Sample("toy", "ch", "g1", "de", swiss, [Span(a, a + len(cls.AHV), "AHV", "CH_AHV", "pos")], "dev",
+                          ["locale:de_CH"]),
+                   Sample("toy", "de", "g2", "de", swiss, [Span(a, a + len(cls.AHV), "AHV", "CH_AHV", "pos")], "dev"),
+                   Sample("toy", "fr", "g3", "fr", "rien", [], "dev", ["locale:fr_FR"])]
+        schema.write(samples, d / "toy.parquet")
+        (d / "manifest.json").write_text(json.dumps({"datasets": {"toy": {"version": "t1"}}}))
+        cls.summary = run.run(d, ["toy"], d / "out", jobs=1)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_the_swiss_locale_runs_with_region_ch_and_the_others_keep_their_group(self):
+        groups = self.summary["groups"]
+        self.assertIn("ch", groups["de:de_CH"]["regions"])
+        self.assertNotIn("ch", groups["de"]["regions"])
+        self.assertIn("fr", groups, "a locale without rules of its own stays in its language's group")
+        self.assertNotIn("fr:fr_FR", groups)
+
+    def test_the_ahv_number_is_found_only_in_the_swiss_document(self):
+        t = self.summary["datasets"]["toy"]["all"]["by_type"]["CH_AHV"]
+        self.assertEqual((t["tp"], t["fn"]), (1, 1))
+
+
 if __name__ == "__main__":
     unittest.main()

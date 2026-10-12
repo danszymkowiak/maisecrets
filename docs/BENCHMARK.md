@@ -160,8 +160,8 @@ values are weakly diverse (the same few names and domains), so its type-level re
   600/600, no new false alarm on CredData, Gretel, Mendeley, Nemotron or the synthetic output, 13 more
   on ai4privacy (of about 250,000 records), weighted false positives +0.000. So the dotted AHV form
   stands without a context word; the bare 13 digits keep one. 900 AHV positives are too few to prove
-  the 0.999 floor (about 3,000 needed), and a plain run groups the Swiss documents by language (`de`,
-  `fr`), not region `ch`: both are TASK-28.
+  the 0.999 floor (about 3,000 needed), and a plain run grouped the Swiss documents by language (`de`,
+  `fr`), not region `ch`: both closed by TASK-28 (below, Regions).
 
 **Usefulness (run 20261012-011327, before the Mendeley e-mail fix).** Each new dataset is in scope,
 not saturated and moved by probes (Nemotron 22 of 30, findocs 8, Mendeley 5): keep, all three scored.
@@ -176,7 +176,12 @@ equal-weight mean of the scored datasets is 79.8%.
 The PII rules depend on the configured regions (`maisecrets/regions.py`). Each sample runs with
 `generic` plus the regions of its language (German text: `de`; Italian: `it`; …), so a country's
 rules never run on another country's text. Samples are grouped by language and each group runs
-with its own config.
+with its own config. A sample whose locale tag names a country with rules of its own runs in a group
+of that locale (`run.LOCALES`, TASK-28): findocs' `de_CH` and `fr_CH` documents run as `de:de_CH`
+and `fr:fr_CH` with region `ch`; every other group is unchanged. findocs writes its three templates
+with an AHV number four times as often (3,600 AHV, 2,400 UID), enough for the critical floor.
+Baseline run 20261012-112723 (against 20261012-110134): CH_AHV 3,600/3,600, Wilson lower bound
+0.99925, clears; CH_UID 2,400/2,400 clears; no false positive moved on any dataset.
 
 ## Metrics
 

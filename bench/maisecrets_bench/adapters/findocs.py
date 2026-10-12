@@ -279,11 +279,15 @@ TEMPLATES: dict[str, tuple[Callable[[FinGen], Doc], str, str]] = {
     "invoice_en": (t_invoice_en, "en", "en_US"), "qr_bill_fr": (t_qr_bill_fr, "fr", "fr_CH"),
 }
 
+# the templates with an AHV number run four times as often: the critical floor (0.999) needs about 3,000 AHV
+# positives with no miss to be shown (TASK-28)
+REPEAT = {"lohnausweis_de": 4, "certificat_fr": 4, "steuererklaerung_de": 4}
+
 
 def samples(table: LabelTable, per_template: int = PER_TEMPLATE, seed: int = SEED) -> Iterator[Sample]:
     g = FinGen(random.Random(seed))
     for name, (template, language, locale) in TEMPLATES.items():
-        for i in range(per_template):
+        for i in range(per_template * REPEAT.get(name, 1)):
             d = template(g)
             sid = f"{name}:{i}"
             spans = [Span(a, b, label, table.type_of(label), gold) for a, b, label, gold in d.spans]

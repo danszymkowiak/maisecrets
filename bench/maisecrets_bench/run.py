@@ -23,6 +23,9 @@ LANGUAGES = {
     "en": (["us", "uk"], "en_US"), "de": (["de"], "de_DE"), "es": (["es"], "es_ES"), "it": (["it"], "it_IT"),
     "fr": ([], "fr_FR"), "nl": ([], "nl_NL"), "sv": (["se"], "sv_SE"), "und": ([], "en_US"),
 }
+# a locale whose country has rules of its own runs in a group of its own (TASK-28): findocs' Swiss documents run with
+# region ch, every other sample keeps its language's group
+LOCALES = {"de_CH": (["ch"], "de_CH"), "fr_CH": (["ch"], "fr_CH"), "it_CH": (["ch"], "it_CH")}
 SKIP_TYPES = {"HIDDEN"}     # removal of invisible characters: no detection to score
 # where text no span labels is negative; CredData labels candidate lines only (docs/BENCHMARK.md, CredData)
 UNLABELLED_NEGATIVE = {"creddata": False}
@@ -100,15 +103,27 @@ def _describe() -> dict:
             "rules": sorted({r.id for r in (_RULESET or _detect.default_ruleset()).rules})}
 
 
+def group_of(s: Sample) -> str:
+    """The sample's group: its language, or language:locale for a locale in LOCALES (de:de_CH)."""
+    loc = next((t.split(":", 1)[1] for t in s.tags if t.startswith("locale:")), None)
+    return f"{s.language}:{loc}" if loc in LOCALES else s.language
+
+
+def _group_config(group: str) -> tuple[list[str], str]:
+    """(regions, locale) a group runs with."""
+    lang, _, loc = group.partition(":")
+    return LOCALES[loc] if loc else LANGUAGES[lang]
+
+
 def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50, mutation=None) -> tuple[dict, dict]:
-    """((dataset, sample_id) -> detections, language -> what it ran with)."""
+    """((dataset, sample_id) -> detections, group -> what it ran with)."""
     by_lang: dict[str, list[Sample]] = {}
     for s in samples:
-        by_lang.setdefault(s.language, []).append(s)
+        by_lang.setdefault(group_of(s), []).append(s)
     det: dict[tuple[str, str], list[score.Detection]] = {}
     groups = {}
     for lang, group in sorted(by_lang.items()):
-        regions, locale = LANGUAGES[lang]
+        regions, locale = _group_config(lang)
         groups[lang] = {**_active(regions, locale, mutation), "samples": len(group)}
         group.sort(key=lambda s: -len(s.text))      # the long files first: no straggler at the end
         chunks = [group[i:i + chunk] for i in range(0, len(group), chunk)]
