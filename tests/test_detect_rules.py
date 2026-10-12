@@ -710,14 +710,16 @@ class LabelValueTests(unittest.TestCase):
     def test_an_english_word_that_starts_with_pass_is_no_label(self):
         # TASK-35: "Combine the pass§es:" and a word was a hit (found by the pre-commit scan on a task text)
         for text in ("Combine the pass§es: tokenise", "Tests pass§ed: abababab12", "The pass§ing: abababab12",
-                     "Pass§engers: abababab12", "Pass§age: abababab12", "pass§ive: abababab12"):
+                     "Pass§engers: abababab12", "pass§ive: abababab12"):
             with self.subTest(text=text):
                 self.assertEqual(kinds(text), [])
 
     def test_the_credential_words_that_start_with_pass_stay_labels(self):
         for text in ("pass§: abababab12", "Pass§: abababab12", "db_pass§: abababab12", "pass§wd: abababab12",
                      "pass§phrase: abababab12", "pass§code: abababab12", "pass§key: abababab12",
-                     "pass§word: abababab12", "pass§ord: abababab12", "pass§e: abababab12"):
+                     "pass§word: abababab12", "pass§ord: abababab12", "pass§e: abababab12",
+                     # French for passkey, in ai4privacy (the bench lost 7 passwords when passage was excluded)
+                     "Clé de pass§age: abababab12"):
             with self.subTest(text=text):
                 self.assertEqual([v for _, v in kinds(text)], ["abababab12"])
 
