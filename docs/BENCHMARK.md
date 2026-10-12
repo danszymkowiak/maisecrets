@@ -168,7 +168,7 @@ not saturated and moved by probes (Nemotron 22 of 30, findocs 8, Mendeley 5): ke
 The highest overlaps are Gretel / Nemotron (61.5% of probes move both the same way) and findocs /
 Mendeley (62.5%), below the 95% that would make one redundant. The synthetic tool output stays a guard
 although saturated (99.2%). findocs is scored by the user's decision of 2026-10-11, with the caveat
-that it is tuned to our own generator; its weight in the objective is set in TASK-21.1. The overall
+that it is tuned to our own generator; it weighs 2.0 in the objective (user, 2026-10-12). The overall
 equal-weight mean of the scored datasets is 79.8%.
 
 ### Regions
@@ -412,8 +412,8 @@ type stays visible.
   and a change that narrows it counts in its favour. A *too few* or *default* type must not get worse
   either (no regression: no find lost).
 - **The objective.** False positives per 1,000 whitespace tokens, per dataset, combined as a weighted
-  mean. Gretel and findocs weigh 2.0, every other scored dataset 1.0 (proposal of TASK-21.1; the
-  user confirms the number). findocs is scored, not a guard (user, 2026-10-11), with the caveat that
+  mean. Gretel and findocs weigh 2.0, every other scored dataset 1.0 (proposed in TASK-21.1,
+  confirmed by the user on 2026-10-12, together with the split of SECRET into prefixed and generic). findocs is scored, not a guard (user, 2026-10-11), with the caveat that
   it is tuned to our own generator. A guard dataset weighs nothing but must not get worse.
 - **What counts as a false positive.** A detection on no in-scope positive, in text the dataset labels
   as negative. A detection on an out-of-scope positive (a name), on uncertain gold, or of a type a

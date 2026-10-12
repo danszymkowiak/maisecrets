@@ -1,10 +1,10 @@
 ---
 id: TASK-21.1
 title: 'Design note: recall floors, tiers and false positives per 1,000 tokens'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:47'
-updated_date: '2026-10-12 10:04'
+updated_date: '2026-10-12 10:22'
 labels:
   - benchmark
   - design
@@ -35,7 +35,7 @@ Rewrite "Metrics" and "Judging a change" in docs/BENCHMARK.md for the epic's rul
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 docs/BENCHMARK.md states the floors, tiers, the below-floor rule, the sample-size rule, the weighted objective and the new verdict, with the user decisions dated
-- [ ] #2 The weight for Gretel and the tax templates is confirmed by the user and recorded
+- [x] #2 The weight for Gretel and the tax templates is confirmed by the user and recorded
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -45,3 +45,9 @@ Rewrite "Metrics" and "Judging a change" in docs/BENCHMARK.md for the epic's rul
 
 2026-10-12: user confirmed the weights (Gretel, findocs 2.0) and the SECRET split as written (inbox TASK-17 #6).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+docs/BENCHMARK.md states floors, tiers, the below-floor rule, the sample-size rule (Wilson lower bound), the weighted objective and the verdict, with dated user decisions (AC #1, earlier). The weights (Gretel and findocs 2.0, every other scored dataset 1.0) and the SECRET split were confirmed by the user on 2026-10-12 (inbox TASK-17 #6) and are recorded there.
+<!-- SECTION:FINAL_SUMMARY:END -->
