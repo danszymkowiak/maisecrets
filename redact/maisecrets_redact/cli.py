@@ -18,6 +18,7 @@ def parser() -> argparse.ArgumentParser:
                     help="country rules, comma-separated (for example ch,de); default: your maisecrets config")
     ap.add_argument("--drop-column", metavar="HEADER", action="append", default=[],
                     help="leave a CSV or Excel column out by its header (repeatable)")
+    ap.add_argument("--rules-only", action="store_true", help="the plugin's rules alone, no local models")
     ap.add_argument("--version", action="version", version=f"redact {__version__}")
     return ap
 
@@ -47,6 +48,11 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:      # no maisecrets checkout to take the rules from
         print(f"redact: {exc}; nothing is written", file=sys.stderr)
         return 2
+    if not args.rules_only:
+        from . import models
+        reason = models.unavailable_reason()
+        if reason:
+            print(f"redact: {reason}", file=sys.stderr)
     names = rules.Placeholders()
     spans = pipeline.detect(doc, [find])
     text = pipeline.render(doc, spans, names.placeholder)

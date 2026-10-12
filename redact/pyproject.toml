@@ -8,6 +8,22 @@ dependencies = [
     "pypdf>=5",
 ]
 
+[project.optional-dependencies]
+# local PII models (TASK-34.4): uv sync --project redact --extra models. torch comes from its CPU index: no GPU stack
+models = [
+    "torch>=2.3",
+    "transformers>=4.44",
+    "gliner>=0.2.13",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [project.scripts]
 redact = "maisecrets_redact.cli:main"
 

@@ -93,6 +93,9 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(src.read_text(encoding="utf-8"), f"deploy key {TOKEN}\nIBAN {IBAN}\n",
                          "the input is unchanged")
         self.assertNotIn(TOKEN, r.stdout + r.stderr, "the summary names counts, never a value")
+        from maisecrets_redact import models
+        if models.unavailable_reason():
+            self.assertEqual(r.stderr.count("only the rules run"), 1, "without the model extra it says so once")
         r = self.run_cli(str(src))
         self.assertNotEqual(r.returncode, 0, "an existing output is not overwritten")
         self.assertIn("exists", r.stderr)
