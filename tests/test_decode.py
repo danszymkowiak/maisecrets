@@ -107,7 +107,9 @@ class ScanTests(unittest.TestCase):
     def test_a_token_encoded_in_a_config_value_is_found(self):
         enc = b64(GHP)
         text = "settings:\n  blob: " + enc + "\n"
-        covers = lambda hits: any(m.start <= text.index(enc) and text.index(enc) + len(enc) <= m.end for m in hits)
+
+        def covers(hits):
+            return any(m.start <= text.index(enc) and text.index(enc) + len(enc) <= m.end for m in hits)
         self.assertFalse(covers(detect.scan(text)), "the rules alone miss it")
         self.assertTrue(covers(detect.scan(text, ruleset=self.rs)))
 
