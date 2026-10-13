@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-13 08:48'
+updated_date: '2026-10-13 09:09'
 labels:
   - inbox
 dependencies: []
@@ -130,5 +130,10 @@ TASK-11.22/11.23: two filters for the generic keyword rules passed the floor ver
 created: 2026-10-13 08:48
 ---
 Normaliser stages, adding to the TASK-11.25 question above: two more stages are ready. decode (TASK-11.26: base64/hex runs that decode to text are scanned, a hit redacts the whole run): accepted on the datasets (+16 finds, +2 false positives), base64 recall under perturbation 47.7 % -> 63.8 %, hex 14.0 % -> 38.4 %; worst case 25 ms per text on CredData, p99 under 3 ms. unwrap with the cheaper guard (TASK-37): +4 ms on 120 KB of prose (was +517 ms), line-wrap recall 30.6 % -> 32.1 %, neutral on the datasets. Options: (a) switch on the six of TASK-11.25 plus decode and unwrap, (b) the six only, (c) none. I recommend (a): both new stages are bounded and only cost time where they find something to undo; TASK-43 (why Mendeley gains little from decode) can follow.
+---
+
+created: 2026-10-13 09:09
+---
+TASK-11.27 (repeat count): skipping a generic keyword-rule value that occurs 10+ times in one text passes the bench on dev and check (about 350 CredData false positives fewer, no find lost; at 3 repeats it lost 154 real passwords in Nemotron). But a debug log that prints the same password= line on every request is exactly such a text, and the filter would let that value through. Options: (a) port repeat10 into the plugin, (b) keep it in the bench only. I recommend (b): the cost of a missed secret in a log outweighs 350 false alarms, and the floor rule exists to keep that trade explicit.
 ---
 <!-- COMMENTS:END -->

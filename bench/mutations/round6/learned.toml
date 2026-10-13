@@ -1,0 +1,32 @@
+name = "Generic rules: skip what the learned model scores below its threshold"
+why = "TASK-11.27 (b). Logistic regression over 28 features, trained on dev of 20261012-194832 (bench/learn.py); the threshold keeps every dev find."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:learned"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:learned"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:learned"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:learned"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:learned"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:learned"

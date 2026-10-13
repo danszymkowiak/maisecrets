@@ -736,6 +736,33 @@ CredData's false positives (wordlike-44), and every cut below 0.871 costs a find
 **Round 6** (mutation run 20261013-095827, same baseline): wordlike-90 is accepted, 163 false positives fewer
 (CredData 147, Nemotron 7, ai4privacy 5, Gretel 4) and no find lost.
 
+### Repeat count and a learned filter (TASK-11.27, 2026-10-13)
+
+The generic keyword rules (ds-keyword-colon 1,093, ds-keyword-equal-signs 886, generic-api-key 672 false positives
+in baseline 20261012-194832) are where most false alarms of secrets remain, and the cheaper filters above remove at
+most 163 of them (wordlike-90). Two last ideas:
+
+- **Repeat count**: skip a value of these rules that occurs several times in the same text (a placeholder, a shared
+  constant). Three times (mutation run 20261013-105756): CredData false positives 2,298 -> 1,055, but 154 finds lost
+  (Nemotron 151, Gretel 2, ai4privacy 1: a password a document repeats), rejected. Counted per hit, no find on the
+  bench repeats ten times or more, while 353 CredData false positives do; repeat10 is accepted on dev (CredData 1,752
+  -> 1,541) and on check (round 20261013-105913). The threat model speaks against it: a debug log that prints the
+  same `password=` line on every request repeats a real value, and the filter would let exactly that through.
+- **Learned filter** (`maisecrets_bench/learned.py`, `bench/learn.py`): a logistic regression over 28 numbers of a
+  hit (length, character classes, three entropies, word coverage, the label's class, quoting, shapes, the rule),
+  trained on the dev split only (15,930 finds, 2,021 false positives); the table of coefficients is
+  `maisecrets_bench/learned_table.py`. To keep every dev find its threshold has to sit below the worst-scored find,
+  and there it drops 42 of the 2,021 dev false positives. The round accepts it (dev: CredData 1,752 -> 1,731; check:
+  weighted false positives per 1,000 tokens -0.001), but it removes fewer false positives than wordlike-90 or the
+  repeat count, on the data it was trained on. The strongest weights: word coverage (negative), normalised entropy,
+  lower-case share, `-` or `_` in the value (negative), all-hex.
+
+**Go or no-go:** no-go for the learned filter. Under recall floors a model is held to its worst-scored find, and the
+finds and false positives of these rules overlap too much in every feature tried for a threshold that keeps all
+finds to remove more than 2 %. The remaining false positives are values that look like secrets after a secret's
+label; telling them apart needs what the text means, which is redact's model step, not a filter in a hook.
+repeat10 passes the bench, but whether its risk is acceptable is the user's call.
+
 ### Presidio's remaining checksums (TASK-11.24, 2026-10-13)
 
 Presidio 2.2.364 validates more recognizers than the plugin's port does. `maisecrets_bench/validators.py` ports

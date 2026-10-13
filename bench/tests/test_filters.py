@@ -149,3 +149,15 @@ class EntropyCharsetFilterTests(unittest.TestCase):
         self.assertEqual(set(filters.ENTROPY_BY_CHARSET),
                          {"hex", "base32", "base62", "base64", "base64url", "printable"})
         self.assertTrue(all(entropy.charset(v) in filters.ENTROPY_BY_CHARSET for v in ("ab12", "AB==", "a_b-")))
+
+
+class RepeatFilterTests(unittest.TestCase):
+    """TASK-11.27 (a): a value that occurs three times or more in one text is a constant, not a secret."""
+
+    def test_a_value_seen_three_times_is_dropped_and_twice_kept(self):
+        keep = filters.FILTERS["bench:repeat3"]
+        v = "q8Zt3LmR0pWv"
+        three = f"a={v}\nb={v}\nc={v}\n"
+        self.assertFalse(keep(v, three, three.index(v), three.index(v) + len(v)))
+        two = f"a={v}\nb={v}\n"
+        self.assertTrue(keep(v, two, two.index(v), two.index(v) + len(v)))

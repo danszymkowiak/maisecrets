@@ -3,10 +3,10 @@ id: TASK-11.27
 title: >-
   Experiment: repeat-count suppression and a small learned filter, only after
   the cheaper filters
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-13 09:09'
 labels:
   - benchmark
 dependencies:
@@ -32,7 +32,13 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Repeat-count mutation judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens)
-- [ ] #2 The model trains on dev only; its coefficients are a small table in the repo with no dataset value; judged on check by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens)
-- [ ] #3 A written go/no-go against the plateau of the earlier filters
+- [x] #1 Repeat-count mutation judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens)
+- [x] #2 The model trains on dev only; its coefficients are a small table in the repo with no dataset value; judged on check by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens)
+- [x] #3 A written go/no-go against the plateau of the earlier filters
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Repeat count: repeat3 rejected (CredData false positives 2,298 -> 1,055 but 154 finds lost, Nemotron 151); repeat10 accepted on dev and check (round 20261013-105913; 353 CredData false positives counted per hit, no find repeats 10 times), but a log repeating a real password is the threat-model case it would let through: inbox question. Learned filter: logistic regression over 28 features, trained on dev only (bench/learn.py, coefficients in maisecrets_bench/learned_table.py); keeping every dev find it drops 42 of 2,021 dev false positives, accepted on dev and check but weaker than the hand filters. Go/no-go: no-go for the learned filter (docs/BENCHMARK.md, Repeat count and a learned filter).
+<!-- SECTION:FINAL_SUMMARY:END -->

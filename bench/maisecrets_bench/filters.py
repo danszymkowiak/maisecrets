@@ -81,6 +81,23 @@ def _wordlike(measure: str, threshold: float) -> Filter:
     return keep
 
 
+_MODEL: list = []
+CURRENT_RULE = [""]   # the rule whose hit a filter is judging (allowed() sets it): the learned model reads it
+
+
+def _learned(value: str, text: str, start: int, end: int) -> bool:
+    """TASK-11.27 (b): keep a hit the learned model (learned_table.py, trained on dev) scores at its threshold or
+    above."""
+    from . import learned
+    if not _MODEL:
+        from . import learned_table as t
+        rows = t.ROWS
+        _MODEL.append((([r[1] for r in rows], t.BIAS, [r[2] for r in rows], [r[3] for r in rows]), t.THRESHOLD))
+    model, threshold = _MODEL[0]
+    rule = CURRENT_RULE[0].split("#", 1)[0]
+    return learned.prob(model, learned.features(value, text, start, end, rule)) >= threshold
+
+
 def label_negative(value: str, text: str, start: int, end: int) -> bool:
     """TASK-11.23: drop a hit whose label is a negative one (token_count, password_hash, tokenizer)."""
     from . import labelclass
@@ -122,6 +139,11 @@ FILTERS: dict[str, Filter] = {
     "bench:wordlike_44": _wordlike("coverage", 0.444),
     "bench:bigram_309": _wordlike("bigram", 3.092),
     "bench:label_negative": label_negative,
+    # TASK-11.27 (a): a value seen three times or more in one text is a constant (a placeholder, a shared id).
+    # Generic rules only: a prefixed token repeated in a log is still a token
+    "bench:repeat3": lambda value, text, start, end: text.count(value) < 3,
+    "bench:repeat10": lambda value, text, start, end: text.count(value) < 10,   # repeat3 lost 154 finds
+    "bench:learned": lambda value, text, start, end: _learned(value, text, start, end),
     "bench:label_weak_entropy": label_weak_entropy,
 }
 ACTIVE: dict[str, str] = {}     # rule id -> filter name, set by mutation.apply in each process
@@ -147,6 +169,7 @@ def install(detect) -> None:
         if name is None:
             return False
         start = _value_start(text, m, secret)
+        CURRENT_RULE[0] = rule.id
         return not FILTERS[name](secret, text, start, start + len(secret))
     allowed._bench_filters = True
     detect._allowed = allowed

@@ -1,0 +1,32 @@
+name = "Generic rules: skip a value seen 3+ times in the text"
+why = "TASK-11.27 (a). A value repeated three times or more in one sample is a constant, not a secret; prefixed tokens untouched."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:repeat3"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:repeat3"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:repeat3"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:repeat3"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:repeat3"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:repeat3"
