@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-13 10:00'
+updated_date: '2026-10-13 10:44'
 labels:
   - inbox
 dependencies: []
@@ -155,5 +155,10 @@ User, 2026-10-13: all recommendations accepted. TASK-8: edit the draft first (fi
 created: 2026-10-13 10:00
 ---
 TASK-8: the draft is updated (its notes): every claim still holds; the last paragraph now says the pull request would hold only the terms feature (file, matcher, PDF/image ask, C25, beliefs, tests) on Python 3.9, and not Betterleaks, the bench, redact or the 3.12 move. May I file it on Mcpgate-de/maisecrets as it stands? Options: (a) file it, (b) not yet. Earlier you wanted it sent together with the bench recommendations page (TASK-11.14); (a) would file the issue alone.
+---
+
+created: 2026-10-13 10:44
+---
+TASK-47: docs/BROKER.md is written. A broker (the store owned by a separate system identity, hooks asking over a socket, gates C4/C7/C9/C10 moved into it) protects the store files and the gate records from the person's other programs. But it cannot tell a hook from another program of the same user, so on its own it does not stop an agent command that talks to the socket. It needs the sandbox deny of the socket path or a user-presence dialog per value, and an installer with administrator rights on every OS. Options: (a) build it, Linux first; (b) not now, decide after TASK-45 and TASK-46 are in and measured. I recommend (b).
 ---
 <!-- COMMENTS:END -->
