@@ -71,7 +71,9 @@ class ReleaseTreeTests(unittest.TestCase):
     DEV_ONLY_FILES = {".gitlab-ci.yml", ".gitignore", ".gitattributes", ".ci-known-hosts-github", "CONTRIBUTING.md",
                       "CLAUDE.md", "renovate.json",
                       "docs/TESTING.md", "docs/REPO-STANDARDS.md", "docs/DIAGNOSTICS.md", "docs/TERMS.md",
-                      "docs/BENCHMARK.md", "docs/REDACT.md"}
+                      "docs/BENCHMARK.md", "docs/REDACT.md",
+                      # a design note for a decision, nothing built (TASK-47)
+                      "docs/BROKER.md"}
 
     def test_every_tracked_file_ships_unless_it_is_named_developer_only(self):
         # the files of the commit the tree was built from; `git ls-files` also lists what is only

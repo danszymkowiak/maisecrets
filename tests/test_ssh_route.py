@@ -460,7 +460,11 @@ class RewrittenCommandTests(unittest.TestCase):
         return out["updatedInput"]["command"]
 
     def run_bash(self, command: str, **env: str) -> subprocess.CompletedProcess:
-        full = {**os.environ, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", **env}
+        # without the signals of a sandbox the suite itself may run in (the Claude Code sandbox sets them): each case
+        # sets what it tests
+        base = {k: v for k, v in os.environ.items()
+                if k.upper() not in ("SANDBOX_RUNTIME", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY")}
+        full = {**base, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", **env}
         return subprocess.run([BASH, "-c", command], capture_output=True, text=True, env=full, timeout=30)
 
     def test_inside_the_sandbox_the_value_reaches_ssh_on_stdin_and_our_proxy_comes_first(self):

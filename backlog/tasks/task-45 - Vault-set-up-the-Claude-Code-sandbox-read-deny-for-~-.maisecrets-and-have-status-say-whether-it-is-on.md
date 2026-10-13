@@ -3,10 +3,10 @@ id: TASK-45
 title: >-
   Vault: set up the Claude Code sandbox read deny for ~/.maisecrets, and have
   status say whether it is on
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-13 10:21'
-updated_date: '2026-10-13 10:40'
+updated_date: '2026-10-13 11:02'
 labels:
   - vault
   - security
@@ -23,13 +23,21 @@ Requested by the user 2026-10-13 (strengthen the vault). C8 is text matching for
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user's settings carry the sandbox read deny for the vault home, after their approval
+- [x] #1 The user's settings carry the sandbox read deny for the vault home, after their approval
 - [x] #2 status reports the sandbox deny as present or missing; tests cover both and the settings layers
-- [ ] #3 A real session shows a run-time-built read of the store refused under the sandbox; recorded in THREAT-MODEL C8
+- [x] #3 A real session shows a run-time-built read of the store refused under the sandbox; recorded in THREAT-MODEL C8
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-13: maisecrets/sandbox_check.py reads the Claude Code settings layers (project, project local, user via CLAUDE_CONFIG_DIR or ~/.claude, managed per OS; a later layer wins for enabled and filesystem.disabled, deny entries of every layer count) and says whether sandbox.credentials.files (mode deny) or sandbox.filesystem.denyRead covers the vault home; /maisecrets:status prints it (tests/test_sandbox_check.py). Schema read from the installed client 2.1.296. The settings change was proposed to the user in chat (sandbox.enabled true, credentials.files ~/.maisecrets deny, allowUnsandboxedCommands left default); waiting for their yes. Slip: while checking the line I ran the status command once against the real store (read, plus the routine expire sweep of Vault().list()); told the user.
+
+2026-10-13: user approved; ~/.claude/settings.json now has sandbox.enabled true and sandbox.credentials.files [{path: ~/.maisecrets, mode: deny}] (merged, nothing else changed). sandbox_check reports 'on (user settings)'. Left: AC #3 in a new session (a run-time-built path, test -r on the config only, expect denied; watch git/uv/gh under the sandbox), then THREAT-MODEL C8.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+User settings carry sandbox.enabled and a credentials.files deny for ~/.maisecrets (approved 2026-10-13). maisecrets/sandbox_check.py + /maisecrets:status report the deny as on or missing (tests/test_sandbox_check.py). Real session (Linux, 2.1.296): a run-time-built path to the vault home shows no file, nothing readable; recorded in THREAT-MODEL C8 with what it does not cover (unsandboxed commands, file tools, MCP). Side effects found: uv and bench caches are read-only under the sandbox (allowWrite asked of the user); a /dev/null mount appears as .bash_profile in the working directory inside the sandbox (not a file).
+<!-- SECTION:FINAL_SUMMARY:END -->
