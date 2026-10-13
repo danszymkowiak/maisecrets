@@ -1,0 +1,6 @@
+name = "Normalise: decode"
+why = "TASK-11.26. The shape rules also scan the text with each base64 or hex run that encodes text replaced by that text (maisecrets/decode.py); a hit there redacts the whole run."
+
+[[change]]
+op = "normalise"
+stages = ["decode"]

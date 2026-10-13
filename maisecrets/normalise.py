@@ -15,8 +15,9 @@ from __future__ import annotations
 import html
 import re
 
-# unwrap last: it asks the shape rules whether a token runs across a line break, on text the other stages cleaned
-STAGES = ("ansi", "cr", "invisible", "gutter", "entity", "escape", "fullwidth", "unwrap")
+# decode after the stages that clean a run's characters (maisecrets/decode.py, TASK-11.26); unwrap last: it asks the
+# shape rules whether a token runs across a line break, on text the other stages cleaned
+STAGES = ("ansi", "cr", "invisible", "gutter", "entity", "escape", "fullwidth", "decode", "unwrap")
 
 _ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]")
 _CR_RE = re.compile(r"\r(?!\n)")
@@ -131,6 +132,11 @@ def _stage(name: str, text: str) -> list:
     if name == "fullwidth":
         return [] if text.isascii() else [
             s for s in (_sub(text, _FULLWIDTH_RE, lambda m: chr(ord(m.group(0)) - 0xFEE0)),) if s]
+    if name == "decode":
+        from . import decode
+        budget = decode.Budget()
+        got = _sub(text, decode.RUN_RE, lambda m: decode.decode_run(m.group(0), decode.MAX_DEPTH, budget) or m.group(0))
+        return [got] if got else []
     if name == "unwrap":
         if "\n" not in text:
             return []
