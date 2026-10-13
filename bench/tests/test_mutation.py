@@ -5,6 +5,8 @@ Run: uv run --project bench python -m unittest discover -s bench/tests
 """
 from __future__ import annotations
 
+import dataclasses
+
 import tempfile
 import unittest
 from pathlib import Path
@@ -72,11 +74,23 @@ class ApplyTests(unittest.TestCase):
     def test_normalise_turns_the_normaliser_stages_on(self):
         # TASK-11.25: a token split by an ANSI reset is found once the stage is on
         text = "use ghp_" + "A1b2C3d4E5f6G7h8I9" + "\x1b[0m" + "j0K1l2M3n4O5p6Q7r8"
-        self.assertEqual(self.scan_with(mutation.Mutation("none", "", []), text), [])
+        bare = dataclasses.replace(D.default_ruleset(), normalise=())
+        none = mutation.Mutation("none", "", [])
+        self.assertEqual([x.type for x in D.scan(text, ruleset=mutation.ruleset(none, bare))], [])
         m = _load('name = "ansi"\n[[change]]\nop = "normalise"\nstages = ["ansi"]\n')
-        self.assertEqual([t for _, t in self.scan_with(m, text)], ["SECRET"])
+        self.assertEqual([x.type for x in D.scan(text, ruleset=mutation.ruleset(m, bare))], ["SECRET"])
         self.assertFalse(m.disable_only)
         mutation.validate(m)
+
+    def test_a_mutation_without_a_normalise_change_keeps_the_shipped_stages(self):
+        # TASK-44 turned stages on in the plugin; a mutation that dropped them was charged with their finds
+        # (round7: SECRET_PREFIXED 1648 -> 1634 for a change to credit-card)
+        base = D.default_ruleset()
+        self.assertTrue(base.normalise)
+        m = _load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n')
+        self.assertEqual(mutation.ruleset(m, base).normalise, base.normalise)
+        m = _load('name = "ansi"\n[[change]]\nop = "normalise"\nstages = ["ansi"]\n')
+        self.assertEqual(mutation.ruleset(m, base).normalise, ("ansi",))
 
     def test_an_unknown_normaliser_stage_is_named(self):
         with self.assertRaisesRegex(BenchError, "'rot13'"):

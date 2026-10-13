@@ -154,14 +154,15 @@ def validate(m: Mutation) -> None:
 
 def ruleset(m: Mutation, base, strict: bool = True):
     """The detector's rule set with the mutation applied (TASK-27): its rules, and the normaliser stages of its last
-    `normalise` change (none without one). `base` is not changed; scan() takes the result as `ruleset`."""
+    `normalise` change (base's stages, the shipped ones, without one). `base` is not changed; scan() takes the result
+    as `ruleset`."""
     import dataclasses as _dc
     from .detector import detect
     swap = [c["set"] for c in m.changes if c["op"] == "vendored"]
     if swap:
         # the group's own settings (regions, labels) with the other vendored set
         base = detect.build(_dc.replace(detect.settings_from_config(), secret_rules=swap[-1]))
-    return detect.RuleSet(tuple(apply(m, list(base.rules), strict)), stages(m))
+    return detect.RuleSet(tuple(apply(m, list(base.rules), strict)), stages(m, base.normalise))
 
 
 def _carried(c: dict, where: str):
@@ -181,9 +182,9 @@ def _carried(c: dict, where: str):
     return rule
 
 
-def stages(m: Mutation) -> tuple:
-    """The normaliser stages the mutation turns on: those of its last `normalise` change, else none."""
-    out: tuple = ()
+def stages(m: Mutation, default: tuple = ()) -> tuple:
+    """The normaliser stages the mutation runs with: those of its last `normalise` change, else `default`."""
+    out: tuple = tuple(default)
     for n, c in enumerate(m.changes, 1):
         if c["op"] == "normalise":
             out = _stages(c, f"{m.name}, change {n}")
