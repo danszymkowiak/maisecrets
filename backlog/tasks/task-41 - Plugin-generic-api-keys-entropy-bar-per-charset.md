@@ -1,10 +1,10 @@
 ---
 id: TASK-41
 title: 'Plugin: generic-api-key''s entropy bar per charset'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 20:59'
-updated_date: '2026-10-13 09:59'
+updated_date: '2026-10-13 21:08'
 labels:
   - plugin
 dependencies: []
@@ -20,6 +20,12 @@ TASK-11.21: raw Shannon entropy compared with one threshold per detected charset
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 generic-api-key compares entropy per charset; tests per charset at the threshold and below
-- [ ] #2 Unit tests, replay_can_fail and the bench pass
+- [x] #1 generic-api-key compares entropy per charset; tests per charset at the threshold and below
+- [x] #2 Unit tests, replay_can_fail and the bench pass
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Applied in 795b411 together (user: judge together before applying): credit-card stands alone after Luhn, generic-api-key uses the per-charset entropy floors (TASK-41) in place of a flat 3.3. Guards: a + before the number, published test cards without a card word. Judge round7 against 20261013-222047 accepted (after the bench fix aae95d0); bench run 20261013-225445: CARD +310, SECRET_GENERIC +112, US_BANK_NUMBER +12, FP +44. Unit tests, replay_can_fail, ruff green.
+<!-- SECTION:FINAL_SUMMARY:END -->

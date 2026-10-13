@@ -1,10 +1,10 @@
 ---
 id: TASK-34.7
 title: 'redact: reversible mode (--reversible) with a vault for the placeholder map'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 10:06'
-updated_date: '2026-10-12 10:06'
+updated_date: '2026-10-13 21:28'
 labels:
   - redact
 dependencies:
@@ -26,3 +26,9 @@ Spec, deferred part: one tool, a --reversible flag off by default. The determini
 - [ ] #1 Tests first: redact --reversible then --restore gives the original text back; without the vault nothing can be restored
 - [ ] #2 The vault is encrypted at rest and never written into the output directory by default
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Not needed: user decision 2026-10-13, no healthcare use case.
+<!-- SECTION:FINAL_SUMMARY:END -->

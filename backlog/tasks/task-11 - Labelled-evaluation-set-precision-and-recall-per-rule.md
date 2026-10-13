@@ -1,10 +1,10 @@
 ---
 id: TASK-11
 title: 'Epic: benchmark harness for the detection rules (precision/recall per dataset)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 08:05'
-updated_date: '2026-10-13 06:46'
+updated_date: '2026-10-13 21:35'
 labels:
   - benchmark
   - detection
@@ -28,12 +28,12 @@ User request 2026-10-11 (chat + upstream issue comment). Measure the rules again
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dataset choice and label mapping agreed with the user
-- [ ] #2 Scorecard script prints per-rule precision/recall without printing any value
-- [ ] #3 Findings land as synthetic cases in tests/fp_corpus.py
-- [ ] #4 Every subtask done
-- [ ] #5 The owner can run setup and the benchmark from bench/README.md on a clean machine
-- [ ] #6 A recommendations report ranks rule changes by equal-weight score change and lists never-triggered rules
+- [x] #1 Dataset choice and label mapping agreed with the user
+- [x] #2 Scorecard script prints per-rule precision/recall without printing any value
+- [x] #3 Findings land as synthetic cases in tests/fp_corpus.py
+- [x] #4 Every subtask done
+- [x] #5 The owner can run setup and the benchmark from bench/README.md on a clean machine
+- [x] #6 A recommendations report ranks rule changes by equal-weight score change and lists never-triggered rules
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -43,3 +43,9 @@ User request 2026-10-11 (chat + upstream issue comment). Measure the rules again
 
 2026-10-13: the epic depends on its open subtasks (11.22-11.24, 11.26, 11.27, 11.36) so it is not taken as ready work before them.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+All subtasks done. Datasets and label mappings decided with the user across rounds (TAB dropped, ai4privacy opt-in, Kaggle PIILO CC BY guard). run.py and errors.py print counts and masked shapes, never values. Findings landed in tests/fp_corpus.py. Clean-machine check 2026-10-13: a fresh clone with an empty MAISECRETS_BENCH_DATA ran the README quick start (bench tests OK, setup of the generated datasets, run and report); the downloaded datasets were not fetched again for it. bench/recommend.py ranks changes and lists never-firing rules.
+<!-- SECTION:FINAL_SUMMARY:END -->

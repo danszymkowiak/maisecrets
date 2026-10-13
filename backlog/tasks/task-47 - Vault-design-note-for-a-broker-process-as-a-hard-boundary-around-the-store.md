@@ -4,7 +4,7 @@ title: 'Vault: design note for a broker process as a hard boundary around the st
 status: Done
 assignee: []
 created_date: '2026-10-13 10:21'
-updated_date: '2026-10-13 10:44'
+updated_date: '2026-10-13 21:28'
 labels:
   - vault
   - security
@@ -29,5 +29,5 @@ Requested by the user 2026-10-13. The threat model says C8 is a backstop and 'a 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-docs/BROKER.md: why (C8 is a backstop, C12 not A3), what a broker is per OS (identity, socket/pipe, peer check), which gates move into it (C4, C7, C9, C10, C12), what it still does not stop (A3 calling the socket as a hook, A5, a value after it left), install and release cost, and the recommendation: TASK-45 and TASK-46 first, then decide. Inbox question asked.
+Not built: user decision 2026-10-13 (no). The design note stays in docs/BROKER.md.
 <!-- SECTION:FINAL_SUMMARY:END -->

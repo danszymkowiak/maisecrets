@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-13 10:44'
+updated_date: '2026-10-13 21:13'
 labels:
   - inbox
 dependencies: []
@@ -160,5 +160,15 @@ TASK-8: the draft is updated (its notes): every claim still holds; the last para
 created: 2026-10-13 10:44
 ---
 TASK-47: docs/BROKER.md is written. A broker (the store owned by a separate system identity, hooks asking over a socket, gates C4/C7/C9/C10 moved into it) protects the store files and the gate records from the person's other programs. But it cannot tell a hook from another program of the same user, so on its own it does not stop an agent command that talks to the socket. It needs the sandbox deny of the socket path or a user-presence dialog per value, and an installer with administrator rights on every OS. Options: (a) build it, Linux first; (b) not now, decide after TASK-45 and TASK-46 are in and measured. I recommend (b).
+---
+
+created: 2026-10-13 20:45
+---
+TASK-46: the Secret Service key store is built (ac8ce04, opt-in). The real check needs (a) sudo apt install libsecret-tools and (b) your OK to run once against your real keyring with a temp vault home (one item, label 'maisecrets store key (<temp home>)', removed afterwards). Options: yes, I do both; or leave it opt-in and untested on real hardware. I recommend yes: it is the only check that shows the hook outside the sandbox reaches the keyring.
+---
+
+created: 2026-10-13 21:13
+---
+TASK-11.36: Kaggle data downloaded and measured (3 false alarms in 4.1M tokens; kept as a guard). One thing left: the data licence. Please paste the 'Competition Data' / data-access section of the Rules page (https://www.kaggle.com/competitions/pii-detection-removal-from-educational-data/rules). Until then the results stay local and never go upstream.
 ---
 <!-- COMMENTS:END -->

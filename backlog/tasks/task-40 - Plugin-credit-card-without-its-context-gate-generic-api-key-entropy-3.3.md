@@ -1,10 +1,10 @@
 ---
 id: TASK-40
 title: 'Plugin: credit-card without its context gate, generic-api-key entropy 3.3'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 20:49'
-updated_date: '2026-10-13 09:59'
+updated_date: '2026-10-13 21:08'
 labels:
   - plugin
 dependencies: []
@@ -20,6 +20,12 @@ TASK-21.9 (operating points): judged together on baseline 20261012-194832 (bench
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 credit-card loads without require_context; generic-api-key's entropy is 3.3; tests for both
-- [ ] #2 Unit tests, replay_can_fail and the bench pass
+- [x] #1 credit-card loads without require_context; generic-api-key's entropy is 3.3; tests for both
+- [x] #2 Unit tests, replay_can_fail and the bench pass
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Applied in 795b411 together (user: judge together before applying): credit-card stands alone after Luhn, generic-api-key uses the per-charset entropy floors (TASK-41) in place of a flat 3.3. Guards: a + before the number, published test cards without a card word. Judge round7 against 20261013-222047 accepted (after the bench fix aae95d0); bench run 20261013-225445: CARD +310, SECRET_GENERIC +112, US_BANK_NUMBER +12, FP +44. Unit tests, replay_can_fail, ruff green.
+<!-- SECTION:FINAL_SUMMARY:END -->

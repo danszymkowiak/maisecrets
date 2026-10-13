@@ -1,10 +1,10 @@
 ---
 id: TASK-11.36
 title: 'Bench: Kaggle PII Data Detection as a real-text check'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:40'
-updated_date: '2026-10-12 16:46'
+updated_date: '2026-10-13 21:28'
 labels:
   - benchmark
   - dataset
@@ -23,8 +23,8 @@ The Learning Agency Lab's Kaggle competition data: student essays, labelled by p
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The competition terms are recorded; the adapter is opt-in (off by default) and needs the user's own Kaggle account and acceptance of the terms
-- [ ] #2 An adapter and label table; the dataset is a guard (no weight in the mean) unless the usefulness check shows it adds information
+- [x] #1 The competition terms are recorded; the adapter is opt-in (off by default) and needs the user's own Kaggle account and acceptance of the terms
+- [x] #2 An adapter and label table; the dataset is a guard (no weight in the mean) unless the usefulness check shows it adds information
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -35,4 +35,12 @@ The Learning Agency Lab's Kaggle competition data: student essays, labelled by p
 2026-10-12: token present (.env, read only by the setup at run time); competition listed; download 403 until the rules are accepted (inbox). Building the opt-in adapter against the published format (train.json: document, full_text, tokens, trailing_whitespace, BIO labels) with a synthetic fixture.
 
 Adapter built and committed (df89b9f): bench/maisecrets_bench/adapters/kagglepii.py, labels/kagglepii.toml, setup.py --with-kaggle-pii, guard and local-only in run.py, terms in bench/README.md; tests with made-up records. The real run waits on the inbox: accept the competition rules with your Kaggle account, and paste the data licence. Then: uv run --project bench python bench/setup.py --only kagglepii, and the usefulness check (AC 2).
+
+2026-10-13: rules accepted by the user; downloaded (6,807 essays, 1,606 labelled spans, 45 in scope). Run 20261013-230908: TP 44, FP 3 in 4.1M tokens (0.001/1k; Gretel 0.7), recall 97.8%, out-of-scope labels touched 2 of 1,561. usefulness.py: keep. Kept as a guard: 45 in-scope values are too few for weight in the mean; its value is the real-text false-alarm rate. AC1 waits for the data licence text (the rules page renders in the browser only).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PIILO (the competition data) is CC BY 4.0 (the-learning-agency-lab.com, user 2026-10-13): recorded with attribution, no longer local-only; still opt-in because the download needs the user's Kaggle account and the competition rules. Measured run 20261013-230908: 44/45 in scope, 3 FP in 4.1M tokens. Guard, not weighted (45 values). Commits df89b9f, 593033f and this one.
+<!-- SECTION:FINAL_SUMMARY:END -->

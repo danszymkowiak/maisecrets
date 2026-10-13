@@ -1,10 +1,10 @@
 ---
 id: TASK-8
 title: Propose user-defined terms upstream
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 07:01'
-updated_date: '2026-10-13 10:00'
+updated_date: '2026-10-13 21:34'
 labels:
   - upstream
 dependencies:
@@ -53,3 +53,9 @@ The fork's commits can be offered as a pull request against upstream main, on Py
 
 The fork's terms commits can be offered as a pull request against upstream main, on Python 3.9: the terms file, its matcher and loader, the PDF/image ask, C25 in the threat model, its beliefs and tests. The fork's other work (the Betterleaks rule set, a benchmark harness, a separate redaction CLI, the move to Python 3.12) would stay out. Would you take such a change?
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Not proposed upstream: user decision 2026-10-13. The draft stays in the notes; the fork keeps personal terms (C25).
+<!-- SECTION:FINAL_SUMMARY:END -->

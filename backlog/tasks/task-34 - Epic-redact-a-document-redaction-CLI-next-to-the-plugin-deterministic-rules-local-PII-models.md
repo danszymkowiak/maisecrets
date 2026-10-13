@@ -3,10 +3,10 @@ id: TASK-34
 title: >-
   Epic: redact, a document redaction CLI next to the plugin (deterministic rules
   + local PII models)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 10:05'
-updated_date: '2026-10-13 06:46'
+updated_date: '2026-10-13 21:35'
 labels:
   - epic
   - redact
@@ -38,3 +38,9 @@ It does NOT change the plugin: the plugin must stay fast and light, so the tool 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-13: AC #1-#3 met by TASK-34.1-34.6 and 34.8. The epic stays open for TASK-34.7 (--reversible), which waits on the user's answer (inbox TASK-17 #14); it now depends on 34.7.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+All subtasks done (34.7, the PHI profile, not needed: user 2026-10-13).
+<!-- SECTION:FINAL_SUMMARY:END -->
