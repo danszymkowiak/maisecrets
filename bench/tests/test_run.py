@@ -27,6 +27,13 @@ def _samples():
             Sample("toy", "c", "g3", "en", "no secrets in this line", [Span(0, 2, "X", "EMAIL", "pos")], "dev")]
 
 
+class PoolTests(unittest.TestCase):
+    def test_workers_start_without_a_unix_socket(self):
+        # Python 3.14's default on Linux, forkserver, opens a Unix socket, which the Claude Code sandbox denies;
+        # spawn talks over pipes and is the default on macOS and Windows already
+        self.assertEqual(run.POOL_CONTEXT.get_start_method(), "spawn")
+
+
 class RunTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

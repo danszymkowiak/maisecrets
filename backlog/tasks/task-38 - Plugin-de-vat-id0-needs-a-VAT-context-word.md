@@ -1,10 +1,10 @@
 ---
 id: TASK-38
 title: 'Plugin: de-vat-id#0 needs a VAT context word'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-12 19:32'
-updated_date: '2026-10-13 09:59'
+updated_date: '2026-10-13 20:11'
 labels:
   - plugin
 dependencies: []
@@ -20,6 +20,18 @@ TASK-18.2 (leave-one-out): the bare form DE + 9 digits raised 60 false alarms on
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 de-vat-id#0 requires a context word; a test with and without one
-- [ ] #2 Unit tests, replay_can_fail and the bench pass
+- [x] #1 de-vat-id#0 requires a context word; a test with and without one
+- [x] #2 Unit tests, replay_can_fail and the bench pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Applied in 809a0a9. Unit tests, replay_can_fail, scan, counts, lint, ruff green. Bench unit tests: 3 setUpClass errors under the Claude Code sandbox only (the forkserver of Python 3.14 needs a Unix socket, which the sandbox denies); to rerun outside it.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Applied in 809a0a9; unit tests, replay_can_fail and the bench tests pass (the bench pool fix in the next commit let them run in the sandbox). Judged on the bench in round5.
+<!-- SECTION:FINAL_SUMMARY:END -->

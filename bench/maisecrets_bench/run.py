@@ -4,6 +4,7 @@ locale fit that language, so a run is the same on every machine. Results hold co
 from __future__ import annotations
 
 import json
+import multiprocessing
 import os
 import tempfile
 import time
@@ -26,6 +27,9 @@ LANGUAGES = {
 # a locale whose country has rules of its own runs in a group of its own (TASK-28): findocs' Swiss documents run with
 # region ch, every other sample keeps its language's group
 LOCALES = {"de_CH": (["ch"], "de_CH"), "fr_CH": (["ch"], "fr_CH"), "it_CH": (["ch"], "it_CH")}
+# workers start over pipes: forkserver, Python 3.14's default on Linux, needs a Unix socket that the Claude Code sandbox
+# denies; spawn is the default on macOS and Windows, and each worker sets itself up in _init_worker anyway
+POOL_CONTEXT = multiprocessing.get_context("spawn")
 SKIP_TYPES = {"HIDDEN"}     # removal of invisible characters: no detection to score
 # where text no span labels is negative; CredData labels candidate lines only (docs/BENCHMARK.md, CredData)
 UNLABELLED_NEGATIVE = {"creddata": False}
@@ -97,7 +101,8 @@ def _detect_chunk(chunk: list[Sample]) -> list[tuple[str, str, list[score.Detect
 
 def _active(regions: list[str], locale: str, mutation=None) -> dict:
     """The rules, regions and label languages a group runs with, from a worker of its own."""
-    with ProcessPoolExecutor(1, initializer=_init_worker, initargs=(regions, locale, mutation)) as ex:
+    with ProcessPoolExecutor(1, mp_context=POOL_CONTEXT, initializer=_init_worker,
+                             initargs=(regions, locale, mutation)) as ex:
         return ex.submit(_describe).result()
 
 
@@ -131,7 +136,8 @@ def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50, mutation=N
         groups[lang] = {**_active(regions, locale, mutation), "samples": len(group)}
         group.sort(key=lambda s: -len(s.text))      # the long files first: no straggler at the end
         chunks = [group[i:i + chunk] for i in range(0, len(group), chunk)]
-        with ProcessPoolExecutor(jobs, initializer=_init_worker, initargs=(regions, locale, mutation)) as ex:
+        with ProcessPoolExecutor(jobs, mp_context=POOL_CONTEXT, initializer=_init_worker,
+                                 initargs=(regions, locale, mutation)) as ex:
             for part in ex.map(_detect_chunk, chunks):
                 for dataset, sample_id, ds in part:
                     det[(dataset, sample_id)] = ds
