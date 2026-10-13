@@ -83,6 +83,19 @@ class StageTests(unittest.TestCase):
         normalise.normalise(text, ("decode",))
         self.assertLess(time.perf_counter() - t0, decode.TIME_SLICE + 0.05)
 
+    def test_the_stage_stops_looking_once_its_budget_is_spent(self):
+        # a 10 MB file with runs on every line cost 225 ms while the candidate cap was long reached (CredData)
+        line = "k: " + b64("token " + GHP) + "\n"
+        text = line * (10_000_000 // len(line))
+        t0 = time.perf_counter()
+        self.assertIs(normalise.normalise(text, ("decode",)).text, text, "over MAX_TEXT the stage does not look")
+        self.assertLess(time.perf_counter() - t0, decode.TIME_SLICE + 0.05)
+        small = line * (decode.MAX_TEXT // len(line))
+        t0 = time.perf_counter()
+        got = normalise.normalise(small, ("decode",)).text.count(GHP)
+        self.assertTrue(0 < got <= decode.MAX_CANDIDATES, got)   # a run inside a decoded one is a candidate too
+        self.assertLess(time.perf_counter() - t0, 0.25, "the walk stops at the cap; the map is per character")
+
     def test_the_candidate_and_byte_caps_bound_the_work(self):
         text = "\n".join("k: " + b64(f"token {i} " + GHP) for i in range(decode.MAX_CANDIDATES + 20))
         n = normalise.normalise(text, ("decode",))

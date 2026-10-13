@@ -1,0 +1,38 @@
+name = "the four accepted checksums of TASK-11.24 together"
+why = "TASK-11.24. Presidio 2.2.364 validates it; the plugin's port does not, so it relies on its pattern and context. Ported in validators.py with Presidio's test vectors; pass rates in bench/passrate.py."
+[[change]]
+op = "set"
+rule = "es-nif"
+validator = "bench:es_nif"
+[[change]]
+op = "set"
+rule = "us-npi#0"
+validator = "bench:us_npi"
+
+[[change]]
+op = "set"
+rule = "us-npi#1"
+validator = "bench:us_npi"
+[[change]]
+op = "set"
+rule = "se-organisationsnummer#0"
+validator = "bench:se_org"
+
+[[change]]
+op = "set"
+rule = "se-organisationsnummer#1"
+validator = "bench:se_org"
+[[change]]
+op = "set"
+rule = "uk-vehicle-registration#0"
+validator = "bench:uk_vehicle"
+
+[[change]]
+op = "set"
+rule = "uk-vehicle-registration#1"
+validator = "bench:uk_vehicle"
+
+[[change]]
+op = "set"
+rule = "uk-vehicle-registration#2"
+validator = "bench:uk_vehicle"

@@ -5,8 +5,9 @@ data, a docker config.json auth, an .npmrc _auth or a JWT payload carry a value 
 clear. A run is decoded when its bytes are UTF-8 text (at least 90% printable); gzip inside base64 is opened, and a run
 inside the decoded text is decoded once more (depth 2, no deeper).
 
-Bounded: a run longer than MAX_RUN is not decoded (a whole file, an image), at most MAX_CANDIDATES runs and
-MAX_DECODED bytes per text, and no new run after TIME_SLICE seconds. Pure functions, the standard library only."""
+Bounded: a text longer than MAX_TEXT is not looked at, a run longer than MAX_RUN is not decoded (a whole file, an
+image), at most MAX_CANDIDATES runs and MAX_DECODED bytes per text, and no new run after TIME_SLICE seconds; once the
+budget is spent the search stops. Pure functions, the standard library only."""
 from __future__ import annotations
 
 import base64
@@ -21,6 +22,7 @@ MAX_RUN = 16_384            # encoded characters
 MAX_DECODED = 262_144       # bytes per text, over every run and depth
 MAX_CANDIDATES = 64         # runs per text
 TIME_SLICE = 0.02           # seconds per text
+MAX_TEXT = 1_000_000        # characters: a larger text is not looked at (its offset map alone would cost more)
 MAX_DEPTH = 2
 PRINTABLE = 0.9
 
@@ -37,6 +39,9 @@ class Budget:
         self.candidates = MAX_CANDIDATES
         self.decoded = MAX_DECODED
         self.until = time.perf_counter() + TIME_SLICE
+
+    def spent(self) -> bool:
+        return self.candidates <= 0 or self.decoded <= 0 or time.perf_counter() > self.until
 
     def take(self, n_bytes: int) -> bool:
         if self.candidates <= 0 or n_bytes > self.decoded or time.perf_counter() > self.until:
@@ -107,6 +112,8 @@ def decode_text(text: str, depth: int, budget: Budget) -> str:
     out: list[str] = []
     pos = 0
     for m in RUN_RE.finditer(text):
+        if budget.spent():
+            break
         got = decode_run(m.group(0), depth, budget)
         if got is not None:
             out += [text[pos:m.start()], got]

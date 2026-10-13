@@ -45,13 +45,16 @@ class Normalised:
         return self.starts[a], self.ends[b - 1]
 
 
-def _sub(text: str, rx: re.Pattern, repl) -> tuple[str, list[int], list[int]] | None:
-    """text with every match replaced by repl(match); per output character, its range in text. None: no match."""
+def _sub(text: str, rx: re.Pattern, repl, stop=None) -> tuple[str, list[int], list[int]] | None:
+    """text with every match replaced by repl(match); per output character, its range in text. None: no match.
+    stop(): no further match is looked at once it returns True."""
     out: list[str] = []
     starts: list[int] = []
     ends: list[int] = []
     pos = 0
     for m in rx.finditer(text):
+        if stop is not None and stop():
+            break
         a, b = m.span()
         new = repl(m)
         if new == m.group(0):
@@ -134,8 +137,11 @@ def _stage(name: str, text: str) -> list:
             s for s in (_sub(text, _FULLWIDTH_RE, lambda m: chr(ord(m.group(0)) - 0xFEE0)),) if s]
     if name == "decode":
         from . import decode
+        if len(text) > decode.MAX_TEXT:
+            return []
         budget = decode.Budget()
-        got = _sub(text, decode.RUN_RE, lambda m: decode.decode_run(m.group(0), decode.MAX_DEPTH, budget) or m.group(0))
+        got = _sub(text, decode.RUN_RE, lambda m: decode.decode_run(m.group(0), decode.MAX_DEPTH, budget) or m.group(0),
+                   budget.spent)
         return [got] if got else []
     if name == "unwrap":
         if "\n" not in text:
