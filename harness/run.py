@@ -534,8 +534,11 @@ def run_scenario(name: str, sc: dict, update_golden: bool) -> list[str]:
         # blocked every scenario on a machine with the synced plugin (2026-09-29). Off for this home only
         (home / "guard.json").write_text(json.dumps({"expect": "off"}))
     # the copy installed from the Anthropic plugin directory has the same name, like the synced one
+    # the sandbox off for every scenario: a developer's own `sandbox.enabled` (user settings) ran the ssh scenario
+    # inside it, where the guard it measures does not fire (2026-10-13). The sandboxed route is harness/sandbox/
     settings.write_text(json.dumps({"enabledPlugins": {"maisecrets@synced": False,
                                                        "maisecrets@anthropic-plugin-directory": False},
+                                    "sandbox": {"enabled": False},
                                     "hooks": hooks_cfg}))
     srv = start_server(turns, out)
     try:
