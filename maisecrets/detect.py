@@ -457,8 +457,45 @@ def _it_fiscal_code_ok(v: str) -> bool:
     return chr(65 + total % 26) == v[15]
 
 
+# TASK-42: ports of Presidio 2.2.364's validate_result, judged on the bench with the context word still required
+# (TASK-11.24: 140 false positives fewer, no find lost). Presidio removes "-" and " " first
+_NIF_LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE"
+
+
+def _es_nif_ok(v: str) -> bool:
+    """Spanish NIF (DNI): the letter is _NIF_LETTERS[number mod 23]."""
+    v = re.sub(r"[- ]", "", v.strip()).upper()
+    digits = "".join(c for c in v if c.isdigit())
+    return bool(digits) and v[-1] == _NIF_LETTERS[int(digits) % 23]
+
+
+def _us_npi_ok(v: str) -> bool:
+    """US NPI: Luhn over 80840 and the ten digits (CMS); a body of one repeated digit is no number."""
+    v = re.sub(r"[- ]", "", v.strip())
+    return v.isdigit() and len(set(v[:-1])) > 1 and _luhn_ok("80840" + v)
+
+
+def _se_organisationsnummer_ok(v: str) -> bool:
+    """Swedish organisationsnummer: ten digits, the third at least 2, Luhn."""
+    d = re.sub(r"\D", "", v)
+    return len(d) == 10 and int(d[2]) >= 2 and _luhn_ok(d)
+
+
+def _uk_vehicle_registration_ok(v: str) -> bool:
+    """UK plate: in the current format (two letters, age identifier, three letters) the age identifier is 02-29 or
+    51-79. Presidio leaves the older prefix and suffix formats unjudged; they pass."""
+    v = re.sub(r"[- ]", "", v.strip())
+    if len(v) == 7 and v[:2].isalpha() and v[2:4].isdigit():
+        return 2 <= int(v[2:4]) <= 29 or 51 <= int(v[2:4]) <= 79
+    return True
+
+
 VALIDATORS = {
     "ds_value": _ds_value_ok,
+    "es_nif": _es_nif_ok,
+    "us_npi": _us_npi_ok,
+    "se_organisationsnummer": _se_organisationsnummer_ok,
+    "uk_vehicle_registration": _uk_vehicle_registration_ok,
     "it_fiscal_code": _it_fiscal_code_ok,
     "de_tax_id": _de_tax_id_ok,
     "de_social_security": _de_social_security_ok,
@@ -657,10 +694,15 @@ PRESIDIO_VALIDATOR = {"iban": "iban", "credit-card": "luhn", "ip": "public_ip", 
                       "de-tax-id": "de_tax_id", "de-social-security": "de_social_security",
                       "de-id-card": "de_id_card", "de-passport": "de_passport",
                       "de-health-insurance": "de_health_insurance", "de-lanr": "de_lanr",
-                      "de-bsnr": "de_bsnr", "de-vat-id": "de_vat_id"}
+                      "de-bsnr": "de_bsnr", "de-vat-id": "de_vat_id", "es-nif": "es_nif", "us-npi": "us_npi",
+                      "se-organisationsnummer": "se_organisationsnummer",
+                      "uk-vehicle-registration": "uk_vehicle_registration"}
 # shapes that are plain digit runs: even with a valid checksum, ask for a context word
+# es-nif, us-npi, se-organisationsnummer and uk-vehicle-registration: judged with their checksum AND the context word
+# (TASK-42); without the word they would fire where the bench never looked
 PRESIDIO_ALWAYS_CONTEXT = {"de-tax-id", "de-tax-number", "de-bsnr", "de-lanr", "de-plz", "de-kfz",
-                           "de-handelsregister", "de-fuehrerschein", "nhs", "aba-routing", "medical-license"}
+                           "de-handelsregister", "de-fuehrerschein", "nhs", "aba-routing", "medical-license",
+                           "es-nif", "us-npi", "se-organisationsnummer", "uk-vehicle-registration"}
 # context words the vendored recognizers lack: Presidio's card words are English, and `Karte 4076 …` in a German
 # statement was missed (TASK-24). The number must still pass its validator. Short words that mean something else in a
 # neighbour language (kort: short in Danish and Dutch) are left out

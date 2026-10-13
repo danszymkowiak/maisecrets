@@ -3,13 +3,13 @@ id: TASK-42
 title: >-
   Plugin: port Presidio's checksums for es-nif, us-npi, se-organisationsnummer
   and uk-vehicle-registration
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-13 08:48'
+updated_date: '2026-10-13 10:12'
 labels:
   - plugin
-dependencies:
-  - TASK-17
+dependencies: []
 priority: medium
 ordinal: 103000
 ---
@@ -22,6 +22,12 @@ From TASK-11.24: the four bench validators (bench/maisecrets_bench/validators.py
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 detect.py validates the four rules like Presidio; tests with Presidio's vectors; the differential script covers them
-- [ ] #2 A bench run after the change shows the 140 false positives gone and no find lost
+- [x] #1 detect.py validates the four rules like Presidio; tests with Presidio's vectors; the differential script covers them
+- [x] #2 A bench run after the change shows the 140 false positives gone and no find lost
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+detect.py validates es-nif, us-npi, se-organisationsnummer and uk-vehicle-registration like Presidio 2.2.364 (its test vectors in tests/test_detect_rules.py; scripts/check_validators_against_presidio.py: 0 disagreements in 4,000 each) and keeps their context word, as the bench judged them. Bench run 20261013-120024 against 20261012-194832: false positives ai4privacy 4,158 -> 4,137, Gretel 5,164 -> 5,055, Nemotron 849 -> 839 (140 fewer); finds unchanged on every dataset.
+<!-- SECTION:FINAL_SUMMARY:END -->

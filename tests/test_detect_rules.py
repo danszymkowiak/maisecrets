@@ -353,6 +353,35 @@ class ValidatorTests(unittest.TestCase):
             self.assertFalse(it(bad), bad)
         self.assertEqual(detect.PRESIDIO_VALIDATOR.get("it-fiscal-code"), "it_fiscal_code")
 
+    def test_presidio_checksums_of_task_42(self):
+        # the vectors of Presidio 2.2.364's own tests; the bench judged these four (TASK-11.24)
+        cases = {
+            "es_nif": (("55555555K", "55555555-K", "1111111-G", "01111111G", "12345678z"), ("12345678a",)),
+            "us_npi": (("1234567893", "1245319599", "1234-567-893", "1234 567 893"), ("1234567890", "1111111112")),
+            "se_organisationsnummer": (("212000-0142", "2120000142", "556703-7485"), ("556703-7486", "551703-7485")),
+            "uk_vehicle_registration": (("AB51 ABC", "BD62XYZ", "LN14-HGT", "aa02 aaa", "A123 BCD"),
+                                        ("AB00 ABC", "AB30 ABC")),
+        }
+        for name, (good, bad) in cases.items():
+            for v in good:
+                self.assertTrue(detect.VALIDATORS[name](v), (name, v))
+            for v in bad:
+                self.assertFalse(detect.VALIDATORS[name](v), (name, v))
+        for rec, name in (("es-nif", "es_nif"), ("us-npi", "us_npi"),
+                          ("se-organisationsnummer", "se_organisationsnummer"),
+                          ("uk-vehicle-registration", "uk_vehicle_registration")):
+            self.assertEqual(detect.PRESIDIO_VALIDATOR.get(rec), name)
+
+    def test_the_checksummed_rules_still_want_their_context_word(self):
+        # judged on the bench with the checksum added and the context word still required (TASK-42)
+        rs = detect.build(detect.Settings(regions=("generic", "es")))
+
+        def found(text):
+            return [m.value for m in detect.scan(text, ruleset=rs) if m.kind.startswith("es-nif")]
+        self.assertEqual(found("NIF 55555555K"), ["55555555K"])
+        self.assertEqual(found("NIF 55555555A"), [], "a wrong letter")
+        self.assertEqual(found("ref 55555555K"), [], "no context word")
+
     def test_an_it_fiscal_code_with_a_wrong_check_letter_is_no_hit(self):
         rs = detect.build(detect.Settings(regions=("generic", "it")))
 

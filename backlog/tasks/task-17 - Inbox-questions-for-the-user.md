@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-13 09:26'
+updated_date: '2026-10-13 10:00'
 labels:
   - inbox
 dependencies: []
@@ -140,5 +140,20 @@ TASK-11.27 (repeat count): skipping a generic keyword-rule value that occurs 10+
 created: 2026-10-13 09:26
 ---
 Correction to my normaliser-stages comment above: after a fix (TASK-43, a 16-byte value was never decoded) the decode stage lifts base64 recall under perturbation from 47.7 % to 71.1 %, not 63.8 %; the verdict on the datasets is unchanged. The recommendation stands.
+---
+
+created: 2026-10-13 09:58
+---
+User, 2026-10-13: (1) TASK-42 yes, port the four checksums. (2) label-negative and wordlike-90: no, they stay in the bench. (3) Normaliser stages: yes, switch on ansi, cr, invisible, gutter, entity, fullwidth, decode and unwrap. (4) repeat10: no, bench only. Still open: TASK-8, 11.36, 34.7, 38, 39, 40, 41.
+---
+
+created: 2026-10-13 09:59
+---
+User, 2026-10-13: all recommendations accepted. TASK-8: edit the draft first (filing it upstream is asked again once it is updated). TASK-34.7: a separate encrypted file per run, built only once the PHI use case is confirmed (not confirmed yet: 34.7 keeps waiting). TASK-38 yes, TASK-39 yes. TASK-40/41: generic-api-key's entropy bar per charset (41) plus credit-card without its context gate (40), judged together before applying; the flat 3.3 is dropped. TASK-11.36 (Kaggle): the user comes back on it.
+---
+
+created: 2026-10-13 10:00
+---
+TASK-8: the draft is updated (its notes): every claim still holds; the last paragraph now says the pull request would hold only the terms feature (file, matcher, PDF/image ask, C25, beliefs, tests) on Python 3.9, and not Betterleaks, the bench, redact or the 3.12 move. May I file it on Mcpgate-de/maisecrets as it stands? Options: (a) file it, (b) not yet. Earlier you wanted it sent together with the bench recommendations page (TASK-11.14); (a) would file the issue alone.
 ---
 <!-- COMMENTS:END -->

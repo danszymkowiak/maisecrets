@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from maisecrets import detect  # noqa: E402
 from presidio_analyzer.predefined_recognizers import (  # noqa: E402
     DeBsnrRecognizer, DeHealthInsuranceRecognizer, DeIdCardRecognizer, DeLanrRecognizer,
-    DePassportRecognizer, DeSocialSecurityRecognizer, DeTaxIdRecognizer, DeVatIdRecognizer,
+    DePassportRecognizer, DeSocialSecurityRecognizer, DeTaxIdRecognizer, DeVatIdRecognizer, EsNifRecognizer,
+    SeOrganisationsnummerRecognizer, UkVehicleRegistrationRecognizer, UsNpiRecognizer,
 )
 
 random.seed(int(sys.argv[1]) if len(sys.argv) > 1 else 7)
@@ -35,13 +36,22 @@ GENS = {
     "de_lanr": (DeLanrRecognizer(), lambda: rnd(D, 9)),
     "de_bsnr": (DeBsnrRecognizer(), lambda: rnd(D, 9)),
     "de_vat_id": (DeVatIdRecognizer(), lambda: "DE" + rnd(D, 9)),
+    "es_nif": (EsNifRecognizer(), lambda: rnd(D, random.choice((7, 8))) + random.choice(("", "-")) + rnd(L, 1)),
+    "us_npi": (UsNpiRecognizer(), lambda: rnd("12", 1) + rnd(D, 9) if random.random() < 0.9
+               else rnd("12", 1) * 9 + rnd(D, 1)),
+    "se_organisationsnummer": (SeOrganisationsnummerRecognizer(),
+                               lambda: rnd(D, 6) + random.choice(("", "-")) + rnd(D, 4)),
+    "uk_vehicle_registration": (UkVehicleRegistrationRecognizer(),
+                                lambda: rnd(L, 2) + rnd(D, 2) + random.choice(("", " ", "-")) + rnd(L, 3)),
 }
 bad = 0
 for name, (rec, gen) in GENS.items():
     disagree = 0
     for _ in range(4000):
         v = gen()
-        if (rec.validate_result(v) is not False) != detect.VALIDATORS[name](v):
+        inv = getattr(rec, "invalidate_result", None)
+        keep = rec.validate_result(v) is not False and not (inv and inv(v))
+        if keep != detect.VALIDATORS[name](v):
             disagree += 1
     print(f"{name:<22} disagree {disagree}/4000")
     bad += disagree

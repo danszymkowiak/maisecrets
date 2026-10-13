@@ -4,10 +4,10 @@ title: 'Plugin: de-vat-id#0 needs a VAT context word'
 status: To Do
 assignee: []
 created_date: '2026-10-12 19:32'
+updated_date: '2026-10-13 09:59'
 labels:
   - plugin
-dependencies:
-  - TASK-17
+dependencies: []
 priority: low
 ordinal: 99000
 ---

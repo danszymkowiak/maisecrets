@@ -4,7 +4,7 @@ title: Propose user-defined terms upstream
 status: To Do
 assignee: []
 created_date: '2026-10-11 07:01'
-updated_date: '2026-10-12 17:48'
+updated_date: '2026-10-13 10:00'
 labels:
   - upstream
 dependencies:
@@ -48,4 +48,8 @@ The fork's commits can be offered as a pull request against upstream main, on Py
 2026-10-11: user chose to send this together with the bench recommendations page (TASK-11.14).
 
 2026-10-12: approval asked in the inbox (TASK-17).
+
+2026-10-13, draft checked against the code (user: edit first). Every claim still holds: terms.txt 0600 under C8, four match modes, longest variant first, fixed LABEL_c0 placeholders, the gates C4/C7/C9/C16, the PDF/image ask, five C25 beliefs (beliefs/c25-*.toml). One change: the last paragraph now says what the pull request would and would not hold. Revised last paragraph:
+
+The fork's terms commits can be offered as a pull request against upstream main, on Python 3.9: the terms file, its matcher and loader, the PDF/image ask, C25 in the threat model, its beliefs and tests. The fork's other work (the Betterleaks rule set, a benchmark harness, a separate redaction CLI, the move to Python 3.12) would stay out. Would you take such a change?
 <!-- SECTION:NOTES:END -->

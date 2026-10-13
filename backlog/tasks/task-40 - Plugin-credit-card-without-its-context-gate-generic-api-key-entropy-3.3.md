@@ -4,10 +4,10 @@ title: 'Plugin: credit-card without its context gate, generic-api-key entropy 3.
 status: To Do
 assignee: []
 created_date: '2026-10-12 20:49'
+updated_date: '2026-10-13 09:59'
 labels:
   - plugin
-dependencies:
-  - TASK-17
+dependencies: []
 priority: medium
 ordinal: 101000
 ---
