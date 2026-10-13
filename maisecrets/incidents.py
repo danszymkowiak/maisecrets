@@ -20,7 +20,8 @@ HOOK_EVENTS = ("user-prompt", "pre-tool", "post-tool", "post-tool-failure")
 CODES = frozenset({
     "store.file-read", "store.keychain-add", "store.keychain-readback", "store.openssl", "store.locker-add",
     "store.index-read", "store.index-shape", "store.lock",
-    "store.timeout-keychain", "store.timeout-openssl", "store.timeout-locker",
+    "store.timeout-keychain", "store.timeout-openssl", "store.timeout-locker", "store.timeout-secret-service",
+    "store.key-secret-service",
     "store.decrypt", "store.mark-weak", "store.expire",
     "config.policy-invalid", "config.user-ignored",
     "hook.run-dir", "hook.sealed-dir", "hook.payload", "hook.session-start",

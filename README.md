@@ -106,7 +106,7 @@ moves only the last number; a higher one needs the owner's approval. Vault backe
 |---|---|---|
 | macOS | `keychain` | login keychain via `security`, no iCloud sync flag |
 | Windows | `windows-vault` | Credential Locker (`PasswordVault`, DPAPI) via PowerShell |
-| Linux | `encrypted-file` | `openssl` AES-256-CBC + PBKDF2 + HMAC tag, key file 0600 |
+| Linux | `encrypted-file` | `openssl` AES-256-CBC + PBKDF2 + HMAC tag, key file 0600 (or in the Secret Service with `key_store`) |
 | any | `jsonfile` | plaintext 0600, TEST MODE only |
 
 Hooks run through `hooks/run.sh` (bash), which looks for a Python 3.12+ as
@@ -276,7 +276,7 @@ claude --plugin-dir /path/to/maisecrets                 # one session, straight 
 python3 -m unittest discover -s tests -v               # about 30 seconds
 python3 harness/run.py                                 # 31 scenarios against a fake upstream (3 for the PowerShell tool of Windows)
 python3 harness/codex.py [--real]                      # 8 scenarios through codex exec (four need --real)
-python3 scripts/replay_can_fail.py                     # 108 proofs: each control's test, and each path of the five invariants, goes red without its guard
+python3 scripts/replay_can_fail.py                     # 109 proofs: each control's test, and each path of the five invariants, goes red without its guard
 python3 scripts/derived_counts.py                      # the numbers in the docs, measured again
 python3 scripts/lint_plugin.py                         # frontmatter YAML, manifests, hook paths (pre-commit, CI)
 scripts/install-hooks.sh                               # git pre-commit / pre-push
@@ -581,6 +581,20 @@ later with the metadata); forget and wipe delete it too.
 `backend`: `keychain` (macOS), `windows-vault`, `encrypted-file` (Linux and
 any other), `jsonfile` (test mode, plaintext). `tips`: `false` turns off the
 one-line tip that appears once a day at session start.
+
+`key_store` (`encrypted-file` only): `file` (default) keeps the key next to the
+store in `~/.maisecrets/key`, so a backup or a copy of the disk holds both.
+`secret-service` keeps it in the Secret Service of the desktop session
+(gnome-keyring, KWallet, KeePassXC; through `secret-tool`, package
+`libsecret-tools`): an existing key file moves there once it reads back equal,
+and is then deleted. Without a Secret Service (a server, CI, `secret-tool` not
+installed) the key file works as before. Once the key moved, a Secret Service
+that is locked, not running or lost the item stops the store with an error; it
+never makes a new key, which would leave every stored value unreadable. Either
+way, keep `~/.maisecrets` out of backups: the key file, or an old copy of it from
+before the move, decrypts the store. This does not help against another program
+of yours: in an unlocked session it can ask the Secret Service for the key, as it
+can read the key file.
 
 `regions`: country codes, for example `["de", "us"]`. Each country adds its
 Presidio rules for personal data, such as a German tax ID or a US social

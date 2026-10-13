@@ -22,8 +22,8 @@ ADVANCED = ("ssh_host_groups", "ssh_approval", "resolve_in_files", "ssh_via_sand
             "rewrite_prompts", "scrub_transcript", "strip_hidden_characters", "regions", "ttl_seconds",
             "renew_on_use", "tips", "shortcut", "guard", "pass_agent_reports", "gateway_servers",
             "max_keys_per_session", "max_resolves_per_hour")
-INTERNAL = ("backend", "allow_plaintext_store", "report_url", "max_ttl_seconds", "max_new_entries_per_result",
-            "keep_purged_days", "audit_max_lines", "pii_regions")
+INTERNAL = ("backend", "key_store", "allow_plaintext_store", "report_url", "max_ttl_seconds",
+            "max_new_entries_per_result", "keep_purged_days", "audit_max_lines", "pii_regions")
 
 TITLE = {
     "ssh_consent": "SSH consent", "ssh_autonomous_hosts": "Autonomous hosts",

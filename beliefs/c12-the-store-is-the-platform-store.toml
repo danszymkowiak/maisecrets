@@ -6,5 +6,5 @@ runner = ["tests/test_vault.py::BackendChoiceTests::test_the_store_is_the_platfo
 
 [proof]
 file = "maisecrets/vault.py"
-find = "        return WindowsVaultBackend()\n    return EncryptedFileBackend()\n"
+find = "        return WindowsVaultBackend()\n    return EncryptedFileBackend(cfg.get(\"key_store\", \"file\"))\n"
 replace = "        return WindowsVaultBackend()\n    return JsonFileBackend()\n"

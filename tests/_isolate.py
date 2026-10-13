@@ -76,7 +76,7 @@ os.environ["CLAUDE_CONFIG_DIR"] = os.path.join(TMP, "claude-config")
 TRIPWIRE = os.path.join(TMP, "tripwire")
 TRIPWIRE_BIN = os.path.join(TMP, "tripwire-bin")
 if os.name != "nt":
-    _tools = ["pbcopy", "pbpaste", "xclip", "open", "xdg-open"]
+    _tools = ["pbcopy", "pbpaste", "xclip", "open", "xdg-open", "secret-tool"]
     if not (os.environ.get("CI") or os.environ.get("MAISECRETS_NATIVE_BACKEND_TEST") == "1"):
         _tools += ["security", "powershell"]
     os.makedirs(TRIPWIRE_BIN, exist_ok=True)

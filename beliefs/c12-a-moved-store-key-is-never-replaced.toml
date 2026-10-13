@@ -1,0 +1,10 @@
+# c12-a-moved-store-key-is-never-replaced: the test owns the rule; this file names it and the mutation that must turn it red.
+belief = "c12-a-moved-store-key-is-never-replaced"
+control = "C12"
+statement = "Once the encrypted file's key moved to the Secret Service, a Secret Service that is unavailable or lost the item stops the store; no new key is made in the Secret Service or as a key file (TASK-46)."
+runner = ["tests/test_key_store.py::KeyStoreTests::test_a_moved_key_is_never_replaced_silently"]
+
+[proof]
+file = "maisecrets/vault.py"
+find = "        if self._moved():\n            state, key = self._ss_lookup()\n"
+replace = "        if False:\n            state, key = self._ss_lookup()\n"

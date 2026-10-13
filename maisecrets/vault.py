@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import platform
 import subprocess
 import time
@@ -52,6 +53,8 @@ def _check_home() -> None:
 
 DEFAULT_CONFIG = {
     "backend": "keychain",          # keychain (macOS) | windows-vault | encrypted-file (Linux) | jsonfile (test)
+    # where the encrypted file's key lives: file (the vault home) | secret-service (Linux, TASK-46; else the file)
+    "key_store": "file",
     "report_url": "https://github.com/Mcpgate-de/maisecrets/issues",   # shown in the block notice
     "ttl_seconds": {"default": 86400, "CARD": 3600},
     "max_ttl_seconds": 30 * 86400,
@@ -104,7 +107,7 @@ _CONFIG_TYPES = {
     "max_new_entries_per_result": int, "keep_purged_days": int, "audit_max_lines": int,
     "allow_plaintext_store": bool, "resolve_in_files": bool, "shortcut": bool, "ssh_via_sandbox": bool,
     "ssh_consent": bool, "ssh_host_groups": dict, "ssh_autonomous_hosts": list, "secret_destinations": str,
-    "ssh_approval": str, "rehydration": str, "guard": bool, "pass_agent_reports": bool,
+    "ssh_approval": str, "rehydration": str, "guard": bool, "pass_agent_reports": bool, "key_store": str,
 }
 
 
@@ -474,7 +477,9 @@ def describe_backend(backend) -> str:
     where = {
         "KeychainBackend": f"macOS login keychain, service '{SERVICE}' (Keychain Access shows the entries)",
         "WindowsVaultBackend": f"Windows Credential Locker, resource '{SERVICE}' (Settings > Credential Manager)",
-        "EncryptedFileBackend": f"encrypted file {HOME / 'vault.enc.json'} (openssl, key file {HOME / 'key'})",
+        "EncryptedFileBackend": f"encrypted file {HOME / 'vault.enc.json'} (openssl, "
+                                + ("key in the Secret Service)" if name == "EncryptedFileBackend" and backend._moved()
+                                   else f"key file {getattr(backend, 'key_file', HOME / 'key')})"),
         "JsonFileBackend": f"PLAINTEXT file {HOME / 'vault.json'} - TEST MODE, not for real secrets",
     }.get(name, name)
     return (f"maisecrets vault: {where}. Metadata: {INDEX}. "
@@ -624,7 +629,7 @@ def parse_keychain_dump(text: str, service: str) -> list[str]:
 
 
 _TIMEOUT_CODES = {"keychain": "store.timeout-keychain", "openssl": "store.timeout-openssl",
-                  "Credential Locker": "store.timeout-locker"}
+                  "Credential Locker": "store.timeout-locker", "Secret Service": "store.timeout-secret-service"}
 
 
 def _run_store(what: str, args: list[str], **kw) -> subprocess.CompletedProcess:
@@ -743,6 +748,11 @@ class KeychainBackend:
         return n
 
 
+SECRET_TOOL = "secret-tool"          # libsecret's CLI: gnome-keyring, KWallet, KeePassXC (Secret Service API)
+KEY_LOCATION = "key.location"        # in the home: "secret-service" once the key moved there (no secret in it)
+KEY_STORES = ("file", "secret-service")
+
+
 class EncryptedFileBackend:
     """Linux servers and anywhere without a keychain: values encrypted at rest with
     ``openssl enc`` (AES-256-CBC, PBKDF2) plus an HMAC-SHA256 tag, key in a 0600 file.
@@ -751,14 +761,93 @@ class EncryptedFileBackend:
     path on a server). Without the key the vault file is noise. This is not a
     hardware-backed store: a process running as the same user can read the key,
     exactly as it could read the keychain on a Mac.
+
+    ``key_store="secret-service"`` (TASK-46) keeps the key in the Secret Service instead, so a backup or a copy of
+    the disk no longer holds key and ciphertext side by side (A4). An existing key file moves there once it reads
+    back equal; with no Secret Service (headless, CI, a sandboxed command) the key file works as before. Once the key
+    moved, KEY_LOCATION says so, and a Secret Service that is unreachable or lost the item fails closed: a new key
+    would make every stored value unreadable (C12). Any process of the same user can still ask the Secret Service of
+    an unlocked session for the key (not A3).
     """
     test_mode = False
+    key_store = "file"
+    _cached: bytes | None = None
 
-    def __init__(self) -> None:
+    def __init__(self, key_store: str = "file") -> None:
+        if key_store not in KEY_STORES:
+            raise ValueError(f"key_store {key_store!r}: not one of {', '.join(KEY_STORES)}")
+        self.key_store = key_store
         self.path = HOME / "vault.enc.json"
         self.key_file = Path(os.environ.get("MAISECRETS_KEY_FILE", HOME / "key"))
+        self._cached = None
+
+    # ---- the Secret Service, through secret-tool; the key goes on stdin and comes back on stdout, never in argv
+    def _attrs(self) -> list[str]:
+        return ["service", SERVICE, "home", str(HOME)]
+
+    def _ss(self, args: list[str], data: str | None = None) -> subprocess.CompletedProcess | None:
+        """A secret-tool call, or None when the tool is not installed."""
+        if not (os.path.isabs(SECRET_TOOL) and os.access(SECRET_TOOL, os.X_OK)) and not shutil.which(SECRET_TOOL):
+            return None
+        return _run_store("Secret Service", [SECRET_TOOL, *args], input=data, capture_output=True, text=True,
+                          timeout=5)
+
+    def _ss_lookup(self) -> tuple[str, bytes | None]:
+        """("found", key), ("missing", None) or ("unavailable", None)."""
+        r = self._ss(["lookup", *self._attrs()])
+        if r is None:
+            return "unavailable", None
+        if r.returncode == 0 and r.stdout.strip():
+            return "found", r.stdout.strip().encode()
+        if r.returncode == 1 and not r.stderr.strip():
+            return "missing", None
+        return "unavailable", None
+
+    def _ss_store(self, key: bytes) -> bool:
+        """Store the key and read it back; True only when the Secret Service now holds exactly this key."""
+        r = self._ss(["store", "--label", f"{SERVICE} store key ({HOME})", *self._attrs()], key.decode())
+        if r is None or r.returncode != 0:
+            return False
+        state, got = self._ss_lookup()
+        return state == "found" and got == key
+
+    @property
+    def location(self) -> Path:
+        return HOME / KEY_LOCATION
+
+    def _moved(self) -> bool:
+        try:
+            return self.location.read_text(encoding="utf-8").strip() == "secret-service"
+        except FileNotFoundError:
+            return False
 
     def _key(self) -> bytes:
+        if self._cached is not None:
+            return self._cached
+        if self._moved():
+            state, key = self._ss_lookup()
+            if state != "found":
+                # never a new key: the store's values were encrypted with the one in the Secret Service
+                raise CodedError(f"the store key is in the Secret Service, which is {state}; nothing replaced",
+                                 "store.key-secret-service", state)
+            self._cached = key
+            return key
+        if self.key_store == "secret-service":
+            state, _ = self._ss_lookup()
+            if state == "missing":
+                key = self.key_file.read_bytes().strip() if self.key_file.exists() else os.urandom(32).hex().encode()
+                if self._ss_store(key):
+                    atomic_write(self.location, "secret-service\n")
+                    self.key_file.unlink(missing_ok=True)   # only after the copy read back equal
+                    self._cached = key
+                    return key
+                if not self.key_file.exists():
+                    self._ss(["clear", *self._attrs()])   # a copy that did not read back must not linger
+            elif state == "found" and not self.key_file.exists():
+                # an item without the marker: a marker lost from the home; the item is the key
+                atomic_write(self.location, "secret-service\n")
+                self._cached = self._ss_lookup()[1]
+                return self._cached
         if not self.key_file.exists():
             self.key_file.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
             fd = os.open(self.key_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -767,8 +856,25 @@ class EncryptedFileBackend:
         return self.key_file.read_bytes().strip()
 
     def _openssl(self, args: list[str], data: bytes) -> bytes:
-        r = _run_store("openssl", ["openssl", "enc", "-aes-256-cbc", "-pbkdf2", "-iter", "100000", "-salt",
-                            "-pass", f"file:{self.key_file}", *args], input=data, capture_output=True, timeout=5)
+        key = self._key()
+        if self._cached is None:
+            r = _run_store("openssl", ["openssl", "enc", "-aes-256-cbc", "-pbkdf2", "-iter", "100000", "-salt",
+                                       "-pass", f"file:{self.key_file}", *args], input=data, capture_output=True,
+                           timeout=5)
+        else:
+            # a key from the Secret Service reaches openssl through a pipe: no file, no argv, no environment
+            rd, wr = os.pipe()
+            try:
+                os.write(wr, key + b"\n")
+                os.close(wr)
+                wr = -1
+                r = _run_store("openssl", ["openssl", "enc", "-aes-256-cbc", "-pbkdf2", "-iter", "100000", "-salt",
+                                           "-pass", f"fd:{rd}", *args], input=data, capture_output=True, timeout=5,
+                               pass_fds=(rd,))
+            finally:
+                os.close(rd)
+                if wr != -1:
+                    os.close(wr)
         if r.returncode != 0:
             raise CodedError("openssl failed: " + r.stderr.decode(errors="ignore")[:200], "store.openssl", "rc",
                              r.returncode)
@@ -798,7 +904,11 @@ class EncryptedFileBackend:
 
     def wipe(self) -> int:
         n = len(self._load())
-        for f in (self.path, self.key_file):
+        if self._moved() or self.key_store == "secret-service":
+            r = self._ss(["clear", *self._attrs()])
+            if self._moved() and (r is None or r.returncode != 0):
+                raise RuntimeError("the store key in the Secret Service not deleted")
+        for f in (self.path, self.key_file, self.location):
             try:
                 f.unlink()
             except FileNotFoundError:
@@ -921,14 +1031,14 @@ def make_backend(cfg: dict):
     if backend == "jsonfile":
         return JsonFileBackend()
     if backend == "encrypted-file":
-        return EncryptedFileBackend()
+        return EncryptedFileBackend(cfg.get("key_store", "file"))
     if backend == "windows-vault":
         return WindowsVaultBackend()
     if platform.system() == "Darwin":
         return KeychainBackend()
     if platform.system() == "Windows":
         return WindowsVaultBackend()
-    return EncryptedFileBackend()
+    return EncryptedFileBackend(cfg.get("key_store", "file"))
 
 
 def _mutating(fn):

@@ -135,6 +135,8 @@ site fails. `scrub.write` is a string of code in the child and is checked by its
 | `store.index-read`, `store.index-shape` | 949, 952 | fail-closed |
 | `store.lock` | 220 (`LockTimeout` after `LOCK_DEADLINE`) | fail-closed |
 | `store.timeout-keychain`, `store.timeout-openssl`, `store.timeout-locker` | 598; `_run_store` gets a closed backend id instead of display text. A store timeout longer than the watchdog shows up as `hook.<event>.watchdog` | fail-closed |
+| `store.key-secret-service` | `EncryptedFileBackend._key`: the key moved to the Secret Service (`key.location`), which is unavailable or lost the item; no new key is made | fail-closed |
+| `store.timeout-secret-service` | `_run_store` for a `secret-tool` call (a locked keyring that waits for its unlock dialog) | fail-closed |
 | `store.decrypt` | the swallowed decrypt failure at 789 (the value is then "not available") | best-effort |
 | `store.mark-weak` | 997 | best-effort |
 | `store.expire` | the `except` at 1327 (also a keychain delete that fails there, 679) | best-effort |
