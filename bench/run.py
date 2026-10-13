@@ -42,7 +42,8 @@ def main(argv: list[str]) -> int:
         return 1
     for name, s in summary["scores"].items():
         print(f"{name:10} score {100 * s:.1f}%")
-    print(f"overall    {100 * summary['overall']:.1f}%   report: {out / 'report.md'}")
+    overall = summary["overall"]   # None when every dataset of the run is a guard (no weight in the mean)
+    print(f"overall    {'-' if overall is None else f'{100 * overall:.1f}%'}   report: {out / 'report.md'}")
     return 0
 
 
