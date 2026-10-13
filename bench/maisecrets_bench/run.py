@@ -37,7 +37,8 @@ UNLABELLED_NEGATIVE = {"creddata": False}
 DROPPED = {"tab"}
 # a dataset that guards: a change must not make it worse, but it has no weight in the overall mean. The generated
 # tool output is ours, so tuning to it would be circular (docs/BENCHMARK.md, Synthetic tool output)
-# kagglepii: real essays, but only personal values are labelled; a guard until the usefulness check (TASK-11.36)
+# kagglepii: real essays, but only 45 values in scope (2026-10-13): its weight would be noise, its false-alarm rate on
+# real text is what it adds (TASK-11.36)
 GUARD = {"synthetic", "kagglepii"}
 
 
@@ -49,9 +50,7 @@ def default_roles(names) -> dict:
 LOCAL_ONLY = {"ai4privacy": "ai4privacy: academic and non-commercial use only (AI4Privacy licence). Local "
                             "measurement; leave it out of anything sent upstream. The plugin's owner needs "
                             "AI4Privacy's permission first (licensing@ai4privacy.com). Its precision is a lower "
-                            "bound: its generator also wrote values outside the labelled slots (TASK-33).",
-              "kagglepii": "kagglepii: The Learning Agency Lab - PII Data Detection (Kaggle competition data). Local "
-                           "until its licence is recorded (TASK-11.36); leave it out of anything sent upstream."}
+                            "bound: its generator also wrote values outside the labelled slots (TASK-33)."}
 
 
 def default_datasets(manifest: dict) -> list[str]:
@@ -61,7 +60,9 @@ def default_datasets(manifest: dict) -> list[str]:
 # a CC BY dataset: its attribution goes into every report that includes it
 ATTRIBUTION = {"nemotron": "nemotron: NVIDIA, Nemotron-PII (huggingface.co/datasets/nvidia/Nemotron-PII), CC BY 4.0.",
                "mendeley": "mendeley: Synthetic Dataset for PII Detection and Anonymization in Financial Documents, "
-                           "Mendeley Data, doi 10.17632/tzrjx692jy.1, CC BY 4.0."}
+                           "Mendeley Data, doi 10.17632/tzrjx692jy.1, CC BY 4.0.",
+               "kagglepii": "kagglepii: PIILO, The Learning Agency Lab (the data of Kaggle's PII Data Detection "
+                            "competition), CC BY 4.0."}
 
 
 def licence_notes(names) -> list[str]:

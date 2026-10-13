@@ -68,5 +68,15 @@ class TokenTests(unittest.TestCase):
             self.assertIn("KAGGLE_API_TOKEN", str(ctx.exception))
 
 
+
+class LicenceTests(unittest.TestCase):
+    def test_piilo_is_cc_by_with_attribution_not_local_only(self):
+        # PIILO, the competition's data: "PIILO © 2024 by The Learning Agency Lab is licensed under CC BY 4.0"
+        # (the-learning-agency-lab.com/learning-exchange/piilo-dataset/, user 2026-10-13)
+        from maisecrets_bench import run
+        self.assertNotIn("kagglepii", run.LOCAL_ONLY)
+        self.assertIn("CC BY 4.0", run.ATTRIBUTION["kagglepii"])
+        self.assertIn("The Learning Agency Lab", run.ATTRIBUTION["kagglepii"])
+
 if __name__ == "__main__":
     unittest.main()

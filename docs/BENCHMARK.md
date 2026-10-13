@@ -893,3 +893,12 @@ After these rules, a gold value of 6 or more characters can equal a context word
 - A dataset of our own for `terms.txt`.
 - Speed tuning beyond running the samples in parallel; `--limit` with a fixed seed takes a sample
   of a large dataset for a quick run.
+
+### Real essays: PIILO, Kaggle's PII Data Detection data (TASK-11.36, 2026-10-13)
+
+About 6,800 student essays written and labelled by people (PIILO, The Learning Agency Lab, CC BY 4.0; downloaded from
+the Kaggle competition with the user's own account, `setup.py --with-kaggle-pii`). Of 1,606 labelled values, 45 are in
+maisecrets' scope (e-mail addresses and phone numbers); names, usernames, ID numbers, URLs and street addresses are not.
+Run 20261013-230908: 44 of the 45 found, 3 false positives in 4.1 million tokens (0.001 per 1,000; Gretel, synthetic,
+0.7), out-of-scope labels touched 2 of 1,561. `bench/usefulness.py` says keep; it stays a guard, outside the mean:
+45 values are too few for a weight, and the false-alarm rate on real text is what it adds.

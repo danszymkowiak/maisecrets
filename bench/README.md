@@ -40,7 +40,7 @@ uv run --project bench python bench/recommend.py --mutations <dir>   # one page 
 | findocs (generated) | 3,300 Swiss salary certificates and tax returns (de, fr), bank statements, MT940 and CSV exports, QR-bills, US W-2 and 1099 forms, invoices | ours | generated from a fixed seed; nothing downloaded |
 | synthetic tool output | 3,000 generated terminal outputs (printenv, git diff, kubectl, lockfiles, ...); a guard, not in the mean | ours | generated from a fixed seed; nothing downloaded |
 | ai4privacy pii-masking-300k | 225,405 records in 6 languages | **academic and non-commercial use only** (AI4Privacy licence) | opt-in: `--with-ai4privacy`, for your own local measurement |
-| The Learning Agency Lab - PII Data Detection (Kaggle) | about 6,800 student essays, labelled by people | **competition data: your Kaggle account must accept the competition rules**; licence not yet recorded | opt-in: `--with-kaggle-pii`, local, a guard |
+| The Learning Agency Lab - PII Data Detection (Kaggle) | about 6,800 student essays, labelled by people | CC BY 4.0 (PIILO, attribution: The Learning Agency Lab); **downloaded from the competition: your Kaggle account must accept its rules** | opt-in: `--with-kaggle-pii`, a guard |
 
 Each dataset becomes `<data>/parquet/<dataset>.parquet` in one schema, with a dev or check split by source.
 `manifest.json` records the versions and counts; a second setup run with the same versions builds nothing.

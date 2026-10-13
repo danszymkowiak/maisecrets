@@ -2,8 +2,10 @@
 by people and labelled by people (student names, e-mail addresses, usernames, ID numbers, phone numbers, personal
 URLs, street addresses). Not financial, but real text: it shows the artefacts generated datasets hide.
 
-Opt-in (setup.py --with-kaggle-pii) and local: the data needs the user's own Kaggle account, whose holder accepts the
-competition rules on kaggle.com first (the API answers 403 before that), and its licence is not yet recorded here.
+Opt-in (setup.py --with-kaggle-pii): the data needs the user's own Kaggle account, whose holder accepts the
+competition rules on kaggle.com first (the API answers 403 before that). The data is PIILO, "licensed under CC BY 4.0"
+by The Learning Agency Lab (the-learning-agency-lab.com/learning-exchange/piilo-dataset/); reports carry the
+attribution.
 The token comes from KAGGLE_API_TOKEN in the environment or the repository's .env (git-ignored); it is passed to the
 Kaggle CLI and never printed. train.json holds per essay its tokens, a whitespace flag per token and a BIO label per
 token; the text is rebuilt from the tokens and must equal full_text."""
@@ -27,8 +29,8 @@ COMPETITION = "pii-detection-removal-from-educational-data"
 REVISION = "bio1"           # part of the version: a change of the adapter or its table builds the parquet again
 LABELS = ("NAME_STUDENT", "EMAIL", "USERNAME", "ID_NUM", "PHONE_NUM", "URL_PERSONAL", "STREET_ADDRESS")
 LICENCE_NOTE = ("kagglepii: The Learning Agency Lab - PII Data Detection (Kaggle). Your own Kaggle account must "
-                "accept the competition rules first; its data licence is not yet recorded (TASK-11.36), so the "
-                "results stay local.")
+                "accept the competition rules first; the data (PIILO) is CC BY 4.0, attribution: The Learning "
+                "Agency Lab.")
 
 
 @dataclass
