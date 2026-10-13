@@ -14,6 +14,12 @@ from .normalise import Normalised
 
 # a break between two token characters, the only place a wrapped token can continue
 _BREAK = re.compile(r"(?<=[A-Za-z0-9_+/=.-])\r?\n(?=[A-Za-z0-9_+/=-])")
+_TOKEN_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_+/=.-")
+# the rules are asked only where the token run before the break has MIN_LEFT characters and both runs together
+# MIN_ACROSS: a prefixed token is that long, a pair of words at a break of prose is not (TASK-37: asking at every
+# break cost 517 ms on 120 KB of prose)
+MIN_LEFT = 8
+MIN_ACROSS = 24
 
 Hits = Callable[[str], list[tuple[int, int]]]
 
@@ -31,6 +37,15 @@ def _line(text: str, a: int, b: int) -> tuple[int, int]:
     return start, len(text) if end < 0 else end
 
 
+def _run(text: str, i: int, step: int, stop: int) -> int:
+    """The number of token characters from i on in the direction of step, up to stop and at most MIN_ACROSS."""
+    n = 0
+    while n < MIN_ACROSS and (i >= stop if step < 0 else i < stop) and text[i] in _TOKEN_CHARS:
+        n += 1
+        i += step
+    return n
+
+
 def unwrap(text: str, shape_hits: Hits | None = None) -> Normalised:
     if "\n" not in text:
         return Normalised(text)
@@ -40,6 +55,9 @@ def unwrap(text: str, shape_hits: Hits | None = None) -> Normalised:
         a, b = m.span()
         ls, le = _line(text, a, b)
         left = text[ls:a]
+        tail = _run(text, a - 1, -1, ls)
+        if tail < MIN_LEFT or tail + _run(text, b, 1, le) < MIN_ACROSS:
+            continue
         brk = len(left)
         across = [h for h in hits(left + text[b:le]) if h[0] < brk < h[1]]
         if not across:

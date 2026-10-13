@@ -115,6 +115,10 @@ FILTERS: dict[str, Filter] = {
     "bench:object_id": object_id,
     "bench:digest_any": lambda *a: digest_label(*a) and digest_prefix(*a) and object_id(*a),
     "bench:wordlike_75": _wordlike("coverage", 0.75),
+    # TASK-11.22, 2026-10-13: the highest coverage of any find of these rules on the whole bench is 0.871 (one
+    # CredData find, outside a strong label; the next is 0.667), so above 0.9 no find is lost. Chosen on all data,
+    # not on dev: a thin margin
+    "bench:wordlike_90": _wordlike("coverage", 0.9),
     "bench:wordlike_44": _wordlike("coverage", 0.444),
     "bench:bigram_309": _wordlike("bigram", 3.092),
     "bench:label_negative": label_negative,

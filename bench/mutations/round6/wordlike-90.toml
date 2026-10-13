@@ -1,0 +1,32 @@
+name = "Generic rules: skip wordlike-90"
+why = "TASK-11.22. Word coverage above 0.9 outside a strong label: above the highest find (0.871, CredData), so no find is lost on the whole bench."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+filter = "bench:wordlike_90"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-colon"
+filter = "bench:wordlike_90"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-equal-signs"
+filter = "bench:wordlike_90"
+
+[[change]]
+op = "set"
+rule = "ds-basic-auth"
+filter = "bench:wordlike_90"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-arrow-function-sign-quotes-required"
+filter = "bench:wordlike_90"
+
+[[change]]
+op = "set"
+rule = "ds-keyword-quotes-and-semicolon"
+filter = "bench:wordlike_90"
