@@ -47,8 +47,8 @@ ARROW = pa.schema([
 
 
 def _check_type(s: Sample, t: str) -> None:
-    from .detector import known_types
-    if t != OUT_OF_SCOPE and t not in known_types():
+    from .detector import unknown_type
+    if t != OUT_OF_SCOPE and unknown_type(t):
         raise BenchError(f"{s.dataset}/{s.sample_id}: type {t!r} is not a maisecrets type")
 
 

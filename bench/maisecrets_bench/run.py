@@ -92,8 +92,9 @@ def _init_worker(regions: list[str], locale: str, mutation=None) -> None:
 
 
 def _detections(text: str) -> list[score.Detection]:
-    return [score.Detection(m.start, m.end, m.type, m.kind) for m in _detect.scan(text, ruleset=_RULESET)
-            if m.type not in SKIP_TYPES]
+    # without a mutation scan(text) alone: an older maisecrets (MAISECRETS_BENCH_DETECTOR) has no ruleset keyword
+    found = _detect.scan(text) if _RULESET is None else _detect.scan(text, ruleset=_RULESET)
+    return [score.Detection(m.start, m.end, m.type, m.kind) for m in found if m.type not in SKIP_TYPES]
 
 
 def _detect_chunk(chunk: list[Sample]) -> list[tuple[str, str, list[score.Detection]]]:
@@ -110,7 +111,7 @@ def _active(regions: list[str], locale: str, mutation=None) -> dict:
 def _describe() -> dict:
     a = _detect.active_regions()
     return {"regions": list(a.regions), "languages": list(a.languages),
-            "rules": sorted({r.id for r in (_RULESET or _detect.default_ruleset()).rules})}
+            "rules": sorted({r.id for r in (_RULESET.rules if _RULESET is not None else _detect.rules())})}
 
 
 def group_of(s: Sample) -> str:

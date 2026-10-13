@@ -34,6 +34,37 @@ class PoolTests(unittest.TestCase):
         self.assertEqual(run.POOL_CONTEXT.get_start_method(), "spawn")
 
 
+class OlderDetectorTests(unittest.TestCase):
+    """The bench measures an older maisecrets too (MAISECRETS_BENCH_DETECTOR, user 2026-10-14: the fork against the
+    version it started from). A plain run uses only scan(text) and rules(), which every version has."""
+
+    def test_a_plain_run_calls_scan_without_a_ruleset(self):
+        import types
+        calls = []
+
+        def scan(text):     # the old signature: no ruleset keyword
+            calls.append(text)
+            return [types.SimpleNamespace(start=0, end=2, type="EMAIL", kind="email")]
+        old = types.SimpleNamespace(scan=scan, rules=lambda: [types.SimpleNamespace(id="email")],
+                                    active_regions=lambda: types.SimpleNamespace(regions=("generic",),
+                                                                                 languages=("en",)))
+        saved = run._detect, run._RULESET
+        try:
+            run._detect, run._RULESET = old, None
+            self.assertEqual([d.type for d in run._detections("ab")], ["EMAIL"])
+            self.assertEqual(run._describe()["rules"], ["email"])
+        finally:
+            run._detect, run._RULESET = saved
+        self.assertEqual(calls, ["ab"])
+
+    def test_a_type_the_older_detector_lacks_is_no_error(self):
+        from unittest import mock
+        from maisecrets_bench import detector
+        self.assertTrue(detector.unknown_type("NO_SUCH_TYPE"))
+        with mock.patch.object(detector, "OLDER", True):
+            self.assertFalse(detector.unknown_type("NO_SUCH_TYPE"))
+
+
 class RunTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

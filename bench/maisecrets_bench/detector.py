@@ -23,8 +23,11 @@ def _isolate() -> Path:
 
 
 HOME = _isolate()
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
+# the maisecrets checkout whose detector is measured: this one, or another one, such as a worktree of the version the
+# fork started from (user, 2026-10-14). Only a plain run works with an older one: mutations need the newer API
+DETECTOR_REPO = Path(os.environ.get("MAISECRETS_BENCH_DETECTOR") or REPO).expanduser().resolve()
+if str(DETECTOR_REPO) not in sys.path:
+    sys.path.insert(0, str(DETECTOR_REPO))
 
 from maisecrets import detect  # noqa: E402
 
@@ -33,8 +36,19 @@ _TYPES: frozenset[str] | None = None
 
 def all_regions() -> tuple[str, ...]:
     """Every region the vendored Presidio rules know, `generic` included."""
-    recs = json.loads((REPO / "maisecrets" / "rules" / "presidio.json").read_text(encoding="utf-8"))["recognizers"]
-    return tuple(sorted({detect.presidio_region(r["id"]) for r in recs} | {d["region"] for d in detect.REGIONAL_RULES}))
+    recs = json.loads((DETECTOR_REPO / "maisecrets" / "rules" / "presidio.json").read_text(encoding="utf-8"))
+    regional = getattr(detect, "REGIONAL_RULES", ())     # an older maisecrets has no regional rules
+    return tuple(sorted({detect.presidio_region(r["id"]) for r in recs["recognizers"]}
+                        | {d["region"] for d in regional}))
+
+
+OLDER = DETECTOR_REPO != REPO.resolve()
+
+
+def unknown_type(t: str) -> bool:
+    """Is t a type the bench's own tables name in error? Measuring another checkout, a type it does not know is
+    expected (it finds none of them: an older maisecrets lacks the fork's CH_AHV), so nothing is unknown then."""
+    return not OLDER and t not in known_types()
 
 
 def known_types() -> frozenset[str]:
@@ -42,7 +56,7 @@ def known_types() -> frozenset[str]:
     global _TYPES
     if _TYPES is None:
         _TYPES = frozenset({r.type for r in detect._load_presidio(all_regions())}
-                           | {r.type for r in detect._load_regional(all_regions())}
+                           | {r.type for r in getattr(detect, "_load_regional", lambda regions: [])(all_regions())}
                            | {r.type for r in detect._load_own()} | detect.SECRET_TYPES)
     return _TYPES
 

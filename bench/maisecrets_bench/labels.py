@@ -25,11 +25,11 @@ class LabelTable:
 
 
 def load(dataset: str, path: Path | None = None) -> LabelTable:
-    from .detector import known_types
+    from .detector import unknown_type
     from .schema import OUT_OF_SCOPE
     path = path or TABLES / f"{dataset}.toml"
     mapping = tomllib.loads(path.read_text(encoding="utf-8")).get("labels", {})
     for label, t in mapping.items():
-        if t != OUT_OF_SCOPE and t not in known_types():
+        if t != OUT_OF_SCOPE and unknown_type(t):
             raise BenchError(f"{dataset}: label {label!r} maps to {t!r}, which is not a maisecrets type")
     return LabelTable(dataset, dict(mapping))
