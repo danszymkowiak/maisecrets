@@ -95,7 +95,8 @@ class ScanTests(unittest.TestCase):
         shipped = ("ansi", "cr", "invisible", "gutter", "entity", "fullwidth", "decode", "unwrap")
         self.assertEqual(detect.NORMALISE, shipped)
         self.assertEqual(detect.default_ruleset().normalise, shipped)
-        self.assertEqual(self.found("t " + GHP[:10] + "\u200b" + GHP[10:]), [("github-pat", GHP[:10] + "\u200b" + GHP[10:])])
+        split = GHP[:10] + "\u200b" + GHP[10:]
+        self.assertEqual(self.found("t " + split), [("github-pat", split)])
 
     def test_a_split_token_is_found_and_its_true_span_redacted(self):
         text = "t " + GHP[:10] + "\u200b" + GHP[10:] + " end"

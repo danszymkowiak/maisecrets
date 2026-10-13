@@ -362,6 +362,11 @@ def cmd_status(_: list[str]) -> int:
     main = pol["bash"]
     other = [f"{path} {p}" for path, p in pol.items() if p != main]
     print(f"rehydration: {main} ({what[main]})" + (f"; except {', '.join(other)}" if other else ""))
+    from . import sandbox_check
+    stack, problems = sandbox_check.layers()
+    print(sandbox_check.line(sandbox_check.verdict(stack, HOME)))
+    for p in problems:
+        print(f"WARNING: Claude Code settings {p}")
     from . import detect
     def version(name: str) -> str:
         return (detect.RULES_DIR / f"{name}_VERSION").read_text(encoding="utf-8").strip()
