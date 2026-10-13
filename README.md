@@ -594,7 +594,10 @@ never makes a new key, which would leave every stored value unreadable. Either
 way, keep `~/.maisecrets` out of backups: the key file, or an old copy of it from
 before the move, decrypts the store. This does not help against another program
 of yours: in an unlocked session it can ask the Secret Service for the key, as it
-can read the key file.
+can read the key file. Measured on 2026-10-13 (GNOME, Claude Code sandbox on): the
+hooks, which run outside the sandbox, read and write values with the key in the
+Secret Service; a sandboxed command cannot reach it, so there a store whose key
+moved fails closed, and a new store falls back to the key file.
 
 `regions`: country codes, for example `["de", "us"]`. Each country adds its
 Presidio rules for personal data, such as a German tax ID or a US social
