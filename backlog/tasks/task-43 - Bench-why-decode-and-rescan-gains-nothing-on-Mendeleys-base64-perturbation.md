@@ -1,9 +1,10 @@
 ---
 id: TASK-43
 title: 'Bench: why decode-and-rescan gains nothing on Mendeley''s base64 perturbation'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-13 08:48'
+updated_date: '2026-10-13 09:26'
 labels:
   - benchmark
 dependencies: []
@@ -19,5 +20,11 @@ From TASK-11.26: with the decode stage Mendeley's base64 recall stays at 0 % and
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The cause is named with counts per type
+- [x] #1 The cause is named with counts per type
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Two causes, counted on Mendeley's 400 perturbation samples. (1) A bug: decode.RUN_RE wanted 24 characters before the padding, so a 16-byte value (22 characters and ==, a 16-digit card) was never decoded; fixed test first. Pooled base64 recall with the stage 63.8% -> 71.1%, Mendeley 0% -> 15.2%, findocs 43.8% -> 72.7% (perturb 20261013-112037); the datasets verdict is unchanged (mutation run 20261013-112552). (2) By design: PHONE 410, US_SSN 473 and 124 of 357 CARD values encode to fewer than 24 characters and are not decoded; 45 decoded cards are missed unencoded too (the card rule's context gate). docs/BENCHMARK.md, Decode and rescan.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -61,6 +61,14 @@ class DecodeTests(unittest.TestCase):
         self.assertIsNone(decode.decode_run(b64("x" * (decode.MAX_RUN))))
 
 
+class RunTests(unittest.TestCase):
+    def test_the_padding_counts_toward_the_minimum_length(self):
+        # 16 bytes encode to 22 characters and "==": a card number (TASK-43, Mendeley)
+        enc = b64("4111" + "111111111111")
+        self.assertEqual(len(enc), 24)
+        self.assertEqual([m.group(0) for m in decode.RUN_RE.finditer("number: " + enc)], [enc])
+
+
 class StageTests(unittest.TestCase):
     def test_the_stage_maps_a_decoded_value_back_to_the_whole_run(self):
         enc = b64("token " + GHP)

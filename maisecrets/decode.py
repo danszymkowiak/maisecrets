@@ -27,7 +27,8 @@ MAX_DEPTH = 2
 PRINTABLE = 0.9
 
 # a run of the base64 alphabets (standard and URL-safe) with its padding; hex is a subset and is told apart below
-RUN_RE = re.compile(r"(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{%d,}={0,2}(?![A-Za-z0-9+/=_-])" % min(MIN_B64, MIN_HEX))
+# (the padding counts toward MIN_B64: 16 bytes are 22 characters and "=="; _bytes checks the whole length)
+RUN_RE = re.compile(r"(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{%d,}={0,2}(?![A-Za-z0-9+/=_-])" % (MIN_B64 - 2))
 _HEX_RE = re.compile(r"(?:[0-9a-fA-F]{2})+")
 
 

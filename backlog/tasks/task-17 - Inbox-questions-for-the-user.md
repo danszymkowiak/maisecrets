@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-13 09:09'
+updated_date: '2026-10-13 09:26'
 labels:
   - inbox
 dependencies: []
@@ -135,5 +135,10 @@ Normaliser stages, adding to the TASK-11.25 question above: two more stages are 
 created: 2026-10-13 09:09
 ---
 TASK-11.27 (repeat count): skipping a generic keyword-rule value that occurs 10+ times in one text passes the bench on dev and check (about 350 CredData false positives fewer, no find lost; at 3 repeats it lost 154 real passwords in Nemotron). But a debug log that prints the same password= line on every request is exactly such a text, and the filter would let that value through. Options: (a) port repeat10 into the plugin, (b) keep it in the bench only. I recommend (b): the cost of a missed secret in a log outweighs 350 false alarms, and the floor rule exists to keep that trade explicit.
+---
+
+created: 2026-10-13 09:26
+---
+Correction to my normaliser-stages comment above: after a fix (TASK-43, a 16-byte value was never decoded) the decode stage lifts base64 recall under perturbation from 47.7 % to 71.1 %, not 63.8 %; the verdict on the datasets is unchanged. The recommendation stands.
 ---
 <!-- COMMENTS:END -->

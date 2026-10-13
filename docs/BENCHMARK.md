@@ -489,11 +489,14 @@ redacts the run. Bounds: a text over 1 MB is not looked at, a run over 16 KiB is
   positives more (CredData), the SECRET_PREFIXED gap narrowed.
 - **The synthetic dataset's encoded positives** (900 gold values that decode to text): the rules find 896 of them
   without the stage (through their labels and the Kubernetes Secret rule) and 896 with it.
-- **Perturbation** (perturb 20261013-103401 without the stage, 20261013-102211 with it; 400 samples per dataset,
-  ai4privacy left out of the sums): base64 47.7 % -> 63.8 %, hex 14.0 % -> 38.4 %. Gretel base64 2.1 % -> 53.3 %, hex
-  1.2 % -> 61.6 %; findocs hex 0 % -> 72.7 %. A value shorter than 16 characters encodes to fewer than 24 base64
-  characters and is not decoded (an SSN with its dashes has 11). Mendeley's base64 stays at 0 %, its hex rises to
-  15.2 %; why it gains so little is not yet looked at.
+- **Perturbation** (perturb 20261013-103401 without the stage, 20261013-112037 with it; 400 samples per dataset,
+  ai4privacy left out of the sums): base64 47.7 % -> 71.1 %, hex 14.0 % -> 38.4 %. Gretel base64 2.1 % -> 61.8 %, hex
+  1.2 % -> 61.6 %; findocs base64 and hex 0 % -> 72.7 %. (The first run, 20261013-102211, gave base64 63.8 %: the run
+  pattern wanted 24 characters before the padding, so a 16-byte value, 22 characters and `==`, was never decoded;
+  TASK-43.) A value shorter than 16 characters encodes to fewer than 24 base64
+  characters and is not decoded (an SSN with its dashes has 11). Mendeley rises only to 15.2 % (TASK-43): of its 400
+  samples' in-scope values every phone number (410) and SSN (473) and 124 of 357 cards are too short to be decoded,
+  and 45 of the decoded cards are missed unencoded too.
 - **Cost** (`bench/decodecost.py`, idle machine), bytes decoded and time of the stage per text:
 
 | dataset | texts | changed | decoded bytes p50 / p99 / max | ms p50 / p99 / max |
