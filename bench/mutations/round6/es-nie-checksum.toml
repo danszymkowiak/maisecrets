@@ -1,0 +1,7 @@
+name = "es-nie: Spanish NIE: X/Y/Z then the NIF letter"
+why = "TASK-11.24. Presidio 2.2.364 validates it; the plugin's port does not, so it relies on its pattern and context. Ported in validators.py with Presidio's test vectors; pass rates in bench/passrate.py."
+
+[[change]]
+op = "set"
+rule = "es-nie"
+validator = "bench:es_nie"

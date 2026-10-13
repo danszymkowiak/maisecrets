@@ -1,0 +1,7 @@
+name = "nhs: UK NHS number mod 11"
+why = "TASK-11.24. Presidio 2.2.364 validates it; the plugin's port does not, so it relies on its pattern and context. Ported in validators.py with Presidio's test vectors; pass rates in bench/passrate.py."
+
+[[change]]
+op = "set"
+rule = "nhs"
+validator = "bench:nhs"

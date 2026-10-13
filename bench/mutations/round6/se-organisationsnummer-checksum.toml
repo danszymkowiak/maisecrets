@@ -1,0 +1,12 @@
+name = "se-organisationsnummer: Swedish organisationsnummer: third digit >= 2, Luhn"
+why = "TASK-11.24. Presidio 2.2.364 validates it; the plugin's port does not, so it relies on its pattern and context. Ported in validators.py with Presidio's test vectors; pass rates in bench/passrate.py."
+
+[[change]]
+op = "set"
+rule = "se-organisationsnummer#0"
+validator = "bench:se_org"
+
+[[change]]
+op = "set"
+rule = "se-organisationsnummer#1"
+validator = "bench:se_org"
