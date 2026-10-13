@@ -1,6 +1,7 @@
 # A broker process around the store (design note, TASK-47)
 
-Status: a note for a decision, nothing built. Requested by the user on 2026-10-13 ("strengthen the vault").
+Status: not built; the user decided against it on 2026-10-13, after TASK-45 (the sandbox deny) and TASK-46 (the key in
+the Secret Service). Requested by the user on 2026-10-13 ("strengthen the vault").
 
 ## Why
 
