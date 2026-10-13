@@ -1,6 +1,7 @@
-"""A card number needs a context word nearby (Presidio scores the bare shape 0.3), and the vendored words were English
-only: 'Karte 4076 ...' in a German bank statement was missed (TASK-24, findocs). The card words of the label
-languages count too; the number must still pass Luhn.
+"""A card number that passes Luhn is reported without a context word (TASK-40), except a published test number such as
+4111 1111 1111 1111, which a developer types in normal work. Next to a card word every number counts, and the
+vendored words were English only: 'Karte 4076 ...' in a German bank statement was missed (TASK-24, findocs). The card
+words of the label languages count too; the number must still pass Luhn.
 
 Run: python3 -m unittest tests.test_card_context -v
 """
@@ -20,6 +21,7 @@ from maisecrets import detect  # noqa: E402
 
 CARD = "4111 1111 1111 1111"            # the common Luhn test number
 BAD = "4111 1111 1111 1112"
+REAL = "4556 7375 8689 9855"            # synthetic, passes Luhn, not a published test number
 
 
 def cards(text: str) -> list[str]:
@@ -37,8 +39,10 @@ class CardContextTests(unittest.TestCase):
     def test_luhn_still_decides(self):
         self.assertEqual(cards(f"Karte {BAD} Bezug Bancomat"), [])
 
-    def test_without_a_card_word_the_bare_number_stays_unreported(self):
+    def test_without_a_card_word_only_a_published_test_number_stays_unreported(self):
+        self.assertEqual(cards(f"Referenz {REAL} vom Konto"), [REAL])
         self.assertEqual(cards(f"Referenz {CARD} vom Konto"), [])
+        self.assertEqual(cards("4242424242424242"), [])
         self.assertEqual(cards(f"Kartoffel {CARD}"), [], "a whole word only: Kartoffel is no Karte")
 
 

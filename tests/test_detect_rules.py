@@ -459,12 +459,24 @@ class ContextWordTests(unittest.TestCase):
         # the word is in the text, but more than 80 characters before the value
         self.assertEqual(kinds("Steuer-ID bitte. " + "x " * 60 + tax), [])
 
-    def test_a_weak_card_shape_needs_a_context_word_near_it(self):
-        card = " ".join(["4111"] + ["1111"] * 3)
+    def test_a_card_number_that_passes_luhn_needs_no_context_word(self):
+        # TASK-40: the context gate lost 325 card finds on the bench for 55 more false alarms (round7)
+        card = " ".join(["4556", "7375", "8689", "9855"])   # synthetic; not a published test number
         self.assertEqual(kinds(f"card {card}"), [("credit-card", card)])
-        self.assertEqual(kinds(card), [])
-        self.assertEqual(kinds("card " + "x " * 60 + card), [])
-        self.assertEqual(kinds("visa " + card[:-1] + "2"), [])       # context, but not a Luhn number
+        self.assertEqual(kinds(card), [("credit-card", card)])
+        self.assertEqual(kinds("ref " + card[:-1] + "2"), [])        # not a Luhn number
+        self.assertEqual([m.type for m in scan("+4915112345678")], ["PHONE"], "after a + it is a phone number")
+        self.assertEqual(kinds("visa " + card[:-1] + "2"), [])
+
+    def test_generic_api_key_has_one_entropy_floor_per_charset(self):
+        # TASK-41: raw entropy rises with the alphabet; 11 distinct characters give log2(11) = 3.46 bits
+        rule = next(r for r in detect.default_ruleset().rules if r.id == "generic-api-key")
+        self.assertTrue(detect._entropy_ok(rule, "0123456789a"), "hex: floor 3.449")
+        self.assertTrue(detect._entropy_ok(rule, "ghijklmnopq"), "base62: floor 3.322")
+        self.assertFalse(detect._entropy_ok(rule, "abcdefghij!@"), "printable: floor 3.594 (12 distinct: 3.585)")
+        self.assertFalse(detect._entropy_ok(rule, "0123456789"), "hex, 10 distinct: 3.32")
+        other = next(r for r in detect.default_ruleset().rules if r.entropy and r.id != "generic-api-key")
+        self.assertEqual(detect._entropy_ok(other, "x"), detect.shannon_entropy("x") >= other.entropy)
 
     def test_german_identifiers_with_their_context(self):
         for text, kind, value in [("Rentenversicherungsnummer 65170839J003", "de-social-security#0", "65170839J003"),

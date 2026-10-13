@@ -628,7 +628,7 @@ candidate is raw entropy per charset, each threshold chosen on dev: hex 3.449, b
 
 Judged (`bench:entropy_charset`, run 20261012-225924): accepted, SECRET_GENERIC +112 finds and 11 false positives fewer
 (CredData -11, ai4privacy -1, Gretel +1). It gains finds and removes false positives at once, where a flat 3.3
-(TASK-21.9) gains 259 finds for 101 more false positives. Applying it waits for the user (TASK-41).
+(TASK-21.9) gains 259 finds for 101 more false positives. Applied with TASK-40 (below) on 2026-10-13.
 
 ### Operating points (TASK-21.9, 2026-10-12)
 
@@ -652,7 +652,18 @@ Floors come first, so a narrowed gap accepts a change that adds false positives.
 own type at a fair price: credit-card without the gate and generic-api-key at 3.3. Applied together (run
 20261012-224916) they are accepted: CARD +325, SECRET_GENERIC +259, US_BANK_NUMBER +12, 167 more false positives,
 weighted false positives per 1,000 tokens +0.003, mean score +0.22. The ID rules gain only phone numbers they mistype,
-and aba-routing#0 pays 2,503 false alarms for them. Applying the pair waits for the user (TASK-40).
+and aba-routing#0 pays 2,503 false alarms for them.
+
+Applied on 2026-10-13 (TASK-40, TASK-41): credit-card without its gate with the per-charset entropy of
+generic-api-key in place of 3.3, judged together (round7 `charset-and-cards`, against baseline 20261013-222047):
+accepted, CARD +325, SECRET_GENERIC +112, US_BANK_NUMBER +12, 55 more false positives (Gretel +60, ai4privacy +5,
+CredData -11), weighted false positives per 1,000 tokens +0.002. Two guards the bench does not see came with it: a
+card shape right after a `+` is a phone number (`+4915112345678` passes Luhn), and a published test card number
+(`4111 1111 1111 1111`, Stripe's `4242…`) without a card word is no hit (tests/fp_corpus.py, normal work).
+
+An earlier judge of round7 rejected all three changes for SECRET_PREFIXED 1648 -> 1634: a mutation without a
+`normalise` change ran with no normaliser stages, not the shipped ones, so every change was charged with what the
+stages find (fixed in `mutation.ruleset`).
 
 ### Leave-one-out (TASK-18, 2026-10-12)
 

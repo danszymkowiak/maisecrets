@@ -35,6 +35,7 @@ import ipaddress
 import json
 import math
 import re
+import string
 import warnings
 from collections import Counter
 from dataclasses import dataclass
@@ -119,6 +120,29 @@ def shannon_entropy(s: str) -> float:
         return 0.0
     n = len(s)
     return -sum(c / n * math.log2(c / n) for c in Counter(s).values())
+
+
+# raw entropy rises with the alphabet, so one floor treats a hex value and a base64 one alike; generic-api-key gets one
+# floor per charset (TASK-41, chosen on the bench's dev split: bench/maisecrets_bench/filters.py ENTROPY_BY_CHARSET)
+ENTROPY_BY_CHARSET = {"hex": 3.449, "base32": 3.584, "base62": 3.322, "base64": 3.252, "base64url": 3.426,
+                      "printable": 3.594}
+ENTROPY_CHARSET_RULES = frozenset({"generic-api-key"})
+_CHARSETS = (("hex", frozenset(string.hexdigits)), ("base32", frozenset(string.ascii_uppercase + "234567=")),
+             ("base62", frozenset(string.ascii_letters + string.digits)),
+             ("base64", frozenset(string.ascii_letters + string.digits + "+/=")),
+             ("base64url", frozenset(string.ascii_letters + string.digits + "-_=")))
+
+
+def charset(value: str) -> str:
+    """The smallest of hex, base32, base62, base64, base64url that holds the value, else printable."""
+    chars = set(value)
+    return next((name for name, alpha in _CHARSETS if chars <= alpha), "printable")
+
+
+def _entropy_ok(rule: "Rule", secret: str) -> bool:
+    if rule.id in ENTROPY_CHARSET_RULES:
+        return shannon_entropy(secret) >= ENTROPY_BY_CHARSET[charset(secret)]
+    return not rule.entropy or shannon_entropy(secret) >= rule.entropy
 
 
 def _luhn_ok(digits: str) -> bool:
@@ -709,6 +733,18 @@ PRESIDIO_ALWAYS_CONTEXT = {"de-tax-id", "de-tax-number", "de-bsnr", "de-lanr", "
                            # one pattern only: DE and 9 digits that pass the checksum are FIX and XML identifiers
                            # (49=, PartyID) on the bench; a real VAT ID stands next to USt-IdNr or VAT (TASK-38)
                            "de-vat-id#0"}
+# a checksum strong enough to stand alone: a card number that passes Luhn is a card number without a context word too
+# (TASK-40: the gate cost 325 card finds on the bench for 55 more false alarms, round7)
+PRESIDIO_STANDALONE = frozenset({"credit-card"})
+# the test numbers card networks and payment providers publish (Visa, Mastercard, Amex, Discover, Diners, JCB,
+# UnionPay; Stripe's and Adyen's docs): typed in normal work, never a person's card. Without a card word nearby they
+# are no hit (tests/fp_corpus.py); next to one they count like any number
+PUBLISHED_TEST_CARDS = frozenset({
+    "4111111111111111", "4242424242424242", "4012888888881881", "4222222222222", "4000056655665556",
+    "5555555555554444", "5105105105105100", "5200828282828210", "2223003122003222",
+    "378282246310005", "371449635398431", "378734493671000",
+    "6011111111111117", "6011000990139424", "3056930009020004", "36227206271667", "38520000023237",
+    "3530111333300000", "3566002020360505", "6200000000000005"})
 # context words the vendored recognizers lack: Presidio's card words are English, and `Karte 4076 …` in a German
 # statement was missed (TASK-24). The number must still pass its validator. Short words that mean something else in a
 # neighbour language (kort: short in Danish and Dutch) are left out
@@ -778,13 +814,14 @@ def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]
             continue
         validator = PRESIDIO_VALIDATOR.get(rec["id"])
         weak = rec["id"] in PRESIDIO_ALWAYS_CONTEXT or (rec["validator"] and validator is None)
+        alone = rec["id"] in PRESIDIO_STANDALONE
         for i, pat in enumerate(rec["patterns"]):
             rule_id = f"{rec['id']}" if len(rec["patterns"]) == 1 else f"{rec['id']}#{i}"
             out.append(Rule(
                 id=rule_id,
                 type=ENTITY_TYPE.get(rec["entity"], rec["entity"]),
                 regex=_Lazy(_re2_to_python(_presidio_regex(rec["id"], pat["regex"]))),
-                validator=validator, score=float(pat["score"]),
+                validator=validator, score=1.0 if alone else float(pat["score"]),
                 context=tuple(c.lower() for c in rec.get("context", [])) + PRESIDIO_EXTRA_CONTEXT.get(rec["id"], ()),
                 require_context=weak or rule_id in PRESIDIO_ALWAYS_CONTEXT,
                 whole_match=True,
@@ -1538,11 +1575,17 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
                     continue   # a YAML anchor or alias alone after a colon label: &gitlab_token_fields
             if rule.fixes and any(FIXES[f](text, m, start, end, secret) for f in rule.fixes):
                 continue   # a named check of this rule says the hit is no value (FIXES)
+            if rule.id in PRESIDIO_STANDALONE:
+                if start and text[start - 1] == "+":
+                    continue   # +4915112345678 passes Luhn: a card number never follows a +, a phone number does
+                if re.sub(r"\D", "", secret) in PUBLISHED_TEST_CARDS and not _has_context_word(
+                        _lower(text[max(0, start - 80):min(len(text), end + 40)]), rule.context):
+                    continue
             if rule.type == "IP" and _SECTION_BEFORE_RE.search(text, max(0, start - 24), start):
                 continue   # a section number: RFC 6749 4.1.2.1, OIDC Core 3.1.2.1, section 7.1.2.3
             if overlaps(start, end):
                 continue
-            if rule.entropy and shannon_entropy(secret) < rule.entropy:
+            if not _entropy_ok(rule, secret):
                 continue
             if rule.filter is not None and filterexpr.discards(rule.filter,
                                                               filterexpr.finding(text, m.start(), m.end(), secret)):

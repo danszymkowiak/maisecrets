@@ -1097,6 +1097,9 @@ does not need to look like a real secret, and these forms are never a hit:
   at `.local` or `.internal` (a person's mailbox there is found); IP addresses in
   the documentation ranges `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24` and
   `2001:db8::/32`, private and loopback addresses.
+- **Card numbers that card networks and payment providers publish for tests**
+  (`4111 1111 1111 1111`, `4242 4242 4242 4242`, `5555 5555 5555 4444`, …), unless
+  a word like "card" stands next to them.
 - **An AWS key id in a SigV4 credential scope:** `X-Amz-Credential=AKIA…` in a presigned
   URL, `Credential=AKIA…` in an `Authorization` header. The id names the key; it is not
   the secret half. The same id anywhere else is still found.
@@ -1165,9 +1168,10 @@ IBAN, credit card and IP come from Presidio's regexes with our validators
 (mod-97, Luhn, public-range check). An IBAN is also found after an MT940
 subfield code (`:86:…?31DE89…?32`, the counterparty in a bank statement
 export) and in lower case; a lowercase one must also have its country's
-length, since a lowercase hex digest passes mod 97 one time in 97. A card number without a word like
-"card", "Karte", "Kreditkarte", "carte" or "carta" nearby is not reported: Presidio scores the bare
-shape low, and a 16-digit number passes Luhn one time in ten.
+length, since a lowercase hex digest passes mod 97 one time in 97. A card number that passes Luhn is
+reported without a word like "card" or "Karte" nearby (the bench: 325 more cards found for 55 more false
+alarms, TASK-40), except right after a `+` (a phone number such as `+4915…` passes Luhn too) and a
+published test number without such a word.
 
 Measure what the rules would catch on your own recordings, values never
 printed: `scripts/replay_sessions.py --claude --codex`.
