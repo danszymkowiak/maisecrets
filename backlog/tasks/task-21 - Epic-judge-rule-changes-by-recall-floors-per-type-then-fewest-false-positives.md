@@ -3,10 +3,10 @@ id: TASK-21
 title: >-
   Epic: judge rule changes by recall floors per type, then fewest false
   positives
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:47'
-updated_date: '2026-10-11 21:53'
+updated_date: '2026-10-13 06:46'
 labels:
   - epic
   - benchmark
@@ -36,7 +36,13 @@ Weights (user, 2026-10-11): Gretel (TASK-11.33) and the synthetic tax templates 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A mutation is judged by the floors and FP per 1,000 tokens; the old strict and tolerance verdicts are gone or shown only for comparison
-- [ ] #2 Every rule with a curve has a chosen operating point that clears the floors
-- [ ] #3 The mutations accepted so far are re-judged under the new rule
+- [x] #1 A mutation is judged by the floors and FP per 1,000 tokens; the old strict and tolerance verdicts are gone or shown only for comparison
+- [x] #2 Every rule with a curve has a chosen operating point that clears the floors
+- [x] #3 The mutations accepted so far are re-judged under the new rule
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Floors first, then weighted false positives per 1,000 tokens (TASK-21.1 design, 21.6 valid gold, 21.7 floors.toml, 21.8 floorscore.py verdict; the strict/tolerance verdict stays only as a comparison column). Operating points chosen from the curves (TASK-21.9, docs/BENCHMARK.md Operating points): credit-card without its gate plus generic-api-key at entropy 3.3, accepted together; applying them is plugin task TASK-40, waiting for the user. Earlier accepted mutations re-judged (TASK-21.10).
+<!-- SECTION:FINAL_SUMMARY:END -->

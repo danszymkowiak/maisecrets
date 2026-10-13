@@ -1,9 +1,10 @@
 ---
 id: TASK-19
 title: 'Epic: move the vendored secret rules from gitleaks to Betterleaks'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 21:30'
+updated_date: '2026-10-13 06:46'
 labels:
   - epic
   - detection
@@ -33,7 +34,13 @@ From Kingfisher (mongodb/kingfisher, Apache-2.0): its 2.x catalogue is generated
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 gitleaks is no longer vendored; Betterleaks (pinned) is, plus the Veles rules that pass the bench
-- [ ] #2 The bench report shows precision on every dataset equal or better than the gitleaks baseline, recall stated alongside
-- [ ] #3 The leave-one-out review (TASK-18) resumes on the new rule set
+- [x] #1 gitleaks is no longer vendored; Betterleaks (pinned) is, plus the Veles rules that pass the bench
+- [x] #2 The bench report shows precision on every dataset equal or better than the gitleaks baseline, recall stated alongside
+- [x] #3 The leave-one-out review (TASK-18) resumes on the new rule set
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Betterleaks v1.9.0 is the vendored secret set (TASK-19.4); four gitleaks v8.30.1 rules are carried in rules/carried.json (generic-api-key per TASK-19.8; etsy, both jfrog per TASK-19.3); the Veles rules from Kingfisher v2.11.1 are vendored, 14 overlapping ones off in overrides.txt (TASK-19.5); Kingfisher's placeholder filters were already the detector's behaviour (TASK-19.6). Bench against the gitleaks baseline: accepted, CredData +8 true hits and false unchanged, every other dataset identical (docs/BENCHMARK.md). Leave-one-out ran on the new set (TASK-19.7, TASK-18).
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -3,10 +3,10 @@ id: TASK-11.23
 title: >-
   Experiment: a word-set classifier for the label before a value (strong, weak,
   negative)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-12 21:29'
+updated_date: '2026-10-13 06:47'
 labels:
   - benchmark
 dependencies:

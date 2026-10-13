@@ -1,10 +1,10 @@
 ---
 id: TASK-18
 title: 'Epic: leave-one-out review of every rule'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:53'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-13 06:46'
 labels:
   - epic
   - benchmark
@@ -23,9 +23,9 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every rule that fired in the re-baselined run (TASK-19.7) has a judged disable mutation
-- [ ] #2 A ranked report under TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens): accepted removals by weighted FP/1k change, the floor or gap that rejects each other one, and the rules whose removal hurts most
-- [ ] #3 Removal candidates become plugin tasks with a real-use note, waiting for the user's approval
+- [x] #1 Every rule that fired in the re-baselined run (TASK-19.7) has a judged disable mutation
+- [x] #2 A ranked report under TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens): accepted removals by weighted FP/1k change, the floor or gap that rejects each other one, and the rules whose removal hurts most
+- [x] #3 Removal candidates become plugin tasks with a real-use note, waiting for the user's approval
 <!-- AC:END -->
 
 ## Comments
@@ -36,3 +36,9 @@ created: 2026-10-11 21:31
 Paused 2026-10-11 (user): the move from gitleaks to Betterleaks (TASK-19) runs first, so leave-one-out runs once, on the new rule set. TASK-19.7 re-baselines and restarts it.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Leave-one-out done on the Betterleaks rule set: all 94 firing rules judged (TASK-18.1, loo run 20261012-200148 on baseline 20261012-194832), ranked under TASK-21.8's verdict by bench/rank.py (TASK-18.2, docs/BENCHMARK.md Leave-one-out). Removal candidates TASK-38 and TASK-39 wait for the user's approval in the inbox.
+<!-- SECTION:FINAL_SUMMARY:END -->

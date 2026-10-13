@@ -3,10 +3,10 @@ id: TASK-11.22
 title: >-
   Experiment: word-likeness filter (dictionary segmentation) as a stand-in for
   token efficiency
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-12 21:29'
+updated_date: '2026-10-13 06:46'
 labels:
   - benchmark
 dependencies:

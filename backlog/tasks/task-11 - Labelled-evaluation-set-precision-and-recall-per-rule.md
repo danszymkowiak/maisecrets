@@ -4,12 +4,18 @@ title: 'Epic: benchmark harness for the detection rules (precision/recall per da
 status: To Do
 assignee: []
 created_date: '2026-10-11 08:05'
-updated_date: '2026-10-11 11:06'
+updated_date: '2026-10-13 06:46'
 labels:
   - benchmark
   - detection
   - epic
-dependencies: []
+dependencies:
+  - TASK-11.22
+  - TASK-11.23
+  - TASK-11.24
+  - TASK-11.26
+  - TASK-11.27
+  - TASK-11.36
 priority: medium
 ordinal: 11000
 ---
@@ -34,4 +40,6 @@ User request 2026-10-11 (chat + upstream issue comment). Measure the rules again
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-11: docs/BENCHMARK.md is the spec. No k folds and no held-out set: one fixed dev/check split by group_id, used by the agent loop only; people's changes are judged on all data; counts are exact, so 'beyond fold noise' does not apply. Read 'fold' in this task as 'split'. Dataset score: F1, or precision where a dataset has no in-scope positives (TAB).
+
+2026-10-13: the epic depends on its open subtasks (11.22-11.24, 11.26, 11.27, 11.36) so it is not taken as ready work before them.
 <!-- SECTION:NOTES:END -->

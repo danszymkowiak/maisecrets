@@ -6,10 +6,12 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-12 10:05'
+updated_date: '2026-10-13 06:46'
 labels:
   - epic
   - redact
-dependencies: []
+dependencies:
+  - TASK-34.7
 references:
   - 'https://claude.ai/code/artifact/6a67afae-e26b-4364-b168-63beda199b37'
 priority: high
@@ -26,7 +28,13 @@ It does NOT change the plugin: the plugin must stay fast and light, so the tool 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 redact <file> and redact <directory> produce redacted text with the deterministic rules alone, and with local models when installed
-- [ ] #2 The plugin (maisecrets/, hooks/) gains no dependency and no import of the tool; its tests and harness are unchanged
-- [ ] #3 docs/REDACT.md says what the tool does, what it never does (no network for models or data), and how to install the model extra
+- [x] #1 redact <file> and redact <directory> produce redacted text with the deterministic rules alone, and with local models when installed
+- [x] #2 The plugin (maisecrets/, hooks/) gains no dependency and no import of the tool; its tests and harness are unchanged
+- [x] #3 docs/REDACT.md says what the tool does, what it never does (no network for models or data), and how to install the model extra
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-13: AC #1-#3 met by TASK-34.1-34.6 and 34.8. The epic stays open for TASK-34.7 (--reversible), which waits on the user's answer (inbox TASK-17 #14); it now depends on 34.7.
+<!-- SECTION:NOTES:END -->
