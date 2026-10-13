@@ -29,11 +29,11 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
    span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).
-4. **Render** (TASK-34.6): `<file>.redacted.txt`, or a mirrored tree for a directory, with
+4. **Render** (TASK-34.6): `<file>.redacted.txt` next to each file, or a mirrored tree under `--out`, with
    placeholders of the plugin's kind (one value, one placeholder, across the run).
 
-Reversible mode (`--reversible`, a vault of the placeholder map) is TASK-34.7 and waits on the
-user's decision. A hook that redacts on read is out of scope: a post-read hook fires after the
+Reversible mode (`--reversible`, a vault of the placeholder map, TASK-34.7) is not built: the
+user has no health-data use case for it (2026-10-13). A hook that redacts on read is out of scope: a post-read hook fires after the
 text is already in the model's context.
 
 ## Use
@@ -42,13 +42,16 @@ text is already in the model's context.
 redact statement.pdf                    # writes statement.pdf.redacted.txt next to it
 redact lohn.xlsx --regions ch --drop-column Name
 redact notes.txt --out ~/prep           # writes ~/prep/notes.txt.redacted.txt
-redact ~/tax-2025 --recursive           # mirrors the tree into ~/tax-2025.redacted/
+redact ~/tax-2025 --recursive           # writes each file's .redacted.txt next to it
+redact ~/tax-2025 -r --out ~/prep/tax   # mirrors the tree into ~/prep/tax/
 ```
 
-A directory run redacts every supported file and mirrors the tree into `<dir>.redacted/` (or
-`--out`); subfolders only with `--recursive`. Unsupported files, a PDF without text and a link
-that points outside the tree are skipped with one line each; an output inside the source tree is
-refused; an output that exists is kept. One value keeps one placeholder across the whole run.
+A directory run redacts every supported file and writes each output next to its file, in the same
+folder (user, 2026-10-14), or mirrors the tree into `--out`; subfolders only with `--recursive`.
+An earlier output (`*.redacted.txt`) is never taken as input, so a second run redacts nothing again.
+Unsupported files, a PDF without text and a link that points outside the tree are skipped with one
+line each; an `--out` folder inside the source tree is refused (the source folder itself is the
+default); an output that exists is kept. One value keeps one placeholder across the whole run.
 
 Each value becomes a placeholder of its type (`⟦IBAN_1⟧`, `⟦SECRET_2⟧`); the same value keeps the
 same placeholder across a run. Without `--regions` the country rules of the person's maisecrets

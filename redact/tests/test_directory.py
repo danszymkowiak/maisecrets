@@ -80,6 +80,19 @@ class DirectoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "inside"):
             app.run_dir(self.src, self.src / "out", model_detectors={}, regions=("generic",), interactive=False)
 
+    def test_the_source_folder_itself_takes_the_output_next_to_each_file(self):
+        # user, 2026-10-14: by default the redacted files go back into the same folder
+        summary = app.run_dir(self.src, self.src, model_detectors={}, regions=("generic",), interactive=False,
+                              recursive=True)
+        self.assertTrue((self.src / "notes.txt.redacted.txt").exists())
+        self.assertTrue((self.src / "2025" / "liste.xlsx.redacted.txt").exists())
+        self.assertNotIn(MAIL, (self.src / "notes.txt.redacted.txt").read_text(encoding="utf-8"))
+        again = app.run_dir(self.src, self.src, model_detectors={}, regions=("generic",), interactive=False,
+                            recursive=True)
+        self.assertEqual(again.written, 0, "a second run does not redact its own output")
+        self.assertFalse(list(self.src.rglob("*.redacted.txt.redacted.txt")))
+        self.assertEqual(again.exists, summary.written)
+
     def test_an_existing_output_is_not_overwritten(self):
         self.run_dir(recursive=True)
         before = (self.out / "notes.txt.redacted.txt").read_text(encoding="utf-8")
@@ -106,7 +119,13 @@ class DirectoryCommandTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("1 written", r.stderr)
         self.assertNotIn(MAIL, r.stderr)
-        self.assertNotIn(MAIL, (base / "in.redacted" / "a.txt.redacted.txt").read_text(encoding="utf-8"))
+        self.assertNotIn(MAIL, (base / "in" / "a.txt.redacted.txt").read_text(encoding="utf-8"),
+                         "by default next to each file, in the same folder")
+        r = subprocess.run([sys.executable, "-m", "maisecrets_redact", str(base / "in"), "--rules-only",
+                            "--out", str(base / "elsewhere")], capture_output=True, text=True, timeout=120,
+                           env={**os.environ, "MAISECRETS_HOME": _home.HOME})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((base / "elsewhere" / "a.txt.redacted.txt").exists())
 
 
 if __name__ == "__main__":

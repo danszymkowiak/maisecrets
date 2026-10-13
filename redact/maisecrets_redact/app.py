@@ -77,14 +77,19 @@ def files_of(root: Path, recursive: bool) -> list[Path]:
     return out
 
 
+OUTPUT_SUFFIX = ".redacted.txt"
+
+
 def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions: tuple[str, ...] | None,
             interactive: bool, recursive: bool = False, ask: Callable[[review.Item], str] | None = None,
             no_review: bool = False, drop_columns: frozenset[str] = frozenset(),
             log: Callable[[str], None] = lambda line: None, vote_k: int | None = None,
             not_reviewed: tuple[str, ...] = ()) -> DirSummary:
     """Every supported file of `src` into the mirrored tree `out`, one placeholder per value across the run. The
-    source is never written; an output inside the source tree is refused; a symlink out of the tree is skipped."""
-    if _inside(out, src):
+    source files are never written; `out` may be `src` itself (each output next to its file, the default of the
+    command), but no other folder inside the source tree; a symlink out of the tree is skipped; an earlier output
+    (`*.redacted.txt`) is never an input."""
+    if out.resolve() != src.resolve() and _inside(out, src):
         raise ValueError(f"{out} is inside {src}: the output must not be written into the source tree")
     summary, names = DirSummary(), rules.Placeholders()
     for path in files_of(src, recursive):
@@ -93,11 +98,13 @@ def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions:
             log(f"skip {rel}: a link that points outside the tree")
             summary.skipped += 1
             continue
+        if path.name.endswith(OUTPUT_SUFFIX):
+            continue   # an output of an earlier run, in place: redacting it again would nest names
         if path.suffix.lower() not in extract.SUPPORTED:
             log(f"skip {rel}: {path.suffix.lstrip('.') or 'no extension'} is not a supported type")
             summary.skipped += 1
             continue
-        target = out / rel.parent / (path.name + ".redacted.txt")
+        target = out / rel.parent / (path.name + OUTPUT_SUFFIX)
         if target.exists():
             log(f"keep {rel}: {target.name} exists and is not overwritten")
             summary.exists += 1

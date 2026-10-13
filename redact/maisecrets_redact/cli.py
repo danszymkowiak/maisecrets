@@ -16,7 +16,7 @@ def parser() -> argparse.ArgumentParser:
                                    "and secrets in it, before the text goes to a language model. See docs/REDACT.md.")
     ap.add_argument("path", metavar="PATH", help="a file, or a directory to redact every supported file in")
     ap.add_argument("--out", metavar="DIR",
-                    help="where the redacted text goes (default: next to a file; <dir>.redacted for a directory)")
+                    help="the folder the redacted text goes to (default: next to each file, in the same folder)")
     ap.add_argument("--recursive", "-r", action="store_true", help="for a directory: its subfolders too")
     ap.add_argument("--regions", metavar="LIST",
                     help="country rules, comma-separated (for example ch,de); default: your maisecrets config")
@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _run_dir(args, src: Path) -> int:
     from . import app
-    out = Path(args.out) if args.out else src.with_name(src.name + ".redacted")
+    out = Path(args.out) if args.out else src
     regions = tuple(r.strip().lower() for r in args.regions.split(",") if r.strip()) if args.regions else None
     try:
         summary = app.run_dir(src, out, _model_detectors(args), regions, interactive=sys.stdin.isatty(),
