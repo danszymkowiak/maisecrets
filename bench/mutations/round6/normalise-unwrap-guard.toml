@@ -1,5 +1,5 @@
-name = "Normalise: guarded line unwrap"
-why = "TASK-37. The guarded unwrap, asking the rules only where a token run of 8 meets the break and both runs make 24."
+name = "Normalise: unwrap with the cheaper guard"
+why = "TASK-37. The guarded unwrap, asking the rules only where a token run of 8 meets the break and both runs make 24, or where the run starts right after = or :."
 
 [[change]]
 op = "normalise"

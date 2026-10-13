@@ -61,6 +61,17 @@ class UnwrapTests(unittest.TestCase):
         unwrap.unwrap(f"export TOKEN={TOKEN[:20]}\n{TOKEN[20:]}\n", hits)
         self.assertTrue(asked)
 
+    def test_a_short_value_wrapped_right_after_its_assignment_is_asked_about(self):
+        # CredData's wrapped values are passwords of 8 to 15 characters: halves of 4 to 7 after `=` or `:`
+        asked = []
+
+        def hits(s):
+            asked.append(s)
+            return []
+        unwrap.unwrap('v = "Xq7z\nR2p!"\n', hits)
+        unwrap.unwrap("conn: Xq7z\nR2p9\n", hits)
+        self.assertEqual(len(asked), 2)
+
     def test_a_short_token_wrapped_in_its_middle_is_still_joined(self):
         short = TOKEN[:24]    # ghp_ and 20 characters: the guard's lower bound is 24 across the break
         text = f"t {short[:12]}\n{short[12:]}\n"

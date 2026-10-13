@@ -16,8 +16,9 @@ from .normalise import Normalised
 _BREAK = re.compile(r"(?<=[A-Za-z0-9_+/=.-])\r?\n(?=[A-Za-z0-9_+/=-])")
 _TOKEN_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_+/=.-")
 # the rules are asked only where the token run before the break has MIN_LEFT characters and both runs together
-# MIN_ACROSS: a prefixed token is that long, a pair of words at a break of prose is not (TASK-37: asking at every
-# break cost 517 ms on 120 KB of prose)
+# MIN_ACROSS (a prefixed token is that long, a pair of words at a break of prose is not), or where that run starts
+# right after `=` or `:` (a short password after its label: CredData's wrapped values have halves of 4 to 7). Asking
+# at every break cost 517 ms on 120 KB of prose (TASK-37)
 MIN_LEFT = 8
 MIN_ACROSS = 24
 
@@ -46,6 +47,16 @@ def _run(text: str, i: int, step: int, stop: int) -> int:
     return n
 
 
+def _assigned(text: str, i: int, stop: int) -> bool:
+    """The run that starts at i follows `=` or `:` (a quote and spaces between allowed)."""
+    i -= 1
+    if i >= stop and text[i] in "\"'`":
+        i -= 1
+    while i >= stop and text[i] in " \t":
+        i -= 1
+    return i >= stop and text[i] in ":="
+
+
 def unwrap(text: str, shape_hits: Hits | None = None) -> Normalised:
     if "\n" not in text:
         return Normalised(text)
@@ -56,7 +67,7 @@ def unwrap(text: str, shape_hits: Hits | None = None) -> Normalised:
         ls, le = _line(text, a, b)
         left = text[ls:a]
         tail = _run(text, a - 1, -1, ls)
-        if tail < MIN_LEFT or tail + _run(text, b, 1, le) < MIN_ACROSS:
+        if not (tail >= MIN_LEFT and tail + _run(text, b, 1, le) >= MIN_ACROSS or _assigned(text, a - tail, ls)):
             continue
         brk = len(left)
         across = [h for h in hits(left + text[b:le]) if h[0] < brk < h[1]]

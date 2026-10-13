@@ -3,10 +3,10 @@ id: TASK-11.26
 title: >-
   Experiment: decode base64 and hex blobs and rescan them, with depth, size and
   time caps
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-11 22:45'
+updated_date: '2026-10-13 08:48'
 labels:
   - benchmark
 dependencies:
@@ -29,7 +29,13 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Recall on the synthetic dataset's encoded pos spans and on the base64/hex perturbations, before and after
-- [ ] #2 Judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens) with CredData and Gretel in the objective; decoded bytes and time per scan reported at p50 and worst case
-- [ ] #3 A test that a 1 MB base64 blob stays within the time slice
+- [x] #1 Recall on the synthetic dataset's encoded pos spans and on the base64/hex perturbations, before and after
+- [x] #2 Judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens) with CredData and Gretel in the objective; decoded bytes and time per scan reported at p50 and worst case
+- [x] #3 A test that a 1 MB base64 blob stays within the time slice
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+maisecrets/decode.py and the normaliser stage decode (off by default): base64/hex runs that decode to text, gzip inside base64, depth 2; bounds: text 1 MB, run 16 KiB, 64 runs, 256 KiB, 20 ms (tests/test_decode.py, incl. 1 MB and 10 MB blobs). Floor verdict: accepted (CredData +12, Nemotron +4 finds, +2 false positives, SECRET_PREFIXED gap narrowed). Synthetic encoded positives: 896/900 without and with (the rules already catch them by label). Perturbation: base64 47.7% -> 63.8%, hex 14.0% -> 38.4%. Cost (bench/decodecost.py): p50 under 0.2 ms, p99 under 3 ms, worst 25 ms (CredData). docs/BENCHMARK.md, Decode and rescan. Switching on is an inbox question; Mendeley's small gain is TASK-43.
+<!-- SECTION:FINAL_SUMMARY:END -->

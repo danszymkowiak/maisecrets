@@ -470,7 +470,47 @@ that.
 when a SECRET shape rule finds a token across it that the line before does not hold whole, so `.env`
 lines stay apart. Neutral on the datasets; on the perturbation suite the line wrap rises from 30.6 % to
 32.1 % (perturb 20261012-174412). It asks the rules at every break between word characters: +107 ms on
-25 KB and +517 ms on 120 KB of plain prose. It stays off; TASK-37 is a cheaper guard.
+25 KB and +517 ms on 120 KB of plain prose. It stays off; TASK-37 is a cheaper guard. The cheaper guard (TASK-37,
+2026-10-13) asks the rules only where the token run before the break has 8 characters and both runs together 24,
+or where the run starts right after `=` or `:` (CredData's wrapped values are passwords whose halves have 4 to 7
+characters): +4 ms on 120 KB of plain prose (`bench/normtime.py --stages unwrap`, idle machine). On the
+perturbation suite the line wrap rises from 30.6 % to 32.1 % (perturb 20261013-104311), the same 141 finds as the
+old guard; with the length condition alone it was 31.4 %. Neutral on the datasets (mutation run 20261013-104727).
+
+### Decode and rescan (TASK-11.26, 2026-10-13)
+
+The normaliser's `decode` stage (`maisecrets/decode.py`) replaces each base64 or hex run (24 or 32 characters at
+least) whose bytes are UTF-8 text, 90 % printable, by that text; gzip inside base64 is opened and a run inside the
+decoded text is decoded once more (depth 2). Every decoded character maps back to the whole run, so a hit inside it
+redacts the run. Bounds: a text over 1 MB is not looked at, a run over 16 KiB is not decoded, at most 64 runs and
+256 KiB of decoded bytes per text, and no new run after 20 ms.
+
+- **Datasets** (mutation run 20261013-101635, floor rule): accepted, CredData +12 and Nemotron +4 finds for 2 false
+  positives more (CredData), the SECRET_PREFIXED gap narrowed.
+- **The synthetic dataset's encoded positives** (900 gold values that decode to text): the rules find 896 of them
+  without the stage (through their labels and the Kubernetes Secret rule) and 896 with it.
+- **Perturbation** (perturb 20261013-103401 without the stage, 20261013-102211 with it; 400 samples per dataset,
+  ai4privacy left out of the sums): base64 47.7 % -> 63.8 %, hex 14.0 % -> 38.4 %. Gretel base64 2.1 % -> 53.3 %, hex
+  1.2 % -> 61.6 %; findocs hex 0 % -> 72.7 %. A value shorter than 16 characters encodes to fewer than 24 base64
+  characters and is not decoded (an SSN with its dashes has 11). Mendeley's base64 stays at 0 %, its hex rises to
+  15.2 %; why it gains so little is not yet looked at.
+- **Cost** (`bench/decodecost.py`, idle machine), bytes decoded and time of the stage per text:
+
+| dataset | texts | changed | decoded bytes p50 / p99 / max | ms p50 / p99 / max |
+|---|---|---|---|---|
+| CredData | 12,057 | 419 | 88 / 2,763 / 13,280 | 0.16 / 2.86 / 25.0 |
+| Gretel | 20,000 | 1 | 0 / 273 / 6,132 | 0.03 / 0.06 / 0.3 |
+| synthetic | 3,000 | 836 | 63 / 267 / 267 | 0.02 / 0.05 / 0.1 |
+| findocs | 6,000 | 0 | 0 / 54 / 54 | 0.01 / 0.02 / 0.1 |
+| Nemotron | 20,000 | 265 | 0 / 119 / 3,534 | 0.02 / 0.08 / 0.3 |
+| TAB | 1,268 | 0 | 0 / 37 / 102 | 0.11 / 0.56 / 0.6 |
+
+  Before the 1 MB bound a 10 MB CredData file cost 225 ms, the search walking on after its budget was spent. On the
+  synthetic 25 KB and 120 KB texts of `bench/normtime.py` the stage adds at most 3 ms. A text the stage changes is
+  scanned a second time in full, like with every stage.
+
+Switching the stage on waits for the user, with the other normaliser stages (TASK-17).
+
 
 On clean gold (mutation runs of 2026-10-12 against 20261012-141549) the set of ansi, cr, invisible,
 gutter, entity and fullwidth is accepted and narrows the SECRET_PREFIXED gap. Whether to switch it on
@@ -664,6 +704,83 @@ to 11.31, 11.32 was closed by the user).
 | Generic rules: skip wordlike-75 | within tolerance | rejected | SECRET_GENERIC, a find lost on CredData |
 
 Every change the tolerance let through on 2026-10-11 fails the floor rule except de-vat-id#0.
+
+### Word-likeness and the label's word sets (TASK-11.22, TASK-11.23, 2026-10-13)
+
+The round 3 filters of the generic keyword rules (generic-api-key, ds-keyword-colon, ds-keyword-equal-signs,
+ds-basic-auth, ds-keyword-arrow-function-sign-quotes-required, ds-keyword-quotes-and-semicolon), judged under the
+floor rule against baseline 20261012-194832 (mutation run 20261013-090847):
+
+| filter | verdict | CredData false positives | finds lost (SECRET_GENERIC) |
+|---|---|---|---|
+| label-negative (a negative label: token_count, password_hash, tokenizer) | accepted | 2,298 -> 2,249 | none |
+| wordlike-75 (word coverage above 0.75, outside a strong label) | rejected | 2,298 -> 2,051 | 1 (CredData) |
+| wordlike-44 | rejected | 2,298 -> 1,491 | 62 (ai4privacy 53, CredData 9) |
+| label-weak-entropy (label-negative, and a weak label needs 3 bits) | rejected | 2,298 -> 2,237 | 44 |
+| bigram-309 (letter-bigram log-odds) | rejected | 2,298 -> 2,284 | 21 |
+
+Weighted false positives per 1,000 tokens change by less than 0.01 in every row; the other datasets move by at
+most 24 false positives. label-negative drops, per rule, 186 hits of ds-keyword-colon, 16 of ds-keyword-equal-signs,
+13 of generic-api-key and 2 of ds-keyword-quotes-and-semicolon (3 of them on ai4privacy), none of them a find; 49 are
+scored false positives (the rest sit on uncertain or out-of-scope gold). It makes no check of `detect.py`
+redundant: `_DERIVED_LABEL_RE` (uuid-elided-or-derived) also drops `id`, `arn`, `ref` and `rules` labels, which the
+word-set table keeps out of its negatives by dev evidence, and `hashed_secret`; `_MEASURE_LABEL_RE`
+(measure-number) reads the whole label (`TTL_REFRESH_TOKEN`) and only for a number. It would be an addition.
+
+The one find wordlike-75 loses has a word coverage of 0.871; no other find of these rules on the whole bench is
+above 0.667 (ai4privacy's highest is 0.75). wordlike-90 cuts above it (see round 6 below); that threshold is read
+off all data, not dev, so its margin is thin. The report's claim (Betterleaks: F1 0.874 with token efficiency and a
+word filter, 0.325 with entropy, on CredData candidates) does not carry over: here a word filter removes at most 35 % of
+CredData's false positives (wordlike-44), and every cut below 0.871 costs a find.
+
+**Round 6** (mutation run 20261013-095827, same baseline): wordlike-90 is accepted, 163 false positives fewer
+(CredData 147, Nemotron 7, ai4privacy 5, Gretel 4) and no find lost.
+
+### Presidio's remaining checksums (TASK-11.24, 2026-10-13)
+
+Presidio 2.2.364 validates more recognizers than the plugin's port does. `maisecrets_bench/validators.py` ports
+seven of them (es-nif, es-nie, it-vat-code, nhs, us-npi, se-organisationsnummer, uk-vehicle-registration), each
+tested with the vectors of Presidio's own tests at that tag and compared with Presidio itself on 20,000 random
+values per recognizer: no disagreement. medical-license (a DEA check) has no published test vector in Presidio's
+repository and is left out. The other candidates of the task (PESEL, Aadhaar, the Finnish HETU, the Canadian SIN,
+and the Dutch BSN, French NIR, Danish CPR, Norwegian fodselsnummer and Croatian OIB, which have no rule at all)
+never fire on the bench: not testable here.
+
+First the risk: a generator that invents ID numbers ignores their check digit, and a checksum then drops true
+finds. `bench/passrate.py` counts how many of a rule's hits on labelled gold (any label) pass (baseline
+20261012-194832, `passrate.md` in the run):
+
+| rule | dataset | hits on gold | pass | hits elsewhere | pass |
+|---|---|---|---|---|---|
+| es-nif | ai4privacy | 1,413 (IDCARD) | 3.5% | 20 | 0.0% |
+| es-nif | Gretel | 0 | - | 46 | 13.0% |
+| es-nie | ai4privacy | 41 (IDCARD) | 0.0% | 0 | - |
+| it-vat-code | Gretel | 3 (phone numbers) | 0.0% | 132 | 1.5% |
+| nhs | Gretel | 3 (phone numbers) | 0.0% | 1 | 0.0% |
+| us-npi | Gretel, Nemotron, ai4privacy | 22 | 4.5% | 53 | 0.0% |
+| se-organisationsnummer | Gretel | 1 | 0.0% | 34 | 14.7% |
+| uk-vehicle-registration | Nemotron, Gretel | 94 (licence plates) | 100.0% | 3 | 66.7% |
+
+ai4privacy's IDCARD values are random runs without any country's format (its label table says so), so the Spanish
+rules' recall cannot be measured here: they are recorded as not testable for recall. Elsewhere the checksums remove
+almost every hit, and the hits on gold they remove are other values the pattern caught by chance (phone numbers,
+customer ids).
+
+Judged under the floor rule (mutation runs 20261013-095827 and 20261013-101635):
+
+| checksum | verdict | false positives removed | finds lost |
+|---|---|---|---|
+| es-nif | accepted | 59 (Gretel 40, ai4privacy 19) | none |
+| us-npi | accepted | 51 (Gretel 39, Nemotron 10, ai4privacy 2) | none |
+| se-organisationsnummer | accepted | 29 (Gretel) | none |
+| uk-vehicle-registration | accepted | 1 | none |
+| es-nie | neutral | 0 | none |
+| it-vat-code | rejected | 131 | 1 phone number (ai4privacy): PHONE gap worse |
+| nhs | rejected | 0 | 1 phone number (Gretel): PHONE gap worse |
+| the four accepted together | accepted | 140 (Gretel 109, ai4privacy 21, Nemotron 10) | none |
+
+it-vat-code and nhs are rejected because each pattern happened to find one phone number the phone rule misses;
+the floor rule does not trade a find for false positives. Porting the four into the plugin waits for the user.
 
 ### The earlier verdicts (for comparison)
 

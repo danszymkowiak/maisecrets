@@ -3,10 +3,10 @@ id: TASK-11.22
 title: >-
   Experiment: word-likeness filter (dictionary segmentation) as a stand-in for
   token efficiency
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 17:07'
-updated_date: '2026-10-13 06:46'
+updated_date: '2026-10-13 08:48'
 labels:
   - benchmark
 dependencies:
@@ -30,8 +30,8 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 A permissively licensed word list is chosen and its licence recorded; load time and memory measured in the hook's interpreter
-- [ ] #2 Segmentation and bigram filters are mutations judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens), with Gretel and TAB in the FP objective
-- [ ] #3 The report's 0.325 to 0.874 claim is restated with this bench's own numbers, whichever way they fall
+- [x] #2 Segmentation and bigram filters are mutations judged by TASK-21.8's verdict (recall floors per type, then weighted FP per 1,000 tokens), with Gretel and TAB in the FP objective
+- [x] #3 The report's 0.325 to 0.874 claim is restated with this bench's own numbers, whichever way they fall
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -42,4 +42,12 @@ Phase 4 (user, 2026-10-12): mutations and rule ideas run last, after the new dat
 2026-10-12 (TASK-21.10): wordlike-75, the mutation this experiment produced, is REJECTED under the floor verdict against 20261012-194832 (SECRET_GENERIC: one find lost on CredData). It was accepted within tolerance on 2026-10-11. A threshold that keeps every find, or none, before any plugin task.
 
 2026-10-12 late: a judge of wordlike-44, bigram-309, label-weak-entropy (with label-negative and wordlike-75) against 20261012-194832 was started and stopped when the user paused; rerun: uv run --project bench python bench/mutate.py bench/mutations/round3/{wordlike-44,bigram-309,label-weak-entropy,label-negative,wordlike-75}.toml --baseline ~/.cache/maisecrets-bench/runs/20261012-194832. Known so far (TASK-21.10): label-negative accepted, wordlike-75 rejected.
+
+2026-10-13: under the floor verdict (mutation run 20261013-090847) wordlike-75, wordlike-44 and bigram-309 are rejected (1, 62 and 21 generic secrets lost). The highest-scoring find has coverage 0.871, so wordlike-90 (round 6, run 20261013-095827) is accepted: 163 false positives fewer, no find lost; the cut is read off all data, a thin margin.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Word filters judged under the floor rule: only wordlike-90 passes (163 false positives fewer, 147 on CredData, no find lost); every cut below the highest find's coverage of 0.871 loses a find. The report's 0.325 -> 0.874 F1 claim does not carry over: here a word filter removes at most 35% of CredData's false positives of the generic rules. The plugin would need a bundled word list (SCOWL, 93 ms load); inbox question. docs/BENCHMARK.md, Word-likeness and the label's word sets.
+<!-- SECTION:FINAL_SUMMARY:END -->

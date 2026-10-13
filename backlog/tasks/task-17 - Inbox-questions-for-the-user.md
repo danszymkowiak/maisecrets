@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-12 20:59'
+updated_date: '2026-10-13 08:48'
 labels:
   - inbox
 dependencies: []
@@ -115,5 +115,20 @@ User, 2026-10-12: accepted every recommendation of comments #1-#6. #1 approve TA
 created: 2026-10-12 10:06
 ---
 TASK-34.7 (redact --reversible): the vault that maps placeholders back to values is the most sensitive file of the tool. Options: (a) reuse the plugin's store backends (keychain on macOS, Credential Locker on Windows, encrypted file on Linux) under a separate service name per run; (b) a separate encrypted file per run (key from a passphrase or a key file), kept away from the output; (c) build it only once your friends confirm the PHI use case. I recommend (b) with (c): a per-run file can be handed over with the redacted text and deleted afterwards, unlike entries in the keychain, and the spec defers the mode until the use case is confirmed. Also: is the PHI use case confirmed?
+---
+
+created: 2026-10-13 08:48
+---
+TASK-42 (from TASK-11.24): port Presidio's checksums for es-nif, us-npi, se-organisationsnummer and uk-vehicle-registration into the plugin? On the bench together: 140 false positives fewer (Gretel 109, ai4privacy 21, Nemotron 10), no find lost; validators tested with Presidio's own vectors and against Presidio itself. it-vat-code and nhs are left out (each loses one phone number). Options: (a) port the four, (b) not now. I recommend (a): checksums are cheap, deterministic, and Presidio already applies them.
+---
+
+created: 2026-10-13 08:48
+---
+TASK-11.22/11.23: two filters for the generic keyword rules passed the floor verdict, neither ported yet. label-negative (skip a value after token_count, password_hash, tokenizer, ...): 49 false positives fewer on CredData, none lost. wordlike-90 (skip a value whose characters are over 90 % dictionary words, outside a password/secret label): 163 fewer, none lost, but the cut is read off all the data (the highest find scores 0.871) and the plugin would have to bundle a word list (SCOWL, about 700 KB, 93 ms to load in each hook run). Options: (a) port both, (b) label-negative only, (c) neither, keep them in the bench. I recommend (c), as for the digest filter (TASK-11.32): the gains are a few dozen to 163 false alarms over the whole bench, and wordlike-90's load time costs every hook call.
+---
+
+created: 2026-10-13 08:48
+---
+Normaliser stages, adding to the TASK-11.25 question above: two more stages are ready. decode (TASK-11.26: base64/hex runs that decode to text are scanned, a hit redacts the whole run): accepted on the datasets (+16 finds, +2 false positives), base64 recall under perturbation 47.7 % -> 63.8 %, hex 14.0 % -> 38.4 %; worst case 25 ms per text on CredData, p99 under 3 ms. unwrap with the cheaper guard (TASK-37): +4 ms on 120 KB of prose (was +517 ms), line-wrap recall 30.6 % -> 32.1 %, neutral on the datasets. Options: (a) switch on the six of TASK-11.25 plus decode and unwrap, (b) the six only, (c) none. I recommend (a): both new stages are bounded and only cost time where they find something to undo; TASK-43 (why Mendeley gains little from decode) can follow.
 ---
 <!-- COMMENTS:END -->
