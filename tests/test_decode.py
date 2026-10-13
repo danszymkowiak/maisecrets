@@ -114,10 +114,12 @@ class ScanTests(unittest.TestCase):
     def setUp(self):
         self.rs = dataclasses.replace(detect.default_ruleset(), normalise=("decode",))
 
-    def test_off_by_default(self):
-        text = "auth: " + b64("contact " + MAIL)
-        self.assertNotIn("decode", detect.NORMALISE)
-        self.assertEqual([m for m in detect.scan(text) if m.type == "EMAIL"], [])
+    def test_on_by_default(self):
+        # TASK-44: the plugin ships with the stage
+        enc = b64("contact " + MAIL)
+        text = "note: " + enc   # not auth: a secret label redacts the run as a secret already
+        self.assertIn("decode", detect.NORMALISE)
+        self.assertEqual([text[m.start:m.end] for m in detect.scan(text) if m.type == "EMAIL"], [enc])
 
     def test_an_email_inside_a_jwt_like_payload_redacts_the_encoded_run(self):
         enc = b64('{"email":"' + MAIL + '"}')
@@ -131,7 +133,8 @@ class ScanTests(unittest.TestCase):
 
         def covers(hits):
             return any(m.start <= text.index(enc) and text.index(enc) + len(enc) <= m.end for m in hits)
-        self.assertFalse(covers(detect.scan(text)), "the rules alone miss it")
+        bare = dataclasses.replace(detect.default_ruleset(), normalise=())
+        self.assertFalse(covers(detect.scan(text, ruleset=bare)), "the rules alone miss it")
         self.assertTrue(covers(detect.scan(text, ruleset=self.rs)))
 
 

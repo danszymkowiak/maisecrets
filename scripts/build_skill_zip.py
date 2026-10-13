@@ -18,7 +18,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "secret-hygiene"
-DETECTOR = ("maisecrets/__init__.py", "maisecrets/detect.py", "maisecrets/filterexpr.py", "maisecrets/regions.py")
+# detect imports normalise (and through it decode and unwrap) once a stage is on (TASK-44)
+DETECTOR = ("maisecrets/__init__.py", "maisecrets/detect.py", "maisecrets/filterexpr.py", "maisecrets/regions.py",
+            "maisecrets/normalise.py", "maisecrets/decode.py", "maisecrets/unwrap.py")
 OPENAI_NAME = "maisecrets-secret-hygiene"
 
 

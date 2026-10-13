@@ -43,9 +43,10 @@ from pathlib import Path
 from . import filterexpr
 
 RULES_DIR = Path(__file__).resolve().parent / "rules"
-# normaliser stages (maisecrets/normalise.py) whose cleaned copy the shape rules scan as well: off until the bench has
-# judged them (TASK-11.25)
-NORMALISE: tuple[str, ...] = ()
+# normaliser stages (maisecrets/normalise.py) whose cleaned copy the shape rules scan as well. Judged on the bench
+# (TASK-11.25, 11.26, 37) and switched on by the user on 2026-10-13 (TASK-44); escape stays off (60 more false hits
+# on Gretel)
+NORMALISE: tuple[str, ...] = ("ansi", "cr", "invisible", "gutter", "entity", "fullwidth", "decode", "unwrap")
 # the vendored secret rule set (TASK-19): Betterleaks, with the rules carried from gitleaks (rules/carried.json)
 SECRET_RULES = "betterleaks"
 

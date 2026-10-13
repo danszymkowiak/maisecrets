@@ -1,5 +1,6 @@
 """The normaliser before the shape rules (TASK-11.25): a cleaned copy of the text and a map from each of its offsets
-back to the original, so a span found in the copy redacts the true text. Off by default; detect.NORMALISE turns
+back to the original, so a span found in the copy redacts the true text. detect.NORMALISE names the stages the plugin
+ships with (TASK-44: every stage but escape); it turns
 stages on. Every invisible character here is an escape."""
 from __future__ import annotations
 
@@ -89,10 +90,12 @@ class ScanTests(unittest.TestCase):
     def found(self, text):
         return [(m.kind, text[m.start:m.end]) for m in detect.scan(text)]
 
-    def test_off_by_default(self):
-        self.assertEqual(detect.NORMALISE, ())
-        self.assertEqual(detect.default_ruleset().normalise, ())
-        self.assertEqual(self.found("t " + GHP[:10] + "\u200b" + GHP[10:]), [])
+    def test_the_shipped_stages(self):
+        # TASK-44, approved 2026-10-13: every stage but escape (60 more false hits on Gretel, TASK-11.25)
+        shipped = ("ansi", "cr", "invisible", "gutter", "entity", "fullwidth", "decode", "unwrap")
+        self.assertEqual(detect.NORMALISE, shipped)
+        self.assertEqual(detect.default_ruleset().normalise, shipped)
+        self.assertEqual(self.found("t " + GHP[:10] + "\u200b" + GHP[10:]), [("github-pat", GHP[:10] + "\u200b" + GHP[10:])])
 
     def test_a_split_token_is_found_and_its_true_span_redacted(self):
         text = "t " + GHP[:10] + "\u200b" + GHP[10:] + " end"

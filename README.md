@@ -1248,6 +1248,13 @@ a to-do.
   URL or a `KEY=value` line, and by the rest of the line; a value split across
   lines, or encoded by a command that carried no placeholder, comes back
   unredacted. Values shorter than 8 characters are matched by shape only.
+  The shape rules also scan a cleaned copy of every text: ANSI colour, lone
+  carriage returns, zero-width characters, `cat -n`/`grep -n`/diff gutters,
+  HTML entities and fullwidth forms removed, base64 and hex runs that decode
+  to text decoded (24 characters or more, so a value under 16 characters
+  stays encoded), and a token a terminal wrapped onto the next line joined. A
+  hit there redacts the original span. Markdown escapes and look-alike
+  letters are not undone.
 - **Every store hands a value to any process of the same user**, and so does
   a FIFO that waits for a granted command: another process of yours can read
   it during the up to 120 s the command takes to start. The gates stand in
