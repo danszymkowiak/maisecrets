@@ -1,0 +1,8 @@
+name = "generic-api-key: one raw-entropy threshold per charset"
+why = "TASK-11.21: the thresholds chosen on dev per charset (hex 3.449, base32 3.584, base62 3.322, base64 3.252, base64url 3.426, printable 3.594) in place of one 3.5; normalised entropy gives the same cut."
+
+[[change]]
+op = "set"
+rule = "generic-api-key"
+entropy = 0.0
+filter = "bench:entropy_charset"

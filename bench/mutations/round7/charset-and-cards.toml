@@ -1,0 +1,13 @@
+name = "TASK-40/41 together: generic-api-key entropy per charset, credit-card without its context gate"
+why = "Approved by the user 2026-10-13 to be judged together before applying (TASK-17)."
+[[change]]
+op = "set"
+rule = "generic-api-key"
+entropy = 0.0
+filter = "bench:entropy_charset"
+
+[[change]]
+op = "set"
+rule = "credit-card"
+require_context = false
+score = 1.0
