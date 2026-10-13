@@ -674,8 +674,8 @@ ranking now counts those finds too, weighted 10 (mutation run 20261012-212629 re
 | medical-license | 9 | 0 | 280 (health plan, licence numbers) | keep |
 | us-npi#0 | 51 | 0 | 18 | keep |
 | uk-nino | 16 | 0 | 8 national insurance numbers | keep |
-| de-vat-id#0 | 60 | 0 | 0 | candidate: require a context word (TASK-38) |
-| de-handelsregister | 32 | 0 | 0 | candidate: drop (TASK-39) |
+| de-vat-id#0 | 60 | 0 | 0 | context word required, applied (TASK-38) |
+| de-handelsregister | 32 | 0 | 0 | dropped, applied (TASK-39) |
 | de-tax-number#2 | 7 | 0 | 0 | keep: its hits are real tax numbers after "Steuernummer:", which Gretel does not label |
 
 Reading the hits mattered as much as the counts. de-vat-id#0's hits are FIX and XML identifiers that pass the

@@ -688,7 +688,9 @@ ENTITY_TYPE = {"EMAIL_ADDRESS": "EMAIL", "IBAN_CODE": "IBAN", "CREDIT_CARD": "CA
                "IP_ADDRESS": "IP", "PHONE_NUMBER": "PHONE"}
 # covered by OWN_RULES with bounded regexes and validators, or not PII worth a placeholder
 # uk-postcode: false alarms only on the bench, and a postcode alone identifies no one (TASK-11.31)
-PRESIDIO_SKIP = {"email", "url", "date", "mac-address", "uuid", "phone", "crypto", "uk-postcode"}
+# de-handelsregister: a company's register number, public in the Handelsregister and no personal data; its bench hits
+# were all real register numbers no dataset labels (TASK-39)
+PRESIDIO_SKIP = {"email", "url", "date", "mac-address", "uuid", "phone", "crypto", "uk-postcode", "de-handelsregister"}
 # validator id per presidio recognizer id; a recognizer with a validator we did not port
 # keeps its pattern score and is treated as weak (context required)
 PRESIDIO_VALIDATOR = {"iban": "iban", "credit-card": "luhn", "ip": "public_ip", "it-fiscal-code": "it_fiscal_code",
@@ -702,8 +704,11 @@ PRESIDIO_VALIDATOR = {"iban": "iban", "credit-card": "luhn", "ip": "public_ip", 
 # es-nif, us-npi, se-organisationsnummer and uk-vehicle-registration: judged with their checksum AND the context word
 # (TASK-42); without the word they would fire where the bench never looked
 PRESIDIO_ALWAYS_CONTEXT = {"de-tax-id", "de-tax-number", "de-bsnr", "de-lanr", "de-plz", "de-kfz",
-                           "de-handelsregister", "de-fuehrerschein", "nhs", "aba-routing", "medical-license",
-                           "es-nif", "us-npi", "se-organisationsnummer", "uk-vehicle-registration"}
+                           "de-fuehrerschein", "nhs", "aba-routing", "medical-license",
+                           "es-nif", "us-npi", "se-organisationsnummer", "uk-vehicle-registration",
+                           # one pattern only: DE and 9 digits that pass the checksum are FIX and XML identifiers
+                           # (49=, PartyID) on the bench; a real VAT ID stands next to USt-IdNr or VAT (TASK-38)
+                           "de-vat-id#0"}
 # context words the vendored recognizers lack: Presidio's card words are English, and `Karte 4076 …` in a German
 # statement was missed (TASK-24). The number must still pass its validator. Short words that mean something else in a
 # neighbour language (kort: short in Danish and Dutch) are left out
@@ -774,13 +779,14 @@ def _load_presidio(regions: tuple[str, ...] = DEFAULT_PII_REGIONS) -> list[Rule]
         validator = PRESIDIO_VALIDATOR.get(rec["id"])
         weak = rec["id"] in PRESIDIO_ALWAYS_CONTEXT or (rec["validator"] and validator is None)
         for i, pat in enumerate(rec["patterns"]):
+            rule_id = f"{rec['id']}" if len(rec["patterns"]) == 1 else f"{rec['id']}#{i}"
             out.append(Rule(
-                id=f"{rec['id']}" if len(rec["patterns"]) == 1 else f"{rec['id']}#{i}",
+                id=rule_id,
                 type=ENTITY_TYPE.get(rec["entity"], rec["entity"]),
                 regex=_Lazy(_re2_to_python(_presidio_regex(rec["id"], pat["regex"]))),
                 validator=validator, score=float(pat["score"]),
                 context=tuple(c.lower() for c in rec.get("context", [])) + PRESIDIO_EXTRA_CONTEXT.get(rec["id"], ()),
-                require_context=weak,
+                require_context=weak or rule_id in PRESIDIO_ALWAYS_CONTEXT,
                 whole_match=True,
             ))
     return out

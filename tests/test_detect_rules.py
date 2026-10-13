@@ -477,6 +477,17 @@ class ContextWordTests(unittest.TestCase):
                 self.assertEqual(kinds(text), [(kind, value)])
         self.assertEqual(kinds("kvnr A123456781"), [])                 # wrong check digit
 
+    def test_a_bare_german_vat_id_needs_its_context_word(self):
+        # TASK-38: DE and 9 digits that pass the checksum are FIX and XML identifiers on the bench (49=, PartyID)
+        self.assertEqual(kinds("VAT DE123456789"), [("de-vat-id#0", "DE123456789")])
+        self.assertEqual(kinds("PartyID=DE123456789"), [])
+        self.assertEqual(kinds("<ReportingBankID>DE123456789</ReportingBankID>"), [])
+
+    def test_a_commercial_register_number_is_not_redacted(self):
+        # TASK-39: a company's register number is public and no personal data
+        self.assertEqual(kinds("Amtsgericht Berlin-Charlottenburg, Handelsregister HRB 123456 B"), [])
+        self.assertNotIn("de-handelsregister", {r.id for r in detect._load_presidio(("de",))})
+
 
 # ------------------------------------------------------------ scanner rules --
 class ScanRuleTests(unittest.TestCase):

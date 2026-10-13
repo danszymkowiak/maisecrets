@@ -1112,11 +1112,12 @@ Four sources, one scanner (`maisecrets/detect.py`):
   `regions` selects them (default: the country of the system setting; `de`
   gives Steuer-ID,
   Sozialversicherungsnummer, Personalausweis, Reisepass, USt-ID,
-  Krankenversicherung, PLZ, Kfz, LANR, BSNR, Handelsregister). Checksums for
+  Krankenversicherung, PLZ, Kfz, LANR, BSNR; not the Handelsregister number,
+  which names a company and is public). Checksums for
   the German types are ported and checked against Presidio
   (`scripts/check_validators_against_presidio.py`). A digit-only shape such as
-  a Steuer-ID is reported only with a context word nearby, even when the
-  checksum passes.
+  a Steuer-ID, or a USt-ID written without separators, is reported only with a
+  context word nearby, even when the checksum passes.
 - **detect-secrets** (Yelp, Apache-2.0, version in `DETECT_SECRETS_VERSION`,
   refresh with `scripts/sync_detect_secrets.py vX.Y.Z`): credentials
   recognised by position (`password = …`, `api_key: "…"`, `user:pass@host`),
