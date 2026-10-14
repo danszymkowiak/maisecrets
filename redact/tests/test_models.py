@@ -55,6 +55,66 @@ class ChunkTests(unittest.TestCase):
         self.assertEqual((s.source, s.score), ("fake-model", 0.9))
 
 
+class WordCapTests(unittest.TestCase):
+    """GLiNER drops every word after its 384th ("Sentence of length 387 has been truncated to 384", user report
+    2026-10-14 on a CSV): a 2,000-character chunk of short cells holds more words than that, and the model never saw
+    the end of it. A backend with `max_words` gets chunks of at most that many words, as GLiNER counts them."""
+
+    def test_no_chunk_holds_more_words_than_the_backend_takes_and_the_end_is_still_seen(self):
+        words: list = []
+
+        class Capped(FakeBackend):
+            max_words = 10
+
+            def spans(self, text):
+                words.append(len(models.WORD_RE.findall(text)))
+                return super().spans(text)
+        text = ",".join(f"r{i};{i}" for i in range(60)) + ",Max Mustermann"
+        det = models.detector_from(Capped({"Max Mustermann": "person"}), "fake", chunk=2000, overlap=200)
+        spans = det(Document("t.csv", text))
+        self.assertTrue(words and max(words) <= 10, words)
+        self.assertEqual([(text[s.start:s.end], s.type) for s in spans], [("Max Mustermann", "NAME")])
+
+    def test_a_name_across_a_word_window_boundary_is_found_once(self):
+        class Capped(FakeBackend):
+            max_words = 12
+        text = " ".join(["w"] * 11) + " Max Mustermann " + " ".join(["v"] * 11)
+        det = models.detector_from(Capped({"Max Mustermann": "person"}), "fake")
+        self.assertEqual(len(det(Document("t.txt", text))), 1)
+
+    def test_the_gliner_backends_declare_their_cap(self):
+        self.assertLess(models.GlinerBackend.max_words, 384)
+        self.assertLess(models.Gliner2Backend.max_words, 384)
+
+
+class QuietOfflineTests(unittest.TestCase):
+    """A run with the models cached contacts no server (HF_HUB_OFFLINE: the tool keeps text private, and asked the
+    Hub on every run, user report 2026-10-14), and the libraries' progress bars and advisories stay quiet."""
+
+    def cache(self, *model_ids):
+        import tempfile
+        from pathlib import Path
+        root = Path(tempfile.mkdtemp())
+        for mid in model_ids:
+            (root / "hub" / ("models--" + mid.replace("/", "--")) / "snapshots" / "abc").mkdir(parents=True)
+        return {"HF_HOME": str(root)}
+
+    def test_offline_only_when_every_model_is_cached(self):
+        env = self.cache("a/one", "b/two")
+        self.assertEqual(models.library_env(["a/one", "b/two"], env)["HF_HUB_OFFLINE"], "1")
+        self.assertNotIn("HF_HUB_OFFLINE", models.library_env(["a/one", "c/three"], env))
+
+    def test_the_libraries_are_quiet_and_a_setting_of_the_person_wins(self):
+        env = self.cache()
+        got = models.library_env(["a/one"], env)
+        self.assertEqual(got["HF_HUB_DISABLE_PROGRESS_BARS"], "1")
+        self.assertEqual(got["TRANSFORMERS_VERBOSITY"], "error")
+        mine = models.library_env(["a/one"], {**env, "TRANSFORMERS_VERBOSITY": "info"})
+        self.assertNotIn("TRANSFORMERS_VERBOSITY", mine)
+        online = models.library_env(["a/one"], {**self.cache("a/one"), "HF_HUB_OFFLINE": "0"})
+        self.assertNotIn("HF_HUB_OFFLINE", online)
+
+
 class MergePiecesTests(unittest.TestCase):
     """openai/privacy-filter answers in word pieces with a leading space (measured 2026-10-12, TASK-34.8):
     ' Erika Muster' and 'frau' for one name."""

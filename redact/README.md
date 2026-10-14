@@ -4,7 +4,8 @@ Extracts the text of documents and redacts personal data and secrets in it befor
 to a language model. Design and rules: `docs/REDACT.md`.
 
 ```bash
-uv tool install --editable ./redact
+uv tool install --python 3.12 --editable ./redact               # the rules only
+uv tool install --python 3.12 --editable './redact[models]' --force   # with the local PII models (about 1 GB)
 redact --help
 ```
 

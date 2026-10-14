@@ -8,9 +8,14 @@ restrictive terms runs only when its id is passed to accept its terms (memory: p
 """
 from __future__ import annotations
 
+import bisect
+import os
+import re
+import warnings
 from dataclasses import dataclass
 from importlib.util import find_spec
-from typing import Callable, Protocol
+from pathlib import Path
+from typing import Callable, Iterator, Mapping, Protocol
 
 from .pipeline import Detector, Document, Span
 
@@ -41,17 +46,43 @@ GLINER2_QUERY_LABELS = ("person", "full_name", "street_address", "email", "phone
                         "bank_account", "national_id_number", "passport_number", "tax_id")
 
 
+# GLiNER's word splitter (gliner.data_processing.tokenizer.WhitespaceTokenSplitter): what its max_len counts
+WORD_RE = re.compile(r"\w+(?:[-_]\w+)*|\S")
+
+
+def windows(text: str, chunk: int, overlap: int, max_words: int | None = None) -> Iterator[tuple[int, int]]:
+    """(start, end) of each chunk: `chunk` characters overlapping by `overlap`, and with `max_words` no more words
+    than that, so a model that drops words past its limit sees every word in some chunk. A chunk cut by the word cap
+    ends at a word start and the next one starts a sixth of the cap earlier."""
+    starts = [m.start() for m in WORD_RE.finditer(text)] if max_words else []
+    at = 0
+    while True:
+        end = min(len(text), at + chunk)
+        k = bisect.bisect_left(starts, at)
+        cut = bool(max_words) and len(starts) - k > max_words and starts[k + max_words] < end
+        if cut:
+            end = starts[k + max_words]
+        yield at, end
+        if end >= len(text):
+            return
+        if cut:
+            nxt = starts[max(k + 1, k + max_words - max(1, max_words // 6))]
+        else:
+            nxt = at + max(1, chunk - overlap)
+        at = max(at + 1, nxt)
+
+
 def detector_from(backend: Backend, name: str, chunk: int = 2000, overlap: int = 200) -> Detector:
-    """A detector over chunks of `chunk` characters that overlap by `overlap`. A span touching the cut edge of a chunk
-    is left to the neighbour that holds it whole; the same span from two chunks is kept once."""
-    step = max(1, chunk - overlap)
+    """A detector over chunks of `chunk` characters that overlap by `overlap` (and of at most the backend's
+    `max_words` words, see windows). A span touching the cut edge of a chunk is left to the neighbour that holds it
+    whole; the same span from two chunks is kept once."""
+    max_words = getattr(backend, "max_words", None)
 
     def find(doc: Document) -> list[Span]:
         text, seen, out = doc.text, set(), []
-        at = 0
-        while True:
-            part = text[at:at + chunk]
-            last = at + chunk >= len(text)
+        for at, end in windows(text, chunk, overlap, max_words):
+            part = text[at:end]
+            last = end >= len(text)
             for a, b, label, score in backend.spans(part):
                 if (b >= len(part) and not last) or (a == 0 and at > 0):
                     continue
@@ -60,14 +91,13 @@ def detector_from(backend: Backend, name: str, chunk: int = 2000, overlap: int =
                 if kind and key not in seen:
                     seen.add(key)
                     out.append(Span(at + a, at + b, kind, name, float(score)))
-            if last:
-                return sorted(out, key=lambda s: (s.start, -s.end))
-            at += step
+        return sorted(out, key=lambda s: (s.start, -s.end))
     return find
 
 
 class GlinerBackend:
     """The gliner library (Apache-2.0): zero-shot span labels. Its use against real models is measured in TASK-34.8."""
+    max_words = 320     # GLiNER drops words past max_len (384); its label prompt takes room too
 
     def __init__(self, model_id: str, threshold: float = 0.5) -> None:
         from gliner import GLiNER
@@ -117,6 +147,7 @@ def gliner2_spans(result: dict) -> list[tuple[int, int, str, float]]:
 class Gliner2Backend:
     """The gliner2 library (Apache-2.0), its local model class only: the package also holds a client for Fastino's
     hosted API (GLiNER2API), which the tool never constructs, so no text leaves the machine."""
+    max_words = 320     # its encoder has a length limit too; the same cap as GLiNER
 
     def __init__(self, model_id: str, threshold: float = 0.5) -> None:
         from gliner2 import GLiNER2
@@ -196,6 +227,35 @@ def unavailable_reason(has_module: Callable[[str], bool] = lambda name: find_spe
             "install them with: uv sync --project redact --extra models")
 
 
+# what the libraries read at import: no progress bars, no advisories (the "unauthenticated requests" note, the
+# transformers config notice); a setting of the person's own environment wins
+_QUIET = {"HF_HUB_DISABLE_PROGRESS_BARS": "1", "HF_HUB_VERBOSITY": "error", "TRANSFORMERS_VERBOSITY": "error",
+          "TRANSFORMERS_NO_ADVISORY_WARNINGS": "1", "HF_HUB_DISABLE_TELEMETRY": "1"}
+
+
+def _hub_cache(env: Mapping[str, str]) -> Path:
+    if env.get("HF_HUB_CACHE"):
+        return Path(env["HF_HUB_CACHE"]).expanduser()
+    home = env.get("HF_HOME") or str(Path(env.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "huggingface")
+    return Path(home).expanduser() / "hub"
+
+
+def library_env(model_ids: list[str], env: Mapping[str, str]) -> dict[str, str]:
+    """The variables to set before the model libraries load. With every model in the local cache the Hub is not
+    asked at all (HF_HUB_OFFLINE): text never leaves the machine anyway, and now no request does either."""
+    out = {k: v for k, v in _QUIET.items() if k not in env}
+    cache = _hub_cache(env)
+    if "HF_HUB_OFFLINE" not in env and all(
+            any((cache / ("models--" + mid.replace("/", "--")) / "snapshots").glob("*")) for mid in model_ids):
+        out["HF_HUB_OFFLINE"] = "1"
+    return out
+
+
 def load(model_ids: list[str], accepted: tuple[str, ...] = ()) -> list[Detector]:
     check_terms(model_ids, accepted)
-    return [detector_from(BACKENDS[MODELS[mid].backend](mid), mid) for mid in model_ids]
+    os.environ.update(library_env(model_ids, os.environ))
+    with warnings.catch_warnings():
+        # the libraries' own deprecations, nothing the person can act on (gliner passes resume_download)
+        warnings.filterwarnings("ignore", message=".*resume_download.*")
+        warnings.filterwarnings("ignore", message=".*torch.jit.script.*")
+        return [detector_from(BACKENDS[MODELS[mid].backend](mid), mid) for mid in model_ids]

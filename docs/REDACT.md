@@ -111,10 +111,16 @@ label the tool did not map (`private_date`), now fixed.
 ## Install
 
 ```bash
-uv tool install --editable ./redact     # puts `redact` on PATH, imports the detector from this checkout
+uv tool install --python 3.12 --editable ./redact     # puts `redact` on PATH, imports the detector from this checkout
+uv tool install --python 3.12 --editable './redact[models]' --force   # with the local PII models
 redact --help
 uv run --project redact python -m unittest discover -s redact/tests
 ```
+
+Python 3.12: torch warns that its script compiler is unsupported on 3.14, and uv takes the newest
+Python it finds unless told. Once the models are in the local Hugging Face cache, a run asks no
+server at all (`HF_HUB_OFFLINE`, set by the tool unless you set it yourself); the first run downloads
+them. A GLiNER model drops every word past its 384th, so its chunks hold at most 320 words.
 
 `MAISECRETS_REPO` points the tool at another checkout. Dependencies and model licences are listed
 in `redact/README.md`; every one must hold for any user of the public repository, and a
