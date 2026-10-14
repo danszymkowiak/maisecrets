@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-14 07:21'
-updated_date: '2026-10-14 08:22'
+updated_date: '2026-10-14 09:03'
 labels:
   - redact
   - bench
@@ -39,4 +39,6 @@ Import graph measured 2026-10-14 (top-level and lazy imports):
 
 <!-- SECTION:NOTES:BEGIN -->
 Blocked 2026-10-14 (unattended run): needs the user's choice of layering before the spec (inbox TASK-17). Proposal in the inbox comment. No code or spec written yet.
+
+User, 2026-10-14 (answer to the inbox question): classic clean architecture - domain, application and adapters, with ports. This replaces the proposed layering. The spec maps each module of redact and bench onto those three layers and names the ports (Protocols) the application uses.
 <!-- SECTION:NOTES:END -->
