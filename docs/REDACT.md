@@ -25,7 +25,9 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    phone, country IDs, the terms file), then local PII models for what rules cannot find, such
    as names and free-form addresses (TASK-34.4, an optional extra). The models read the text
    with every rule hit already replaced by `[TYPE]`, so they never see a value the rules found;
-   their spans map back to the original text.
+   their spans map back to the original text. A span is cut at each cell (and page) edge, so a
+   table row keeps its columns, and a model's e-mail without an `@` is dropped: gliner2 calls
+   the city after an `[EMAIL]` cell an e-mail (TASK-49).
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
    span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).

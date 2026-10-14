@@ -61,6 +61,25 @@ def render(doc: Document, spans: Iterable[Span], placeholder: Callable[[Span, st
     return "".join(out)
 
 
+def within_cells(doc: Document, spans: Iterable[Span]) -> list[Span]:
+    """Each span cut at the edges of the document's positions (a table's cells, a PDF's pages), so one placeholder
+    never covers two cells (TASK-49); a part between two positions that holds only blanks is dropped."""
+    edges = sorted({e for p in doc.positions for e in (p.start, p.end)})
+    out = []
+    for s in spans:
+        cuts = [s.start] + [e for e in edges if s.start < e < s.end] + [s.end]
+        for a, b in zip(cuts, cuts[1:]):
+            if doc.text[a:b].strip():
+                out.append(Span(a, b, s.type, s.source, s.score))
+    return out
+
+
+def plausible(doc: Document, spans: Iterable[Span]) -> list[Span]:
+    """A model's span without the shape of its type is dropped: an EMAIL without an @. gliner2 labels the city cell
+    after an [EMAIL] placeholder 'email' (TASK-49)."""
+    return [s for s in spans if s.type != "EMAIL" or "@" in doc.text[s.start:s.end]]
+
+
 @dataclass(frozen=True)
 class Masked:
     """The text the models read after the rules (user, 2026-10-12): each rule hit replaced by [TYPE]. segments maps

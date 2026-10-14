@@ -74,3 +74,44 @@ class AfterTheRulesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CellTests(unittest.TestCase):
+    """A span never crosses a cell of a table (TASK-49): openai/privacy-filter and gliner2 answered 'Max\\tMuster' for a
+    first and a last name in two CSV cells, and gliner2 one span over five cells and a line break (measured
+    2026-10-14); one placeholder for both took a column out of the row."""
+
+    TEXT = "Max\tMuster\tZurich\n"
+    DOC = Document("t.csv", TEXT, (pipeline.Position(0, 3, "row 1, column first"),
+                                   pipeline.Position(4, 10, "row 1, column last"),
+                                   pipeline.Position(11, 17, "row 1, column city")))
+
+    def test_a_span_over_two_cells_becomes_one_per_cell(self):
+        got = pipeline.within_cells(self.DOC, [Span(0, 10, "NAME", "m", 0.9)])
+        self.assertEqual([(self.TEXT[s.start:s.end], s.type, s.source, s.score) for s in got],
+                         [("Max", "NAME", "m", 0.9), ("Muster", "NAME", "m", 0.9)])
+
+    def test_a_span_in_one_cell_and_a_text_without_cells_stay_whole(self):
+        self.assertEqual(pipeline.within_cells(self.DOC, [Span(4, 10, "NAME", "m")]), [Span(4, 10, "NAME", "m")])
+        text = "Max\tMuster wohnt in Zurich"
+        doc = Document("t.txt", text, (pipeline.Position(0, len(text), "file"),))
+        self.assertEqual(pipeline.within_cells(doc, [Span(0, 10, "NAME", "m")]), [Span(0, 10, "NAME", "m")])
+
+    def test_the_part_between_cells_is_dropped(self):
+        got = pipeline.within_cells(self.DOC, [Span(2, 12, "NAME", "m")])
+        self.assertEqual([self.TEXT[s.start:s.end] for s in got], ["x", "Muster", "Z"])
+        self.assertEqual(pipeline.within_cells(self.DOC, [Span(10, 11, "NAME", "m")]), [])
+
+
+class PlausibleTests(unittest.TestCase):
+    """gliner2 (fastino/gliner2-privacy-filter-PII-multi) labels the city 'email' when the email cell before it already
+    holds the rules' [EMAIL] (score 0.6 to 0.7, measured 2026-10-14 on a 120-row CSV; with the address itself in the
+    text it finds the address, without an email column nothing): a model's EMAIL without an @ is not an address."""
+
+    def test_a_model_email_without_an_at_is_dropped(self):
+        text = "max@example.com\tZurich"
+        doc = Document("t.csv", text)
+        spans = [Span(0, 15, "EMAIL", "m"), Span(16, 22, "EMAIL", "m"), Span(16, 22, "NAME", "m")]
+        got = pipeline.plausible(doc, spans)
+        self.assertEqual([(text[s.start:s.end], s.type) for s in got],
+                         [("max@example.com", "EMAIL"), ("Zurich", "NAME")])

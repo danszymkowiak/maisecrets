@@ -92,6 +92,25 @@ class DecideTests(unittest.TestCase):
         self.assertEqual((d.redact, d.review), ((), ()))
 
 
+class TableTests(unittest.TestCase):
+    """A CSV through run_file (TASK-49): a model's name across two cells redacts each cell, so the row keeps its
+    columns, and a city a model calls an email stays."""
+
+    def test_the_row_keeps_its_columns_and_the_city(self):
+        d = Path(tempfile.mkdtemp())
+        src, out = d / "people.csv", d / "people.csv.redacted.txt"
+        src.write_text("first,last,city\nMax,Muster,Zurich\n", encoding="utf-8")
+        words = {"Max\tMuster": "NAME", "Zurich": "EMAIL"}
+        result = app.run_file(src, out, model_detectors={"m1": fake("m1", words), "m2": fake("m2", words)},
+                              regions=("generic",), interactive=False)
+        self.assertEqual(result.status, "written")
+        row = out.read_text(encoding="utf-8").splitlines()[1].split("\t")
+        self.assertEqual(len(row), 3, row)
+        self.assertNotIn("Max", row[0])
+        self.assertNotIn("Muster", row[1])
+        self.assertEqual(row[2], "Zurich")
+
+
 class GateTests(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
