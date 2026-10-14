@@ -1,10 +1,11 @@
 """The password shape (TASK-55): a password-like token in free text becomes a review item."""
 from __future__ import annotations
 
+import functools
 import re
 
 from .document import Document, Span
-from .fields import _CARD_FIELD, _CELL, _words
+from .fields import _CARD_FIELD, _words
 
 
 # The password shape (TASK-55): a token of 8 to 64 characters with three of lower case, upper case, digits and
@@ -82,26 +83,40 @@ _FREE_TEXT_WORDS = {"note", "notes", "comment", "comments", "description", "extr
 _TOKEN = re.compile(r"\S+")
 
 
+@functools.lru_cache(maxsize=4096)
+def _free_text_header(header: str) -> bool:
+    w = _words(header)
+    return bool(w) and w[-1] in _FREE_TEXT_WORDS
+
+
 def _free_text(where: str) -> bool:
-    """Is a position free text: a whole text file or PDF page, a notes-like column below its header, or the NOTE,
-    DESCRIPTION, COMMENT or SUMMARY of a vCard or iCalendar file."""
+    """Is a position outside a table free text: a whole text file or PDF page, or the NOTE, DESCRIPTION, COMMENT or
+    SUMMARY of a vCard or iCalendar file."""
     if where == "file" or where.startswith("page "):
         return True
-    m = _CELL.search(where)
-    if m:
-        w = _words(m.group(2))
-        return int(m.group(1)) > 1 and bool(w) and w[-1] in _FREE_TEXT_WORDS
     m = _CARD_FIELD.search(where)
     return bool(m) and not m.group(2) and m.group(1) in {"NOTE", "DESCRIPTION", "COMMENT", "SUMMARY"}
+
+
+def _free_text_ranges(doc: Document) -> list[tuple[int, int]]:
+    """The stretches of free text: a table's cells below a notes-like header (the header looked at once per column,
+    not once per cell: a 50,000-row table spent half a second there), else the free positions."""
+    if doc.tables:
+        out = []
+        for table in doc.tables:
+            if not table.rows:
+                continue
+            cols = [i for i, (a, b) in enumerate(table.rows[0]) if _free_text_header(doc.text[a:b])]
+            out += [row[i] for row in table.rows[1:] for i in cols if i < len(row)]
+        return out
+    return [(p.start, p.end) for p in doc.positions if _free_text(p.where)]
 
 
 def shape_spans(doc: Document) -> list[Span]:
     """Password-shaped tokens in free text (TASK-55): review items only, never a redaction of their own."""
     out = []
-    for p in doc.positions:
-        if not _free_text(p.where):
-            continue
-        for m in _TOKEN.finditer(doc.text, p.start, p.end):
+    for start, end in _free_text_ranges(doc):
+        for m in _TOKEN.finditer(doc.text, start, end):
             if password_shaped(m.group()):
                 a, b = _core(m.group())
                 out.append(Span(m.start() + a, m.start() + b, "SECRET", "password-shape"))
