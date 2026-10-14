@@ -15,8 +15,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _home  # noqa: E402,F401  first: a temp maisecrets home
 
-from maisecrets_redact import app  # noqa: E402
-from maisecrets_redact.pipeline import Span  # noqa: E402
+from maisecrets_redact.adapters import compose as app  # noqa: E402
+from maisecrets_redact.domain.document import Span  # noqa: E402
 
 ROWS, LIMIT = 50_000, 10.0
 

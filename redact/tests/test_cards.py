@@ -15,7 +15,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _home  # noqa: E402,F401  first: a temp maisecrets home
 
-from maisecrets_redact import app, extract, pipeline  # noqa: E402
+from maisecrets_redact.adapters import compose as app  # noqa: E402
+
+from maisecrets_redact.adapters import extract  # noqa: E402
+
+from maisecrets_redact.domain import fields  # noqa: E402
 
 VCF = ("BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Erika Musterfrau\r\nN:Musterfrau;Erika;;;\r\n"
        "TEL;TYPE=cell:+41 79 000 00 01\r\nEMAIL;TYPE=home:erika@mailbox-test.de\r\n"
@@ -41,7 +45,7 @@ def write(name: str, text: str) -> Path:
 
 
 def hits(doc) -> dict[str, str]:
-    return {doc.text[s.start:s.end]: s.type for s in pipeline.card_spans(doc)}
+    return {doc.text[s.start:s.end]: s.type for s in fields.card_spans(doc)}
 
 
 class VcardTests(unittest.TestCase):

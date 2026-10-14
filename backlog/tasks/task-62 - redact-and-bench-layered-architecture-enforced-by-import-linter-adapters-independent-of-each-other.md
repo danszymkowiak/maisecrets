@@ -3,10 +3,10 @@ id: TASK-62
 title: >-
   redact and bench: layered architecture enforced by import-linter, adapters
   independent of each other
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-14 07:21'
-updated_date: '2026-10-14 09:03'
+updated_date: '2026-10-14 09:28'
 labels:
   - redact
   - bench
@@ -41,4 +41,6 @@ Import graph measured 2026-10-14 (top-level and lazy imports):
 Blocked 2026-10-14 (unattended run): needs the user's choice of layering before the spec (inbox TASK-17). Proposal in the inbox comment. No code or spec written yet.
 
 User, 2026-10-14 (answer to the inbox question): classic clean architecture - domain, application and adapters, with ports. This replaces the proposed layering. The spec maps each module of redact and bench onto those three layers and names the ports (Protocols) the application uses.
+
+2026-10-14: spec reviewed by an independent agent instead of the user (user's instruction), 14 blockers taken in; spec in backlog/docs/doc-1. redact done: domain/application/adapters, ports, compose facade, 4 import-linter contracts kept (and shown red on a planted os import and an upward import), 138 tests green, lint-imports in .githooks/pre-commit and CLAUDE.md. bench next.
 <!-- SECTION:NOTES:END -->

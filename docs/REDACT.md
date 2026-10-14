@@ -17,7 +17,8 @@ because nobody waits for it in a prompt.
 
 ## Pipeline
 
-Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and writes files.
+Pure functions in `redact/maisecrets_redact/domain/`; the use cases in `application/` reach files, formats and
+detectors only through ports, and `adapters/` holds those (layers below, TASK-62).
 
 1. **Extract** (TASK-34.2): a document becomes text plus a map from text offsets back to its
    source (PDF page; sheet, row and column), and a table keeps where each cell lies in that text.
@@ -54,7 +55,7 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    may be a UUID-shaped key (TASK-57).
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
-   span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).
+   span only openai/privacy-filter finds, which is dropped (`domain/models.py`: `VOTE_K`, `NOT_REVIEWED`).
 4. **Render** (TASK-34.6, TASK-54): a PDF or text file becomes `<file>.redacted.txt`; a CSV or TSV
    becomes `<file>.redacted.csv` with the input's delimiter and its header row, and a workbook one
    `<file>.<sheet>.redacted.csv` per sheet. Each cell is redacted on its own (no span crosses a cell)
@@ -113,7 +114,7 @@ punctuation (`Jean-Pierre`, `Hello,World`), identifiers, URLs, mail addresses, p
 markup and the plugin's placeholders. What is left is a review item, never a redaction of its
 own; at a terminal you are asked, otherwise it waits in the review file.
 
-`uv run --project redact --with pyarrow python -m maisecrets_redact.measure --password-shape check`
+`uv run --project redact --with pyarrow python -m maisecrets_redact.adapters.measure --password-shape check`
 measures it on the bench text; the shapes above were set on the dev split, and on the check
 split they give:
 
@@ -131,7 +132,7 @@ notes column rarely hold; a hit on a value that is no password costs one "keep" 
 
 ## Models on the bench (TASK-34.8, 2026-10-12)
 
-`uv run --project redact --with pyarrow python -m maisecrets_redact.measure` runs the rules and then
+`uv run --project redact --with pyarrow python -m maisecrets_redact.adapters.measure` runs the rules and then
 each model, as the tool does, on 150 documents from each of four bench datasets (findocs, Gretel,
 Nemotron-PII, Mendeley; `docs/BENCHMARK.md`): run 20261012-191234, offsets only, under the bench's
 data directory. A value counts as hidden when redacted spans cover 80 % of it. A false redaction is
@@ -169,6 +170,21 @@ and its misses overlap least with theirs; it also makes the most false redaction
 were most of the review questions. Its low score on birth dates in the first measurement was a
 label the tool did not map (`private_date`), now fixed.
 
+## Layers (TASK-62)
+
+The package follows a clean architecture, checked by import-linter on every commit
+(`uv run --project redact --group dev lint-imports --config redact/pyproject.toml`):
+
+- `domain/`: the document and its spans, the field and shape rules, the vote, the review questions, the model
+  registry and windows, the outputs. No I/O, no clock, no environment, no third-party import, no plugin import.
+- `application/`: one file and a directory through the pipeline (`redact_file.py`), and the ports it needs
+  (`ports.py`: extractor, rules detector, review store, output sink, file tree).
+- `adapters/`: the formats (`extract.py`), the plugin's rules (`plugin_rules.py`), the model libraries
+  (`model_backends.py`), the review file, the file system; each implements a port and imports no other.
+  `compose.py` puts them together, and the drivers `cli.py` and `measure.py` use it.
+
+The design and its review: `backlog/docs/doc-1 - Clean-architecture-for-redact-and-bench.md`.
+
 ## Install
 
 ```bash
@@ -184,6 +200,9 @@ no server at all (`HF_HUB_OFFLINE`, set by the tool unless you set it yourself);
 them. Complete means each snapshot holds its config and weights, and a GLiNER model without a
 tokenizer of its own also has its base encoder's config (TASK-58); a load that still fails offline
 says so and asks for one run with `HF_HUB_OFFLINE=0`. A GLiNER model drops every word past its 384th, so its chunks hold at most 320 words.
+
+After the move into layers (2026-10-14) the command lives in `maisecrets_redact.adapters.cli`: an
+earlier `uv tool install --editable` needs the install command once more (with `--force`).
 
 `MAISECRETS_REPO` points the tool at another checkout. Dependencies and model licences are listed
 in `redact/README.md`; every one must hold for any user of the public repository, and a

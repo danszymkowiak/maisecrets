@@ -26,8 +26,9 @@ import time
 from collections import Counter
 from pathlib import Path
 
-from . import pipeline
-from .pipeline import Document, Span
+from ..domain import shape
+from ..domain import text as text_ops
+from ..domain.document import Document, Span
 
 DATASETS = ("findocs", "gretel", "nemotron", "mendeley")
 COVER = 0.8
@@ -77,8 +78,8 @@ class Score:
 
 def vote(text: str, rule_spans: list[Span], per_model: dict[str, list[Span]], k: int | None = None,
          not_reviewed: tuple[str, ...] = ()) -> tuple[list[Span], list[Span]]:
-    """What the tool redacts without asking, and what it sends to a person (review.decide, the tool's own vote)."""
-    from .review import decide
+    """What the tool redacts without asking, and what it sends to a person (domain.vote.decide, the tool's own vote)."""
+    from ..domain.vote import decide
     d = decide(Document("bench", text), rule_spans, per_model, k=k, not_reviewed=not_reviewed)
     return list(d.redact), list(d.review)
 
@@ -100,9 +101,9 @@ def _samples(data: Path, name: str, n: int) -> list[dict]:
 
 
 def _detect(data: Path, out: Path, per_dataset: int, model_ids: list[str]) -> None:
-    from . import models, rules
-    detectors = {"rules": rules.detector(regions=("ch", "us"))}
-    for mid, det in zip(model_ids, models.load(model_ids)):
+    from . import model_backends, plugin_rules
+    detectors = {"rules": plugin_rules.detector(regions=("ch", "us"))}
+    for mid, det in zip(model_ids, model_backends.load(model_ids)):
         detectors[mid] = det
     with (out / "spans.jsonl").open("w", encoding="utf-8") as f:
         for name in DATASETS:
@@ -113,7 +114,7 @@ def _detect(data: Path, out: Path, per_dataset: int, model_ids: list[str]) -> No
                     t = time.perf_counter()
                     if det_name == "rules":
                         spans = det(doc)
-                        masked = pipeline.mask(doc, spans)
+                        masked = text_ops.mask(doc, spans)
                     else:
                         spans = masked.back(det(masked.doc))
                     f.write(json.dumps({"dataset": name, "sample_id": r["sample_id"], "detector": det_name,
@@ -157,7 +158,7 @@ def report(data: Path, out: Path, defaults: tuple[str, ...]) -> str:
                 configs[f"{m} alone"].add(ds, r["spans"], per[m], words)
                 configs[f"rules + {m}"].add(ds, r["spans"], per["rules"] + per[m], words)
             if voters:
-                from . import models
+                from ..domain import models
                 redact, review = vote(r["text"], per["rules"], {m: per[m] for m in voters}, models.VOTE_K,
                                       tuple(m for m in models.NOT_REVIEWED if m in voters))
                 configs["vote, no review"].add(ds, r["spans"], redact, words)
@@ -170,7 +171,7 @@ def _render(configs: dict[str, Score], seconds: Counter, docs: Counter, voters: 
     lines = ["# redact on the bench datasets (TASK-34.8)", "",
              f"A value counts as hidden when redacted spans cover {COVER:.0%} of its characters. False positives: "
              "redacted spans touching no positive or uncertain gold span, per 1,000 words. "
-             f"Vote: {', '.join(voters) or '-'} (review.decide).", "",
+             f"Vote: {', '.join(voters) or '-'} (domain.vote.decide).", "",
              "## Recall per type (all datasets)", "",
              "| configuration | " + " | ".join(types) + " | FP / 1k words |",
              "|---|" + "---|" * (len(types) + 1)]
@@ -218,7 +219,7 @@ def password_shape(data: Path, split: str) -> str:
             words += len(text.split())
             pw = [(g["start"], g["end"]) for g in spans if (g["label"] or "").lower() in ("password", "pass")
                   and g["gold"] == "pos"]
-            hits = [(m.start(), m.end()) for m in token.finditer(text) if pipeline.password_shaped(m.group())]
+            hits = [(m.start(), m.end()) for m in token.finditer(text) if shape.password_shaped(m.group())]
             total += len(pw)
             found += sum(any(a < he and ha < b for ha, he in hits) for a, b in pw)
             false += sum(not any(g["start"] < he and ha < g["end"] for g in spans) for ha, he in hits)
@@ -239,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         print(password_shape(_bench_data(), args.password_shape))
         return 0
     os.environ["MAISECRETS_HOME"] = tempfile.mkdtemp(prefix="redact-measure-home-")   # never the real plugin home
-    from . import models
+    from ..domain import models
     data = _bench_data()
     if args.report_only:
         out = args.report_only

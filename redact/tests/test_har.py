@@ -16,7 +16,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _home  # noqa: E402,F401  first: a temp maisecrets home
 
-from maisecrets_redact import app, extract, pipeline  # noqa: E402
+from maisecrets_redact.adapters import compose as app  # noqa: E402
+
+from maisecrets_redact.adapters import extract  # noqa: E402
+
+from maisecrets_redact.domain import fields  # noqa: E402
 
 # built here, not written out: the tree's own secret scan (scripts/scan_tree.py) reads every literal
 QUERY_TOKEN, FORM_PASS = "testtoken" + "-query", "testpass" + "-form"
@@ -77,11 +81,11 @@ class HarExtractTests(unittest.TestCase):
 
     def test_the_fields_that_hold_secrets_are_hits(self):
         doc = extract.extract(write(Path(tempfile.mkdtemp())))
-        got = {doc.text[s.start:s.end] for s in pipeline.har_spans(doc)}
+        got = {doc.text[s.start:s.end] for s in fields.har_spans(doc)}
         self.assertEqual(got, {"session=testcookie-1; theme=dark", "testcookie-1", "Bearer testtoken-bearer",
                                "testkey-header", "testtoken-query", "testpass-form",
                                "session=testcookie-2; Path=/; HttpOnly", "testcookie-2", "testuser"})
-        self.assertEqual({s.type for s in pipeline.har_spans(doc) if doc.text[s.start:s.end] == "testuser"},
+        self.assertEqual({s.type for s in fields.har_spans(doc) if doc.text[s.start:s.end] == "testuser"},
                          {"USERNAME"})
 
 

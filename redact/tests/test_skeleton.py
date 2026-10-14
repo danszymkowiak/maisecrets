@@ -72,5 +72,16 @@ class BoundaryTests(unittest.TestCase):
             self.assertFalse((ROOT / name).exists(), name)
 
 
+class CheckoutTests(unittest.TestCase):
+    """The tool finds the checkout it lives in by a file of it (maisecrets/detect.py), not by a count of parent
+    folders: the count broke silently when the module moved into adapters/ (TASK-62)."""
+
+    def test_the_checkout_is_the_one_this_tool_lives_in(self):
+        from maisecrets_redact.adapters import plugin_rules
+        here = Path(__file__).resolve().parents[2]
+        self.assertEqual(plugin_rules.checkout(), here)
+        self.assertTrue((plugin_rules.checkout() / "maisecrets" / "detect.py").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()

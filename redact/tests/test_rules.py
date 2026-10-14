@@ -18,7 +18,15 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _home  # noqa: E402  first: a temp maisecrets home
 
-from maisecrets_redact import extract, pipeline, rules  # noqa: E402
+from maisecrets_redact.adapters import extract  # noqa: E402
+
+from maisecrets_redact.domain import document  # noqa: E402
+
+from maisecrets_redact.domain import text as text_ops  # noqa: E402
+
+from maisecrets_redact.domain import placeholders  # noqa: E402
+
+from maisecrets_redact.adapters import plugin_rules  # noqa: E402
 from test_extract import minimal_pdf  # noqa: E402
 
 _R = random.Random(343)
@@ -30,9 +38,9 @@ AHV = "756.9217.0769.85"                       # the ZAS example
 
 
 def redact_text(doc, regions=("generic",)):
-    det = rules.detector(regions=regions)
-    names = rules.Placeholders()
-    return pipeline.render(doc, pipeline.detect(doc, [det]), names.placeholder), names
+    det = plugin_rules.detector(regions=regions)
+    names = placeholders.Placeholders()
+    return text_ops.render(doc, document.detect(doc, [det]), names.placeholder), names
 
 
 class RulesTests(unittest.TestCase):
@@ -59,19 +67,19 @@ class RulesTests(unittest.TestCase):
 
     def test_the_same_value_gets_the_same_placeholder_and_another_value_another(self):
         other = "eva@firma-beispiel.ch"
-        doc = pipeline.Document("x.txt", f"{MAIL}, {other} und nochmals {MAIL}")
+        doc = document.Document("x.txt", f"{MAIL}, {other} und nochmals {MAIL}")
         out, names = redact_text(doc)
         self.assertEqual(out, "⟦EMAIL_1⟧, ⟦EMAIL_2⟧ und nochmals ⟦EMAIL_1⟧")
         self.assertEqual(names.counts(), {"EMAIL": 2})
 
     def test_regions_choose_the_country_rules(self):
-        doc = pipeline.Document("x.txt", f"AHV-Nr. {AHV}")
+        doc = document.Document("x.txt", f"AHV-Nr. {AHV}")
         self.assertIn(AHV, redact_text(doc)[0], "generic rules only: no Swiss number")
         self.assertNotIn(AHV, redact_text(doc, regions=("generic", "ch"))[0])
 
     def test_a_run_leaves_the_plugin_home_untouched(self):
         before = sorted(os.listdir(_home.HOME))
-        redact_text(pipeline.Document("x.txt", f"token {TOKEN}"))
+        redact_text(document.Document("x.txt", f"token {TOKEN}"))
         self.assertEqual(sorted(os.listdir(_home.HOME)), before)
 
 
@@ -79,13 +87,13 @@ class ModelsAfterRulesTests(unittest.TestCase):
     """The models run after the rules (user, 2026-10-12): they never read a value the rules found."""
 
     def test_a_model_reads_the_text_with_rule_hits_replaced_and_its_spans_land_on_the_original(self):
-        from maisecrets_redact import app
+        from maisecrets_redact.adapters import compose as app
         seen = []
 
         def model(doc):
             seen.append(doc.text)
             at = doc.text.index("Erika Muster")
-            return [pipeline.Span(at, at + 12, "NAME", "m")]
+            return [document.Span(at, at + 12, "NAME", "m")]
         d = Path(tempfile.mkdtemp())
         src = d / "a.txt"
         src.write_text(f"deploy key {TOKEN} for Erika Muster, IBAN {IBAN}\n", encoding="utf-8")
@@ -119,7 +127,7 @@ class CommandTests(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0, "an existing output is not overwritten")
         self.assertIn("exists", r.stderr)
 
-    @unittest.skipUnless(__import__("maisecrets_redact.models").models.unavailable_reason(),
+    @unittest.skipUnless(__import__("maisecrets_redact.adapters.model_backends").adapters.model_backends.unavailable_reason(),
                          "the model extra is installed")
     def test_without_the_model_extra_the_rules_run_and_it_says_so_once(self):
         d = Path(tempfile.mkdtemp())

@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_redact import extract
+from maisecrets_redact.adapters import extract
 
 
 def minimal_pdf(pages: list[list[str]]) -> bytes:

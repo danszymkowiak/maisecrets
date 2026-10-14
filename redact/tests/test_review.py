@@ -18,8 +18,12 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _home  # noqa: E402,F401  first: a temp maisecrets home
 
-from maisecrets_redact import app, review  # noqa: E402
-from maisecrets_redact.pipeline import Document, Span  # noqa: E402
+from maisecrets_redact.adapters import compose as app  # noqa: E402
+
+from maisecrets_redact.adapters import review_file  # noqa: E402
+
+from maisecrets_redact.domain import vote  # noqa: E402
+from maisecrets_redact.domain.document import Document, Span  # noqa: E402
 
 TEXT = "Kunde Max Muster, wohnhaft Bahnhofstrasse 12, IBAN CH93 0076 2011 6238 5295 7."
 
@@ -42,7 +46,7 @@ M2 = fake("m2", {"Max Muster": "NAME", "Muster": "NAME"})          # agrees on t
 class DecideTests(unittest.TestCase):
     def test_unanimous_redacts_and_split_goes_to_review(self):
         doc = Document("t.txt", TEXT)
-        d = review.decide(doc, rule_spans=[], model_spans={"m1": M1(doc), "m2": M2(doc)})
+        d = vote.decide(doc, rule_spans=[], model_spans={"m1": M1(doc), "m2": M2(doc)})
         self.assertEqual([doc.text[s.start:s.end] for s in d.redact], ["Max Muster"])
         self.assertEqual([doc.text[s.start:s.end] for s in d.review], ["Bahnhofstrasse 12"])
 
@@ -51,7 +55,7 @@ class DecideTests(unittest.TestCase):
         iban = TEXT.index("CH93")
         rule = Span(iban, iban + len("CH93 0076 2011 6238 5295 7"), "IBAN", "rules")
         inside = Span(iban, iban + 4, "ACCOUNT", "m1")
-        d = review.decide(doc, rule_spans=[rule], model_spans={"m1": [inside], "m2": []})
+        d = vote.decide(doc, rule_spans=[rule], model_spans={"m1": [inside], "m2": []})
         self.assertEqual(d.redact, (rule,))
         self.assertEqual(d.review, ())
 
@@ -60,7 +64,7 @@ class DecideTests(unittest.TestCase):
         doc = Document("x.txt", "Erika Muster wohnt in Bern, Hans Meier auch")
         spans = {"a": [Span(0, 12, "NAME", "a"), Span(22, 26, "ADDRESS", "a")], "b": [Span(0, 12, "NAME", "b")],
                  "c": [Span(28, 38, "NAME", "c")], "d": []}
-        d = review.decide(doc, [], spans, k=2)
+        d = vote.decide(doc, [], spans, k=2)
         self.assertEqual([(s.start, s.end) for s in d.redact], [(0, 12)])
         self.assertEqual([(s.start, s.end) for s in d.review], [(22, 26), (28, 38)])
 
@@ -68,18 +72,19 @@ class DecideTests(unittest.TestCase):
         doc = Document("x.txt", "Erika Muster wohnt in Bern, Hans Meier auch")
         spans = {"a": [Span(0, 12, "NAME", "a")], "pf": [Span(0, 12, "NAME", "pf"), Span(28, 38, "NAME", "pf")],
                  "c": [Span(22, 26, "ADDRESS", "c")]}
-        d = review.decide(doc, [], spans, k=2, not_reviewed=("pf",))
+        d = vote.decide(doc, [], spans, k=2, not_reviewed=("pf",))
         self.assertEqual([(s.start, s.end) for s in d.redact], [(0, 12)])
         self.assertEqual([(s.start, s.end) for s in d.review], [(22, 26)], "pf's lone span is dropped, c's is asked")
 
     def test_the_defaults_are_two_of_four_without_privacy_filter_reviews(self):
-        from maisecrets_redact import models
+        from maisecrets_redact.domain import models
         self.assertEqual(len(models.DEFAULTS), 4)
         self.assertEqual((models.VOTE_K, models.NOT_REVIEWED), (2, ("openai/privacy-filter",)))
 
     def test_the_command_runs_the_default_vote(self):
         from unittest import mock
-        from maisecrets_redact import cli, models
+        from maisecrets_redact.adapters import cli
+        from maisecrets_redact.domain import models
         d = Path(tempfile.mkdtemp())
         (d / "a.txt").write_text("x\n", encoding="utf-8")
         with mock.patch.object(cli, "_model_detectors", return_value={"m": lambda doc: []}), \
@@ -90,7 +95,7 @@ class DecideTests(unittest.TestCase):
 
     def test_without_models_only_the_rules_decide(self):
         doc = Document("t.txt", TEXT)
-        d = review.decide(doc, rule_spans=[], model_spans={})
+        d = vote.decide(doc, rule_spans=[], model_spans={})
         self.assertEqual((d.redact, d.review), ((), ()))
 
 
@@ -160,7 +165,7 @@ class GateTests(unittest.TestCase):
     def test_a_stale_review_file_is_refused(self):
         self.run_file(interactive=False)
         self.src.write_text(TEXT.replace("Bahnhofstrasse 12", "Seestrasse 99a"), encoding="utf-8")
-        with self.assertRaisesRegex(review.StaleReview, "changed"):
+        with self.assertRaisesRegex(review_file.StaleReview, "changed"):
             self.run_file(interactive=False)
 
 

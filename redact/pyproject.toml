@@ -30,11 +30,51 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [project.scripts]
-redact = "maisecrets_redact.cli:main"
+redact = "maisecrets_redact.adapters.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "import-linter>=2.15",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["maisecrets_redact"]
+
+# Clean architecture, adapters > application > domain (TASK-62; the spec is backlog/docs/doc-1 in the repository).
+[tool.importlinter]
+root_package = "maisecrets_redact"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "layers: adapters > application > domain"
+type = "layers"
+containers = ["maisecrets_redact"]
+layers = ["adapters", "application", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "the adapters that implement ports are independent of each other"
+type = "independence"
+modules = [
+    "maisecrets_redact.adapters.extract",
+    "maisecrets_redact.adapters.plugin_rules",
+    "maisecrets_redact.adapters.model_backends",
+    "maisecrets_redact.adapters.review_file",
+    "maisecrets_redact.adapters.files",
+]
+
+[[tool.importlinter.contracts]]
+name = "domain and application import no plugin, model library or file format"
+type = "forbidden"
+source_modules = ["maisecrets_redact.domain", "maisecrets_redact.application"]
+forbidden_modules = ["maisecrets", "gliner", "gliner2", "transformers", "torch", "pypdf", "openpyxl", "pyarrow"]
+
+[[tool.importlinter.contracts]]
+name = "the domain does no I/O: no files, processes, clock or environment"
+type = "forbidden"
+source_modules = ["maisecrets_redact.domain"]
+forbidden_modules = ["os", "time", "tempfile", "subprocess", "multiprocessing", "concurrent", "tomllib", "importlib",
+                     "shutil", "socket", "urllib"]

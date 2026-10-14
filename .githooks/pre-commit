@@ -31,6 +31,15 @@ done
 # refused (2026-09-28), so this runs on every commit
 python3 scripts/lint_plugin.py || { echo "pre-commit: scripts/lint_plugin.py failed"; exit 1; }
 
+# 2c. the layers of redact and bench (TASK-62): import-linter contracts in each pyproject.toml
+if command -v uv >/dev/null 2>&1; then
+  for proj in redact; do
+    OUT=$(uv run --quiet --project "$proj" --group dev lint-imports --no-cache --config "$proj/pyproject.toml" 2>&1) || {
+      printf '%s\n' "$OUT" | grep -E "BROKEN|->|^-" | head -40
+      echo "pre-commit: import-linter contracts of $proj are broken (uv run --project $proj --group dev lint-imports --config $proj/pyproject.toml)"; exit 1; }
+  done
+fi
+
 # 3. unit tests
 # the output is kept: a failure that a retry did not repeat went unnamed twice (TASK-14, 2026-10-11)
 TEST_LOG="$(git rev-parse --git-dir)/maisecrets-pre-commit-tests.log"

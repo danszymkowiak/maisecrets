@@ -54,6 +54,7 @@ python3 harness/run.py                         # the real claude client against 
 claude plugin test .                           # the mod's own tests (tests/mod.test.ts)
 uv run --project bench python -m unittest discover -s bench/tests   # the rule benchmark (docs/BENCHMARK.md)
 uv run --project redact python -m unittest discover -s redact/tests # the redact tool (docs/REDACT.md)
+uv run --project redact --group dev lint-imports --config redact/pyproject.toml   # redact's layers (TASK-62)
 ```
 
 All of them run on this machine (`ruff` through `uvx`, the harness with the installed `claude`).

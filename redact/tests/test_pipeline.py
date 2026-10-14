@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_redact import pipeline
-from maisecrets_redact.pipeline import Document, Span
+from maisecrets_redact.domain import document
+
+from maisecrets_redact.domain import fields
+
+from maisecrets_redact.domain import text as text_ops
+from maisecrets_redact.domain.document import Document, Span
 
 
 def ph(span: Span, value: str) -> str:
@@ -17,21 +21,21 @@ class PipelineTests(unittest.TestCase):
         doc = Document("x.txt", "mail a@b.ch, call +41 44 000 00 00")
         one = lambda d: [Span(18, 34, "PHONE", "rules")]   # noqa: E731
         two = lambda d: [Span(5, 11, "EMAIL", "model")]    # noqa: E731
-        self.assertEqual([s.type for s in pipeline.detect(doc, [one, two])], ["EMAIL", "PHONE"])
+        self.assertEqual([s.type for s in document.detect(doc, [one, two])], ["EMAIL", "PHONE"])
 
     def test_render_replaces_each_span(self):
         doc = Document("x.txt", "mail a@b.ch, call +41 44 000 00 00")
-        out = pipeline.render(doc, [Span(5, 11, "EMAIL", "rules"), Span(18, 34, "PHONE", "rules")], ph)
+        out = text_ops.render(doc, [Span(5, 11, "EMAIL", "rules"), Span(18, 34, "PHONE", "rules")], ph)
         self.assertEqual(out, "mail <EMAIL>, call <PHONE>")
 
     def test_overlapping_spans_render_once(self):
         doc = Document("x.txt", "Max Muster, Bahnhofstr. 1")
-        out = pipeline.render(doc, [Span(0, 10, "NAME", "m1"), Span(4, 10, "NAME", "m2")], ph)
+        out = text_ops.render(doc, [Span(0, 10, "NAME", "m1"), Span(4, 10, "NAME", "m2")], ph)
         self.assertEqual(out, "<NAME>, Bahnhofstr. 1")
 
     def test_no_span_leaves_the_text(self):
         doc = Document("x.txt", "nothing here")
-        self.assertEqual(pipeline.render(doc, [], ph), "nothing here")
+        self.assertEqual(text_ops.render(doc, [], ph), "nothing here")
 
 
 class AfterTheRulesTests(unittest.TestCase):
@@ -47,18 +51,18 @@ class AfterTheRulesTests(unittest.TestCase):
         self.doc = Document("x.txt", self.TEXT)
 
     def test_the_models_read_placeholders_where_the_rules_found_values(self):
-        m = pipeline.mask(self.doc, self.rules)
+        m = text_ops.mask(self.doc, self.rules)
         self.assertEqual(m.doc.text, "Konto [IBAN] von Erika Muster, Tel. [PHONE]")
 
     def test_a_model_span_maps_back_to_the_original_text(self):
-        m = pipeline.mask(self.doc, self.rules)
+        m = text_ops.mask(self.doc, self.rules)
         at = m.doc.text.index("Erika Muster")
         (back,) = m.back([Span(at, at + 12, "NAME", "model", 0.9)])
         self.assertEqual((self.TEXT[back.start:back.end], back.type, back.source, back.score),
                          ("Erika Muster", "NAME", "model", 0.9))
 
     def test_the_part_of_a_span_on_a_placeholder_is_dropped(self):
-        m = pipeline.mask(self.doc, self.rules)
+        m = text_ops.mask(self.doc, self.rules)
         a, b = m.doc.text.index("[IBAN]"), m.doc.text.index(" Muster") + 7
         self.assertEqual([self.TEXT[s.start:s.end] for s in m.back([Span(a, b, "NAME", "model")])],
                          ["von Erika Muster"])
@@ -66,7 +70,7 @@ class AfterTheRulesTests(unittest.TestCase):
         self.assertEqual(m.back([Span(p, p + 7, "PHONE", "model")]), [])
 
     def test_without_rule_hits_the_text_is_the_same(self):
-        m = pipeline.mask(self.doc, [])
+        m = text_ops.mask(self.doc, [])
         self.assertIs(m.doc, self.doc)
         self.assertEqual(m.back([Span(0, 5, "X", "m")]), [Span(0, 5, "X", "m")])
 
@@ -79,25 +83,25 @@ class CellTests(unittest.TestCase):
     2026-10-14); one placeholder for both took a column out of the row."""
 
     TEXT = "Max\tMuster\tZurich\n"
-    DOC = Document("t.csv", TEXT, (pipeline.Position(0, 3, "row 1, column first"),
-                                   pipeline.Position(4, 10, "row 1, column last"),
-                                   pipeline.Position(11, 17, "row 1, column city")))
+    DOC = Document("t.csv", TEXT, (document.Position(0, 3, "row 1, column first"),
+                                   document.Position(4, 10, "row 1, column last"),
+                                   document.Position(11, 17, "row 1, column city")))
 
     def test_a_span_over_two_cells_becomes_one_per_cell(self):
-        got = pipeline.within_cells(self.DOC, [Span(0, 10, "NAME", "m", 0.9)])
+        got = text_ops.within_cells(self.DOC, [Span(0, 10, "NAME", "m", 0.9)])
         self.assertEqual([(self.TEXT[s.start:s.end], s.type, s.source, s.score) for s in got],
                          [("Max", "NAME", "m", 0.9), ("Muster", "NAME", "m", 0.9)])
 
     def test_a_span_in_one_cell_and_a_text_without_cells_stay_whole(self):
-        self.assertEqual(pipeline.within_cells(self.DOC, [Span(4, 10, "NAME", "m")]), [Span(4, 10, "NAME", "m")])
+        self.assertEqual(text_ops.within_cells(self.DOC, [Span(4, 10, "NAME", "m")]), [Span(4, 10, "NAME", "m")])
         text = "Max\tMuster wohnt in Zurich"
-        doc = Document("t.txt", text, (pipeline.Position(0, len(text), "file"),))
-        self.assertEqual(pipeline.within_cells(doc, [Span(0, 10, "NAME", "m")]), [Span(0, 10, "NAME", "m")])
+        doc = Document("t.txt", text, (document.Position(0, len(text), "file"),))
+        self.assertEqual(text_ops.within_cells(doc, [Span(0, 10, "NAME", "m")]), [Span(0, 10, "NAME", "m")])
 
     def test_the_part_between_cells_is_dropped(self):
-        got = pipeline.within_cells(self.DOC, [Span(2, 12, "NAME", "m")])
+        got = text_ops.within_cells(self.DOC, [Span(2, 12, "NAME", "m")])
         self.assertEqual([self.TEXT[s.start:s.end] for s in got], ["x", "Muster", "Z"])
-        self.assertEqual(pipeline.within_cells(self.DOC, [Span(10, 11, "NAME", "m")]), [])
+        self.assertEqual(text_ops.within_cells(self.DOC, [Span(10, 11, "NAME", "m")]), [])
 
 
 class PlausibleTests(unittest.TestCase):
@@ -109,7 +113,7 @@ class PlausibleTests(unittest.TestCase):
         text = "max@example.com\tZurich"
         doc = Document("t.csv", text)
         spans = [Span(0, 15, "EMAIL", "m"), Span(16, 22, "EMAIL", "m"), Span(16, 22, "NAME", "m")]
-        got = pipeline.plausible(doc, spans)
+        got = fields.plausible(doc, spans)
         self.assertEqual([(text[s.start:s.end], s.type) for s in got],
                          [("max@example.com", "EMAIL"), ("Zurich", "NAME")])
 

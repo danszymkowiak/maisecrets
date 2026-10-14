@@ -9,8 +9,8 @@ import unittest
 
 import _home  # noqa: F401  first: a temp plugin home
 
-from maisecrets_redact import measure
-from maisecrets_redact.pipeline import Span
+from maisecrets_redact.adapters import measure
+from maisecrets_redact.domain.document import Span
 
 
 def gold(start, end, label, g="pos"):

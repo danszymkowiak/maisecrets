@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_redact import models
-from maisecrets_redact.pipeline import Document
+from maisecrets_redact.adapters import model_backends
+
+from maisecrets_redact.domain import models
+from maisecrets_redact.domain.document import Document
 
 
 class FakeBackend:
@@ -119,8 +121,8 @@ class WordCapTests(unittest.TestCase):
                 self.assertLessEqual(len(models.WORD_RE.findall(text[at:end])), 20, (chunk, at, end))
 
     def test_the_gliner_backends_declare_their_cap(self):
-        self.assertLess(models.GlinerBackend.max_words, 384)
-        self.assertLess(models.Gliner2Backend.max_words, 384)
+        self.assertLess(model_backends.GlinerBackend.max_words, 384)
+        self.assertLess(model_backends.Gliner2Backend.max_words, 384)
 
 
 class QuietOfflineTests(unittest.TestCase):
@@ -137,17 +139,17 @@ class QuietOfflineTests(unittest.TestCase):
 
     def test_offline_only_when_every_model_is_cached(self):
         env = self.cache("a/one", "b/two")
-        self.assertEqual(models.library_env(["a/one", "b/two"], env)["HF_HUB_OFFLINE"], "1")
-        self.assertNotIn("HF_HUB_OFFLINE", models.library_env(["a/one", "c/three"], env))
+        self.assertEqual(model_backends.library_env(["a/one", "b/two"], env)["HF_HUB_OFFLINE"], "1")
+        self.assertNotIn("HF_HUB_OFFLINE", model_backends.library_env(["a/one", "c/three"], env))
 
     def test_the_libraries_are_quiet_and_a_setting_of_the_person_wins(self):
         env = self.cache()
-        got = models.library_env(["a/one"], env)
+        got = model_backends.library_env(["a/one"], env)
         self.assertEqual(got["HF_HUB_DISABLE_PROGRESS_BARS"], "1")
         self.assertEqual(got["TRANSFORMERS_VERBOSITY"], "error")
-        mine = models.library_env(["a/one"], {**env, "TRANSFORMERS_VERBOSITY": "info"})
+        mine = model_backends.library_env(["a/one"], {**env, "TRANSFORMERS_VERBOSITY": "info"})
         self.assertNotIn("TRANSFORMERS_VERBOSITY", mine)
-        online = models.library_env(["a/one"], {**self.cache("a/one"), "HF_HUB_OFFLINE": "0"})
+        online = model_backends.library_env(["a/one"], {**self.cache("a/one"), "HF_HUB_OFFLINE": "0"})
         self.assertNotIn("HF_HUB_OFFLINE", online)
 
 
@@ -175,7 +177,7 @@ class CompleteSnapshotTests(unittest.TestCase):
         self.env = {"HF_HOME": str(self.root)}
 
     def offline(self, *mids):
-        return models.library_env(list(mids), self.env).get("HF_HUB_OFFLINE") == "1"
+        return model_backends.library_env(list(mids), self.env).get("HF_HUB_OFFLINE") == "1"
 
     def test_a_snapshot_without_weights_or_config_is_not_complete(self):
         snap(self.root, "a/cfg-only", ["config.json"])
@@ -216,11 +218,12 @@ class CompleteSnapshotTests(unittest.TestCase):
 
         def broken(mid):
             raise OSError("We couldn't connect to 'https://huggingface.co' ... not in the local cache")
-        with mock.patch.dict(models.os.environ, self.env, clear=True), \
-                mock.patch.dict(models.MODELS, {"a/full": models.MODELS["urchade/gliner_multi_pii-v1"]}), \
-                mock.patch.dict(models.BACKENDS, {models.MODELS["urchade/gliner_multi_pii-v1"].backend: broken}):
+        urchade = models.MODELS["urchade/gliner_multi_pii-v1"]
+        with mock.patch.dict(model_backends.os.environ, self.env, clear=True), \
+                mock.patch.dict(models.MODELS, {"a/full": urchade}), \
+                mock.patch.dict(model_backends.BACKENDS, {urchade.backend: broken}):
             with self.assertRaisesRegex(RuntimeError, "HF_HUB_OFFLINE=0") as ctx:
-                models.load(["a/full"], accepted=("a/full",))
+                model_backends.load(["a/full"], accepted=("a/full",))
         self.assertIn("offline", str(ctx.exception))
 
 
@@ -283,7 +286,7 @@ class RegistryTests(unittest.TestCase):
         for mid, m in models.MODELS.items():
             with self.subTest(model=mid):
                 self.assertTrue(m.licence and m.source.startswith("https://huggingface.co/"))
-                self.assertIn(m.backend, models.BACKENDS)
+                self.assertIn(m.backend, model_backends.BACKENDS)
 
     def test_only_permissive_models_are_defaults(self):
         for mid in models.DEFAULTS:
@@ -304,9 +307,9 @@ class RegistryTests(unittest.TestCase):
             models.check_terms(["no/such"], accepted=())
 
     def test_without_the_extra_the_tool_says_so(self):
-        msg = models.unavailable_reason(lambda name: False)
+        msg = model_backends.unavailable_reason(lambda name: False)
         self.assertIn("uv sync --project redact --extra models", msg)
-        self.assertIsNone(models.unavailable_reason(lambda name: True))
+        self.assertIsNone(model_backends.unavailable_reason(lambda name: True))
 
 
 if __name__ == "__main__":

@@ -17,8 +17,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _home  # noqa: E402,F401  first: a temp maisecrets home
 
-from maisecrets_redact import app, pipeline  # noqa: E402
-from maisecrets_redact.pipeline import Span  # noqa: E402
+from maisecrets_redact.adapters import compose as app  # noqa: E402
+
+from maisecrets_redact.domain import text as text_ops  # noqa: E402
+from maisecrets_redact.domain.document import Span  # noqa: E402
 
 MAIL = "max@mailbox-test.de"
 
@@ -34,18 +36,18 @@ def run(src: Path, **kw) -> app.Result:
 
 class ToCsvTests(unittest.TestCase):
     def test_cells_with_a_delimiter_quote_tab_or_line_break_are_quoted(self):
-        text = pipeline.to_csv([["a", "b,c", 'say "hi"', "x\ty", "two\nlines", ""]], ",")
+        text = text_ops.to_csv([["a", "b,c", 'say "hi"', "x\ty", "two\nlines", ""]], ",")
         self.assertEqual(text, 'a,"b,c","say ""hi""","x\ty","two\nlines",\r\n')
         self.assertEqual(list(csv.reader(io.StringIO(text, newline=""))), [["a", "b,c", 'say "hi"', "x\ty",
                                                                             "two\nlines", ""]])
 
     def test_the_delimiter_of_the_input(self):
-        self.assertEqual(pipeline.to_csv([["a;b", "c"]], ";"), '"a;b";c\r\n')
+        self.assertEqual(text_ops.to_csv([["a;b", "c"]], ";"), '"a;b";c\r\n')
 
 
 class SafeNameTests(unittest.TestCase):
     def test_a_sheet_name_unsafe_in_a_file_name_is_made_safe_and_names_stay_apart(self):
-        self.assertEqual(pipeline.safe_names(["Lohn 2025", "a/b", "a:b", "..", "", "Konten"]),
+        self.assertEqual(text_ops.safe_names(["Lohn 2025", "a/b", "a:b", "..", "", "Konten"]),
                          ["Lohn 2025", "a_b", "a_b-2", "sheet4", "sheet5", "Konten"])
 
 

@@ -20,15 +20,7 @@ import json
 from pathlib import Path
 from urllib.parse import unquote_plus
 
-from .pipeline import Document, Position, Table
-
-
-class Unsupported(ValueError):
-    """A file type the tool does not extract."""
-
-
-class NoText(ValueError):
-    """A document with no extractable text (a scanned PDF: OCR is out of scope)."""
+from ..domain.document import Document, NoText, Position, Table, Unsupported
 
 
 class _Builder:
@@ -187,8 +179,14 @@ def _har(path: Path) -> Document:
 
 
 _PERSON_PARAMS = {"CN", "EMAIL", "SENT-BY"}
+
+
 _LEFT_OUT = {"PHOTO", "LOGO", "SOUND", "KEY", "ATTACH"}        # binary, or no personal text
+
+
 _PARAM = re.compile(r';([A-Za-z0-9-]+)=("[^"]*"|[^;:]*)')
+
+
 _CONTENT = re.compile(r'^((?:[A-Za-z0-9-]+\.)?([A-Za-z0-9-]+))((?:;[A-Za-z0-9-]+=(?:"[^"]*"|[^;:]*))*):(.*)$')
 
 
@@ -251,3 +249,13 @@ def extract(path: Path | str, drop_columns: set[str] | frozenset[str] = frozense
         return _plain(path)
     raise Unsupported(f"{path.name}: {suffix.lstrip('.') or 'no extension'} is not a supported type "
                       f"({', '.join(SUPPORTED)})")
+
+
+class FileExtractor:
+    """The Extractor port over the formats above."""
+
+    def supports(self, path: Path) -> bool:
+        return path.suffix.lower() in SUPPORTED
+
+    def extract(self, path: Path, drop_columns: frozenset[str]) -> Document:
+        return extract(path, drop_columns)

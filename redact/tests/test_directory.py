@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _home  # noqa: E402,F401  first: a temp maisecrets home
 
-from maisecrets_redact import app  # noqa: E402
+from maisecrets_redact.adapters import compose as app  # noqa: E402
 from test_extract import minimal_pdf  # noqa: E402
 
 MAIL = "max.muster@firma-beispiel.ch"
