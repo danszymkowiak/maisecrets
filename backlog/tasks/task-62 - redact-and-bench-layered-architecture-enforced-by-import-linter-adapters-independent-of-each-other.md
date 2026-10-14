@@ -3,10 +3,10 @@ id: TASK-62
 title: >-
   redact and bench: layered architecture enforced by import-linter, adapters
   independent of each other
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-14 07:21'
-updated_date: '2026-10-14 09:28'
+updated_date: '2026-10-14 11:30'
 labels:
   - redact
   - bench
@@ -28,11 +28,11 @@ Import graph measured 2026-10-14 (top-level and lazy imports):
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 import-linter is a dev dependency of redact and bench, and lint-imports runs in the git hooks and the checks list of CLAUDE.md
-- [ ] #2 A layers contract for each package passes, with no ignore_imports beyond ones named and justified in the spec
-- [ ] #3 An independence contract over bench's adapters.* (and redact's adapter modules, as the spec defines them) passes
-- [ ] #4 Every test of both packages and the bench's numbers are unchanged by the refactor
-- [ ] #5 docs/REPO-STANDARDS.md (or the spec it links) describes the layers
+- [x] #1 import-linter is a dev dependency of redact and bench, and lint-imports runs in the git hooks and the checks list of CLAUDE.md
+- [x] #2 A layers contract for each package passes, with no ignore_imports beyond ones named and justified in the spec
+- [x] #3 An independence contract over bench's adapters.* (and redact's adapter modules, as the spec defines them) passes
+- [x] #4 Every test of both packages and the bench's numbers are unchanged by the refactor
+- [x] #5 docs/REPO-STANDARDS.md (or the spec it links) describes the layers
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -44,3 +44,9 @@ User, 2026-10-14 (answer to the inbox question): classic clean architecture - do
 
 2026-10-14: spec reviewed by an independent agent instead of the user (user's instruction), 14 blockers taken in; spec in backlog/docs/doc-1. redact done: domain/application/adapters, ports, compose facade, 4 import-linter contracts kept (and shown red on a planted os import and an upward import), 138 tests green, lint-imports in .githooks/pre-commit and CLAUDE.md. bench next.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Spec (backlog/docs/doc-1) reviewed by an independent agent at the user's request, 14 blockers taken in. redact (7e78702): domain/application/adapters, ports, compose facade, 4 contracts. bench (014e72f): domain/application/adapters with adapters/plugin (detector, spawn-safe worker pool, mutations, filters, gold checks), parquet_store, files, datasets/*, sources and compose; 5 contracts. No ignore_imports. lint-imports for both in .githooks/pre-commit and CLAUDE.md; docs/REDACT.md, docs/BENCHMARK.md, docs/REPO-STANDARDS.md describe the layers. Tests: redact 138, bench 331 (same count as before), all green; a 3,000-sample bench run per dataset before and after: metrics, detections, critical misses and report identical (runs 20261014-113815 and -115104). Contracts shown red on planted violations.
+<!-- SECTION:FINAL_SUMMARY:END -->
