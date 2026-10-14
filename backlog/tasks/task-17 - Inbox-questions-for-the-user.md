@@ -1,10 +1,10 @@
 ---
 id: TASK-17
 title: 'Inbox: questions for the user'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-14 08:22'
+updated_date: '2026-10-14 08:59'
 labels:
   - inbox
 dependencies: []
