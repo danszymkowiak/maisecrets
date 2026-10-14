@@ -43,10 +43,9 @@ class Floors:
 
 
 def load(path: Path | None = None) -> Floors:
-    from .detector import known_types, unknown_type
+    from .detector import unknown_type
     path = path or PATH
     data = tomllib.loads(path.read_text(encoding="utf-8"))
-    known = set(known_types()) - {"SECRET"} | set(SECRET_TYPES)
     tiers: dict[str, tuple] = {}
     by_name: dict[str, tuple] = {}
     for name, tier in data.get("tiers", {}).items():
@@ -58,7 +57,7 @@ def load(path: Path | None = None) -> Floors:
         for t in tier.get("types", []):
             if t == "SECRET":
                 raise BenchError(f"{path.name}: tier {name!r} lists SECRET; use {' or '.join(SECRET_TYPES)}")
-            if t not in known and unknown_type(t):
+            if t not in SECRET_TYPES and unknown_type(t):     # SECRET itself is refused above
                 raise BenchError(f"{path.name}: tier {name!r} lists {t!r}, which is not a maisecrets type")
             if t in tiers:
                 raise BenchError(f"{path.name}: {t!r} is in tiers {tiers[t][0]!r} and {name!r}")

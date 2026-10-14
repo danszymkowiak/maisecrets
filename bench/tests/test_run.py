@@ -57,6 +57,17 @@ class OlderDetectorTests(unittest.TestCase):
             run._detect, run._RULESET = saved
         self.assertEqual(calls, ["ab"])
 
+    def test_a_mutation_against_an_older_detector_stops_at_once_with_a_clear_error(self):
+        # code review 2026-10-14, TASK-61: it failed with an AttributeError inside the process pool
+        import types
+        from unittest import mock
+        from maisecrets_bench import detector
+        from maisecrets_bench.paths import BenchError
+        with mock.patch.object(detector, "detect", types.SimpleNamespace(scan=lambda text: [])), \
+                mock.patch.object(run, "ProcessPoolExecutor", side_effect=AssertionError("no pool")):
+            with self.assertRaisesRegex(BenchError, "MAISECRETS_BENCH_DETECTOR"):
+                run.detect_samples(_samples(), 1, mutation=object())
+
     def test_a_type_the_older_detector_lacks_is_no_error(self):
         from unittest import mock
         from maisecrets_bench import detector

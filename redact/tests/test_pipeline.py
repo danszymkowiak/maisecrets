@@ -34,7 +34,6 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(pipeline.render(doc, [], ph), "nothing here")
 
 
-
 class AfterTheRulesTests(unittest.TestCase):
     """The models run after the rules (user, 2026-10-12): they read the text with every rule hit already replaced, and
     their spans map back to the original text; a span's part on a placeholder is dropped, the rules hold it."""
@@ -72,8 +71,6 @@ class AfterTheRulesTests(unittest.TestCase):
         self.assertEqual(m.back([Span(0, 5, "X", "m")]), [Span(0, 5, "X", "m")])
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class CellTests(unittest.TestCase):
@@ -115,3 +112,7 @@ class PlausibleTests(unittest.TestCase):
         got = pipeline.plausible(doc, spans)
         self.assertEqual([(text[s.start:s.end], s.type) for s in got],
                          [("max@example.com", "EMAIL"), ("Zurich", "NAME")])
+
+
+if __name__ == "__main__":
+    unittest.main()

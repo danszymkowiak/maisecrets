@@ -126,8 +126,20 @@ def _group_config(group: str) -> tuple[list[str], str]:
     return LOCALES[loc] if loc else LANGUAGES[lang]
 
 
+def _require_rule_sets() -> None:
+    """A mutation needs a maisecrets with rule sets (default_ruleset, scan(ruleset=)); an older one in
+    MAISECRETS_BENCH_DETECTOR has none, and failed inside the process pool (TASK-61)."""
+    from . import detector
+    if not hasattr(detector.detect, "default_ruleset"):
+        from .paths import BenchError
+        raise BenchError(f"a mutation needs a maisecrets with rule sets, and {detector.DETECTOR_REPO} "
+                         "(MAISECRETS_BENCH_DETECTOR) has none; run mutations against this checkout")
+
+
 def detect_samples(samples: list[Sample], jobs: int, chunk: int = 50, mutation=None) -> tuple[dict, dict]:
     """((dataset, sample_id) -> detections, group -> what it ran with)."""
+    if mutation is not None:
+        _require_rule_sets()
     by_lang: dict[str, list[Sample]] = {}
     for s in samples:
         by_lang.setdefault(group_of(s), []).append(s)
