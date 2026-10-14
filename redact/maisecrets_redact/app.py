@@ -57,7 +57,8 @@ def run_file(src: Path, target: Path, model_detectors: dict[str, Detector], regi
     model_spans = {name: pipeline.plausible(doc, pipeline.within_cells(doc, masked.back(d(masked.doc))))
                    for name, d in model_detectors.items()}
     doubted = [s for spans in model_spans.values() for s in pipeline.doubtful(doc, spans)]
-    decision = review.decide(doc, rule_spans, model_spans, k=vote_k, not_reviewed=not_reviewed, ask=doubted)
+    decision = review.decide(doc, rule_spans, model_spans, k=vote_k, not_reviewed=not_reviewed, ask=doubted,
+                             extra_review=pipeline.shape_spans(doc))
     redact = list(decision.redact)
     open_items = review.items(doc, decision, list(model_detectors))
     review_path = target.with_name(target.name + ".review.json")

@@ -197,12 +197,47 @@ def _render(configs: dict[str, Score], seconds: Counter, docs: Counter, voters: 
     return "\n".join(lines) + "\n"
 
 
+SHAPE_DATASETS = ("gretel", "nemotron", "findocs", "tab", "mendeley")
+
+
+def password_shape(data: Path, split: str) -> str:
+    """The password-shape check (TASK-55) on every plain text of a split: the labelled passwords it touches, and per
+    1,000 words its hits on no gold span at all. Counts only, never a value."""
+    import re
+    import pyarrow.parquet as pq
+    lines = [f"password shape, {split} split", "",
+             "| dataset | words | passwords found | false hits | per 1,000 words |", "|---|---|---|---|---|"]
+    token = re.compile(r"\S+")
+    for name in SHAPE_DATASETS:
+        t = pq.read_table(data / "parquet" / f"{name}.parquet", columns=["text", "spans", "split"])
+        words = found = total = false = 0
+        for text, spans, sp in zip(*(t.column(c).to_pylist() for c in ("text", "spans", "split"))):
+            if sp != split:
+                continue
+            spans = spans or []
+            words += len(text.split())
+            pw = [(g["start"], g["end"]) for g in spans if (g["label"] or "").lower() in ("password", "pass")
+                  and g["gold"] == "pos"]
+            hits = [(m.start(), m.end()) for m in token.finditer(text) if pipeline.password_shaped(m.group())]
+            total += len(pw)
+            found += sum(any(a < he and ha < b for ha, he in hits) for a, b in pw)
+            false += sum(not any(g["start"] < he and ha < g["end"] for g in spans) for ha, he in hits)
+        per_k = false / max(words, 1) * 1000
+        lines.append(f"| {name} | {words:,} | {found:,} of {total:,} | {false:,} | {per_k:.2f} |")
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--per-dataset", type=int, default=150)
     ap.add_argument("--models", help="comma-separated model ids (default: every permissive model)")
     ap.add_argument("--report-only", type=Path, metavar="DIR", help="score an earlier run's spans.jsonl again")
+    ap.add_argument("--password-shape", metavar="SPLIT", choices=("dev", "check"),
+                    help="measure the password-shape check (TASK-55) on that split, and nothing else")
     args = ap.parse_args(argv)
+    if args.password_shape:
+        print(password_shape(_bench_data(), args.password_shape))
+        return 0
     os.environ["MAISECRETS_HOME"] = tempfile.mkdtemp(prefix="redact-measure-home-")   # never the real plugin home
     from . import models
     data = _bench_data()

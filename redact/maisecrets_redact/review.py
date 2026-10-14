@@ -22,11 +22,13 @@ def _overlaps(a: Span, b: Span) -> bool:
 
 
 def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Span]], k: int | None = None,
-           not_reviewed: tuple[str, ...] = (), ask: list[Span] | tuple[Span, ...] = ()) -> Decision:
+           not_reviewed: tuple[str, ...] = (), ask: list[Span] | tuple[Span, ...] = (),
+           extra_review: list[Span] | tuple[Span, ...] = ()) -> Decision:
     """k: how many models must hold a span in a group to redact it (None: every configured model, of one type).
     not_reviewed: models whose lone spans are dropped instead of asked about (TASK-34.8: privacy-filter's many lone
     spans were most of the review questions). ask: spans whose group a person decides even when the models agree
-    (pipeline.doubtful, TASK-57)."""
+    (pipeline.doubtful, TASK-57). extra_review: spans a person decides that no vote redacts (the password shape,
+    TASK-55), asked about unless a rule or another span already covers them."""
     rules = sorted(rule_spans, key=lambda s: s.start)
     on_rule, doubted = overlapping(rules), overlapping(ask)
     loose = sorted((s for spans in model_spans.values() for s in spans if not on_rule(s.start, s.end)),
@@ -57,6 +59,8 @@ def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Sp
         group.append(s)
         group_end = max(group_end, s.end) if len(group) > 1 else s.end
     close(group)
+    covered = overlapping([*redact, *review])
+    review += [s for s in sorted(extra_review, key=lambda s: s.start) if not covered(s.start, s.end)]
     return Decision(tuple(sorted(redact, key=lambda s: s.start)), tuple(sorted(review, key=lambda s: s.start)))
 
 

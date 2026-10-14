@@ -100,6 +100,35 @@ surrounding words, with every value masked. Without a terminal it writes
 `--no-review` redacts every disputed span. A review file belongs to one version of the document:
 if the document changes, it is refused as stale.
 
+## Password shape (TASK-55, 2026-10-14)
+
+A password with no context, such as one in a password manager's notes column, matches no rule,
+header or model. Entropy does not find it either: human passwords score low, and GUIDs, hashes
+and timestamps score high. So in free text (a text file, a PDF page, a column headed `notes`,
+`comment`, `description`, `extra` or the like, a vCard NOTE or an event DESCRIPTION) every token
+of 8 to 64 characters with three of lower case, upper case, digits and symbols is checked
+against the shapes that are not passwords: ids and hashes, dates, numbers and amounts, versions
+and references (`ISO-9001`), codes (`2024-Q1-05`), a word with digits (`Version2024`), words and
+punctuation (`Jean-Pierre`, `Hello,World`), identifiers, URLs, mail addresses, paths, `key=value`,
+markup and the plugin's placeholders. What is left is a review item, never a redaction of its
+own; at a terminal you are asked, otherwise it waits in the review file.
+
+`uv run --project redact --with pyarrow python -m maisecrets_redact.measure --password-shape check`
+measures it on the bench text; the shapes above were set on the dev split, and on the check
+split they give:
+
+| dataset | words | labelled passwords found | false hits per 1,000 words |
+|---|---|---|---|
+| Nemotron-PII | 3.9 M | 1,557 of 2,090 (74 %) | 0.02 |
+| Gretel (finance) | 2.2 M | 136 of 216 (63 %) | 0.45 |
+| TAB (court decisions) | 0.5 M | none labelled | 0.02 |
+| findocs | 0.09 M | none labelled | 0 |
+| Mendeley | 2.2 M | none labelled | 0 |
+
+Over all five, 1,693 passwords found against 1,056 false hits, so the check is kept. Most of
+Gretel's false hits are structured finance messages (SWIFT and EDI segments) that prose and a
+notes column rarely hold; a hit on a value that is no password costs one "keep" in the review.
+
 ## Models on the bench (TASK-34.8, 2026-10-12)
 
 `uv run --project redact --with pyarrow python -m maisecrets_redact.measure` runs the rules and then
