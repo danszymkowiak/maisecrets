@@ -3,9 +3,10 @@ id: TASK-64
 title: >-
   maisecrets skill: when a document being read looks like it holds secrets,
   pause and offer the redact tool
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-14 09:03'
+updated_date: '2026-10-14 09:19'
 labels:
   - skill
   - redact
@@ -21,8 +22,14 @@ User, 2026-10-14: if Claude sees that a document it is about to read (or has sta
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The maisecrets skill tells Claude when to pause: file names and headers of exports (logins.csv, passwords, .har, .vcf), or a first look that shows secrets in bulk
-- [ ] #2 The offer names the redact command for that file and its output, and Claude reads the output instead of the original once it exists
-- [ ] #3 When redact is not installed, the offer says how to install it (docs/REDACT.md, Install)
-- [ ] #4 A test or a harness scenario covers the skill text (lint_plugin passes; the wording is checked)
+- [x] #1 The maisecrets skill tells Claude when to pause: file names and headers of exports (logins.csv, passwords, .har, .vcf), or a first look that shows secrets in bulk
+- [x] #2 The offer names the redact command for that file and its output, and Claude reads the output instead of the original once it exists
+- [x] #3 When redact is not installed, the offer says how to install it (docs/REDACT.md, Install)
+- [x] #4 A test or a harness scenario covers the skill text (lint_plugin passes; the wording is checked)
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+secret-hygiene SKILL.md: the description now triggers when Claude is about to read a document that looks like it holds secrets in bulk; a new section 'Before you read a document full of secrets' names the signs (password exports, .har, .vcf/.ics, key files, header row, a first look), says to stop and offer a redacted copy, uses redact <file> when on PATH (outputs .redacted.csv/.txt, install pointer docs/REDACT.md) and scripts/redact_copy.py otherwise, then reads only the output; on a no it does not read the file. Tests: tests/test_skill.py ReadAnExportTests; lint_plugin passes.
+<!-- SECTION:FINAL_SUMMARY:END -->

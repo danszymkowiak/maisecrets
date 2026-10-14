@@ -65,6 +65,33 @@ class SkillFileTests(unittest.TestCase):
             self.assertTrue((SKILL / rel).is_file(), rel)
 
 
+class ReadAnExportTests(unittest.TestCase):
+    """Before a document full of secrets is read, the skill pauses and offers a redacted copy (TASK-64, user
+    2026-10-14): a password export read by mistake sends every password to the provider."""
+
+    def setUp(self):
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        self.head = text.split("---\n", 2)[1]
+        self.section = text.split("## Before you read a document full of secrets", 1)[1].split("\n## ", 1)[0]
+
+    def test_the_description_names_the_moment(self):
+        self.assertIn("about to read", self.head)
+
+    def test_it_names_the_signs_and_pauses_before_reading(self):
+        for sign in ("logins.csv", "password", ".har", ".vcf", "export"):
+            self.assertIn(sign, self.section, sign)
+        self.assertIn("Do not open", self.section)
+
+    def test_it_offers_the_redact_tool_and_the_copy_script_and_reads_only_the_output(self):
+        s = self.section
+        self.assertIn("redact <file>", s)
+        self.assertIn(".redacted.", s)
+        self.assertIn("scripts/redact_copy.py", s)
+        self.assertIn("docs/REDACT.md", s, "how to install the redact tool")
+        self.assertIn("read the redacted output", s)
+        self.assertIn("If the user says no", s)
+
+
 class SkillListingTests(unittest.TestCase):
     def test_the_chatgpt_listing_names_the_skill_and_its_icons_exist(self):
         """ChatGPT shows a skill's name and icon from agents/openai.yaml; without it the upload

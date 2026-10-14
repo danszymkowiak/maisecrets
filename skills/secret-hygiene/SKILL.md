@@ -1,6 +1,6 @@
 ---
 name: secret-hygiene
-description: Protect secrets from the AI and clean up those that already leaked. Use when the user wants to protect passwords, keys or personal data from the AI or to install maisecrets; when the user asks whether a repository, its git history, a file or their past AI agent sessions contain passwords, API keys, tokens or private keys; when the user says a key or password was pasted into a chat, committed, pushed, logged or shared; or when the user wants a log, config or stack trace made safe to post in an issue, ticket or chat. Never shows a secret value.
+description: Protect secrets from the AI and clean up those that already leaked. Use when the user wants to protect passwords, keys or personal data from the AI or to install maisecrets; when the user asks whether a repository, its git history, a file or their past AI agent sessions contain passwords, API keys, tokens or private keys; when the user says a key or password was pasted into a chat, committed, pushed, logged or shared; when the user wants a log, config or stack trace made safe to post in an issue, ticket or chat; or when you are about to read a document that looks like it holds secrets or personal data in bulk, such as a password export. Never shows a secret value.
 ---
 
 # Secret hygiene
@@ -135,6 +135,37 @@ screenshot. It needs no shell, so it also works in a chat without tools.
 8. Then clean up, each step only after the user's yes: remove the value from the file or
    the history (see "Check a repository"), ask the chat or ticket owner to delete the
    message, and update every place that uses the new value.
+
+## Before you read a document full of secrets
+
+Some files are full of secrets by their nature: a password export (`logins.csv`,
+`passwords.csv`, `bitwarden_export.csv`, a KeePass or 1Password export), a browser's HAR
+recording (`.har`: cookies and login tokens), a contact or calendar export (`.vcf`, `.ics`),
+a key file. Reading one sends every value in it to the AI provider, and the hooks redact only
+what their rules find. When the user asks you to read such a file, or a file you were about to
+read turns out to be one (its name, its header row, or a first look that shows passwords,
+tokens or many personal records):
+
+1. Do not open it, and do not read more of it. Stop and offer a redacted copy instead:
+
+   > This looks like a <password export / HAR recording / contact list>. If I read it, every
+   > value in it goes to the AI provider. I can make a redacted copy first and read only that.
+   > Shall I?
+
+2. On a yes, make the copy with the best tool at hand:
+   - The redact tool, if `redact` is on the PATH: `redact <file>`. It writes
+     `<file>.redacted.csv` for a table and `<file>.redacted.txt` otherwise, next to the file,
+     and reads table headers, so a password column comes out whole. If it is not installed,
+     say that it is a separate command in the maisecrets repository (`docs/REDACT.md`,
+     Install) and offer the next tool for now.
+   - Otherwise `python3 scripts/redact_copy.py <file>`, which writes `<name>.redacted<ext>`.
+     It replaces what the rules find, not a bare password in a column: say so.
+3. Then read the redacted output, never the original. Tell the user its path.
+4. If the user says no, do not read the file. Ask what they need from it, and offer to answer
+   from the redacted copy or from what they tell you.
+
+If you already read part of such a file, say so plainly and treat what you read as reached
+the provider ("Contain a leak").
 
 ## Make a file safe to share
 
