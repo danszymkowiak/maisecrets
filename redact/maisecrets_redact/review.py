@@ -22,10 +22,11 @@ def _overlaps(a: Span, b: Span) -> bool:
 
 
 def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Span]], k: int | None = None,
-           not_reviewed: tuple[str, ...] = ()) -> Decision:
+           not_reviewed: tuple[str, ...] = (), ask: list[Span] | tuple[Span, ...] = ()) -> Decision:
     """k: how many models must hold a span in a group to redact it (None: every configured model, of one type).
     not_reviewed: models whose lone spans are dropped instead of asked about (TASK-34.8: privacy-filter's many lone
-    spans were most of the review questions)."""
+    spans were most of the review questions). ask: spans whose group a person decides even when the models agree
+    (pipeline.doubtful, TASK-57)."""
     rules = sorted(rule_spans, key=lambda s: s.start)
     loose = sorted((s for spans in model_spans.values() for s in spans if not any(_overlaps(s, r) for r in rules)),
                    key=lambda s: (s.start, -s.end))
@@ -42,7 +43,8 @@ def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Sp
         sources = {s.source for s in group}
         span = Span(start, end, kind, "+".join(sorted(sources)), min(s.score for s in group))
         agreed = bool(common) if k is None else len(sources) >= min(k, len(model_spans))
-        if agreed:
+        doubted = any(a.start < end and start < a.end for a in ask)
+        if agreed and not doubted:
             redact.append(span)
         elif not sources <= set(not_reviewed):
             review.append(span)

@@ -3,9 +3,10 @@ id: TASK-57
 title: >-
   redact: a GUID-shaped value is dropped only where the column or context says
   it is an id
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-14 07:16'
+updated_date: '2026-10-14 07:50'
 labels:
   - redact
 dependencies: []
@@ -20,7 +21,13 @@ Code review 2026-10-14: plausible() drops every model span on a GUID shape anywh
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A GUID under guid/uuid/id headers is never redacted by a model span
-- [ ] #2 A GUID-shaped value a model labels SECRET in free text goes to review, with a test
-- [ ] #3 The synthetic Firefox export of TASK-50 still keeps every GUID
+- [x] #1 A GUID under guid/uuid/id headers is never redacted by a model span
+- [x] #2 A GUID-shaped value a model labels SECRET in free text goes to review, with a test
+- [x] #3 The synthetic Firefox export of TASK-50 still keeps every GUID
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+pipeline._guid_verdict: a model span on a GUID is dropped under an id header (guid, uuid, id, *_id) or when labelled ACCOUNT/NATIONAL_ID in a table cell; anywhere else pipeline.doubtful lists it and review.decide(ask=...) sends its group to review even when the models agree. Firefox export test still keeps every GUID. Tests in IdShapeTests.
+<!-- SECTION:FINAL_SUMMARY:END -->

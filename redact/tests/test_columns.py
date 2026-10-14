@@ -162,9 +162,42 @@ class IdShapeTests(unittest.TestCase):
         i = doc.text.index(GUID)
         spans = [at(doc, GUID, "NATIONAL_ID"), Span(i + 1, i + 9, "ACCOUNT", "m"), Span(i + 15, i + 19, "ACCOUNT", "m")]
         self.assertEqual(pipeline.plausible(doc, spans), [])
-        text = f"record {GUID[1:-1].upper()} of Max"
-        plain = Document("t.txt", text)
-        self.assertEqual(pipeline.plausible(plain, [at(plain, GUID[1:-1].upper(), "ACCOUNT")]), [])
+
+    def test_a_guid_under_an_id_header_is_dropped_whatever_its_label(self):
+        # code review 2026-10-14, TASK-57: the drop holds where the column says the value is an id
+        for header in ("guid", "uuid", "id", "ID", "customer_id", "recordUuid"):
+            text = f"{header}\tnote\n{GUID}\tx\n"
+            n = text.index(GUID)
+            d = Document("t.csv", text, (Position(0, len(header), f"row 1, column {header}"),
+                                         Position(n, n + len(GUID), f"row 2, column {header}")))
+            for typ in ("SECRET", "ACCOUNT", "NATIONAL_ID"):
+                self.assertEqual(pipeline.plausible(d, [Span(n, n + len(GUID), typ, "m")]), [], (header, typ))
+
+    def test_a_guid_elsewhere_labelled_a_secret_goes_to_review(self):
+        # a UUID-shaped API key or customer id: dropped, it was written in the clear; redacted, every record id goes
+        key = GUID[1:-1].upper()
+        plain = Document("t.txt", f"the deploy key is {key} for prod")
+        for typ in ("SECRET", "ACCOUNT"):
+            span = at(plain, key, typ)
+            self.assertEqual(pipeline.plausible(plain, [span]), [span], typ)
+            self.assertEqual(pipeline.doubtful(plain, [span]), [span], typ)
+        text = f"note\n{key}\n"
+        n = text.index(key)
+        cell = Document("t.csv", text, (Position(0, 4, "row 1, column note"),
+                                        Position(n, n + len(key), "row 2, column note")))
+        self.assertEqual(pipeline.plausible(cell, [Span(n, n + len(key), "ACCOUNT", "m")]), [],
+                         "models label a bare GUID in a table an account")
+        secret = Span(n, n + len(key), "SECRET", "m")
+        self.assertEqual((pipeline.plausible(cell, [secret]), pipeline.doubtful(cell, [secret])), ([secret], [secret]))
+        self.assertEqual(pipeline.doubtful(plain, [at(plain, "prod", "NAME")]), [])
+
+    def test_two_models_on_a_doubtful_guid_ask_instead_of_redacting(self):
+        from maisecrets_redact import review
+        key = GUID[1:-1].upper()
+        doc = Document("t.txt", f"the deploy key is {key} for prod")
+        spans = {"a": [at(doc, key, "SECRET", "a")], "b": [at(doc, key, "SECRET", "b")]}
+        d = review.decide(doc, [], spans, k=2, ask=[s for v in spans.values() for s in pipeline.doubtful(doc, v)])
+        self.assertEqual((d.redact, [doc.text[s.start:s.end] for s in d.review]), ((), [key]))
 
     def test_a_timestamp_under_a_time_header_is_dropped_and_the_same_number_elsewhere_stays(self):
         doc = firefox_export()

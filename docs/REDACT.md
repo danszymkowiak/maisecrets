@@ -48,7 +48,10 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    an EMAIL, ADR and LOCATION an ADDRESS, BDAY a DOB; a meeting passcode in NOTE, SUMMARY or
    DESCRIPTION (`?pwd=`, `Passcode: ...`) is a SECRET, and the rest of the free text goes to the
    rules and models. Photos, logos, sounds and keys are left out. A model span
-   on a GUID, or on a 10- or 13-digit timestamp under a time header, is dropped (TASK-50).
+   on a GUID under an id header (`guid`, `uuid`, `id`, `customer_id`), or labelled an account or a
+   national id in a table cell, is dropped, and so is one on a 10- or 13-digit timestamp under a
+   time header (TASK-50); a GUID anywhere else goes to review even when the models agree, since it
+   may be a UUID-shaped key (TASK-57).
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
    span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).

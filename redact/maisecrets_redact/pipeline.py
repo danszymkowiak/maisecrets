@@ -307,20 +307,48 @@ def _token(doc: Document, s: Span, starts: list[int]) -> tuple[str, str | None]:
     return doc.text[a:b].strip("\"'()[],;."), None
 
 
+_ID_WORDS = {"id", "guid", "uuid"}
+_GUID_LABELS = {"ACCOUNT", "NATIONAL_ID"}       # what the models call a record's GUID in a table (TASK-50)
+
+
+def _id_header(header: str) -> bool:
+    w = _words(header)
+    return bool(w) and w[-1] in _ID_WORDS
+
+
+def _guid_verdict(doc: Document, s: Span, starts: list[int]) -> str | None:
+    """For a model span on a GUID or a piece of one (TASK-57): 'drop' under an id header, or labelled an account or a
+    national id in a table cell; 'ask' anywhere else (a UUID-shaped API key or customer id); None off a GUID."""
+    token, header = _token(doc, s, starts)
+    if not _GUID.fullmatch(token):
+        return None
+    if header is not None and (_id_header(header) or s.type in _GUID_LABELS):
+        return "drop"
+    return "ask"
+
+
 def plausible(doc: Document, spans: Iterable[Span]) -> list[Span]:
     """A model's span without the shape of its type is dropped: an EMAIL without an @ (gliner2 labels the city cell
-    after an [EMAIL] placeholder 'email', TASK-49), and any span on a GUID or a piece of one, or on a 10- or 13-digit
-    timestamp under a time header (models took a password export's record ids and times for national ids and accounts,
-    TASK-50)."""
+    after an [EMAIL] placeholder 'email', TASK-49), a span on a GUID where the column says it is an id (models took a
+    password export's record ids for national ids and accounts, TASK-50, TASK-57), and one on a 10- or 13-digit
+    timestamp under a time header."""
     out, starts = [], [p.start for p in doc.positions]
     for s in spans:
         if s.type == "EMAIL" and "@" not in doc.text[s.start:s.end]:
             continue
         token, header = _token(doc, s, starts)
-        if _GUID.fullmatch(token) or (header is not None and _time_header(header) and _EPOCH.fullmatch(token)):
+        if _guid_verdict(doc, s, starts) == "drop" or (header is not None and _time_header(header)
+                                                        and _EPOCH.fullmatch(token)):
             continue
         out.append(s)
     return out
+
+
+def doubtful(doc: Document, spans: Iterable[Span]) -> list[Span]:
+    """The model spans a person decides even when the models agree (TASK-57): a GUID outside an id column. Dropped,
+    a UUID-shaped key would be written in the clear; redacted, every record id would go."""
+    starts = [p.start for p in doc.positions]
+    return [s for s in spans if _guid_verdict(doc, s, starts) == "ask"]
 
 
 @dataclass(frozen=True)
