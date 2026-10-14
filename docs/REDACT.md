@@ -27,7 +27,10 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    with every rule hit already replaced by `[TYPE]`, so they never see a value the rules found;
    their spans map back to the original text. A span is cut at each cell (and page) edge, so a
    table row keeps its columns, and a model's e-mail without an `@` is dropped: gliner2 calls
-   the city after an `[EMAIL]` cell an e-mail (TASK-49).
+   the city after an `[EMAIL]` cell an e-mail (TASK-49). A table's header counts as a rule: every
+   cell under `password`, `client_secret`, `api_key` and the like is a SECRET, under `username` or
+   `login` a USERNAME, so a browser password export comes out without its passwords. A model span
+   on a GUID, or on a 10- or 13-digit timestamp under a time header, is dropped (TASK-50).
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
    span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).
