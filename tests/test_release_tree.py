@@ -72,6 +72,8 @@ class ReleaseTreeTests(unittest.TestCase):
                       "CLAUDE.md", "renovate.json",
                       "docs/TESTING.md", "docs/REPO-STANDARDS.md", "docs/DIAGNOSTICS.md", "docs/TERMS.md",
                       "docs/BENCHMARK.md", "docs/REDACT.md",
+                      # the fork's detection changes ranked for upstream, a note for a pull request
+                      "docs/UPSTREAM-DETECTION.md",
                       # a design note for a decision, nothing built (TASK-47)
                       "docs/BROKER.md"}
 

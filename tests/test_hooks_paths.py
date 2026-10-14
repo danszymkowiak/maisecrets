@@ -540,6 +540,7 @@ class FileToolTests(unittest.TestCase):
         _reset()
         self.e = Vault().put(PLAIN, "SECRET", "manual", session="S1")
         self.work = tempfile.mkdtemp(prefix="maisecrets-work-", dir=str(Path(_TMP).parent))
+        self.addCleanup(shutil.rmtree, self.work, True)
 
     def _pre(self, tool: str, tool_input: dict, **extra) -> dict:
         return hooks.pre_tool(_marked({"tool_name": tool, "session_id": "S1", "tool_input": tool_input}, extra))
