@@ -114,3 +114,19 @@ class ScanTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LargeTextTests(unittest.TestCase):
+    """The second pass over the cleaned copy looked up the raw hits a copy hit overlaps by scanning all of them
+    (TASK-63, 2026-10-14): a table of 20,000 rows, one address each, whose row numbers the gutter stage removes,
+    took 9 s for the email rule alone, 0.15 s without the copy; 50,000 rows took 84 s."""
+
+    def test_a_copy_with_many_hits_stays_linear(self):
+        import time
+        text = "".join(f"{i}\tclient {i % 977}\tuser{i}@mailbox-test.de\tok\n" for i in range(20000))
+        self.assertIsNot(normalise.normalise(text, detect.default_ruleset().normalise).text, text)
+        t0 = time.perf_counter()
+        found = detect.scan(text, enabled={"email"})
+        took = time.perf_counter() - t0
+        self.assertEqual(len(found), 20000)
+        self.assertLess(took, 3.0, f"{took:.1f} s: quadratic again?")

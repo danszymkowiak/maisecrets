@@ -6,10 +6,12 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-14 07:21'
+updated_date: '2026-10-14 08:22'
 labels:
   - redact
   - bench
-dependencies: []
+dependencies:
+  - TASK-17
 ordinal: 123000
 ---
 
@@ -32,3 +34,9 @@ Import graph measured 2026-10-14 (top-level and lazy imports):
 - [ ] #4 Every test of both packages and the bench's numbers are unchanged by the refactor
 - [ ] #5 docs/REPO-STANDARDS.md (or the spec it links) describes the layers
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Blocked 2026-10-14 (unattended run): needs the user's choice of layering before the spec (inbox TASK-17). Proposal in the inbox comment. No code or spec written yet.
+<!-- SECTION:NOTES:END -->

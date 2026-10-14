@@ -1526,6 +1526,7 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
     found: list[Match] = []
     taken_starts: list[int] = []
     taken_ends: list[int] = []
+    taken: list[Match] = []        # the matches in the order of taken_starts
 
     def overlaps(a: int, b: int) -> bool:
         """Whether [a, b) overlaps a span already taken. The spans never overlap each other, so only the two
@@ -1646,6 +1647,7 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
             i = bisect.bisect_left(taken_starts, start)
             taken_starts.insert(i, start)
             taken_ends.insert(i, end)
+            taken.insert(i, found[-1])
     if rs.normalise and not _shapes_only:
         from .normalise import normalise
         norm = normalise(text, rs.normalise)
@@ -1655,7 +1657,12 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
             for m in scan(norm.text, enabled, _shapes_only=True, ruleset=rs):
                 start, end = norm.span(m.start, m.end)
                 if overlaps(start, end):
-                    inside = [f for f in found if f.start < end and start < f.end]
+                    # the taken spans never overlap: the ones this span overlaps lie together in start order. A
+                    # scan over all of them was quadratic in the hits (TASK-63: 84 s for a table of 50,000 addresses)
+                    lo = bisect.bisect_left(taken_starts, start)
+                    if lo > 0 and taken_ends[lo - 1] > start:
+                        lo -= 1
+                    inside = taken[lo:bisect.bisect_left(taken_starts, end)]
                     if not all(start <= f.start and f.end <= end for f in inside) or \
                             all((f.start, f.end) == (start, end) for f in inside):
                         continue
@@ -1664,11 +1671,12 @@ def scan(text: str, enabled: set[str] | None = None, _shapes_only: bool = False,
                     for f in inside:
                         found.remove(f)
                         i = bisect.bisect_left(taken_starts, f.start)
-                        del taken_starts[i], taken_ends[i]
+                        del taken_starts[i], taken_ends[i], taken[i]
                 found.append(Match(m.kind, m.type, text[start:end], start, end))
                 i = bisect.bisect_left(taken_starts, start)
                 taken_starts.insert(i, start)
                 taken_ends.insert(i, end)
+                taken.insert(i, found[-1])
     if _shapes_only:
         found.sort(key=lambda x: x.start)
         return found

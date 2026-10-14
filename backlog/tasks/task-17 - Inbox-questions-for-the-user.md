@@ -4,7 +4,7 @@ title: 'Inbox: questions for the user'
 status: To Do
 assignee: []
 created_date: '2026-10-11 17:43'
-updated_date: '2026-10-13 21:13'
+updated_date: '2026-10-14 08:22'
 labels:
   - inbox
 dependencies: []
@@ -170,5 +170,10 @@ TASK-46: the Secret Service key store is built (ac8ce04, opt-in). The real check
 created: 2026-10-13 21:13
 ---
 TASK-11.36: Kaggle data downloaded and measured (3 false alarms in 4.1M tokens; kept as a guard). One thing left: the data licence. Please paste the 'Competition Data' / data-access section of the Rules page (https://www.kaggle.com/competitions/pii-detection-removal-from-educational-data/rules). Until then the results stay local and never go upstream.
+---
+
+created: 2026-10-14 08:22
+---
+TASK-62 (import-linter layers for redact and bench): architectural, so it needs a spec you approve before any code, and a few choices first. My proposal: redact, top to bottom: cli > app | measure (siblings) > review > extract | models | rules (independent adapters: none imports another) > paths > pipeline. That fits today's imports with no ignore_imports (cli's lazy imports are downward). bench: commands (run, round, mutate, setup, loo, audit...) > scoring services (score, floorscore, floors, mutation, filters, learned...) > adapters.* (independent) > schema, labels, split, paths (core). Two refactors that needs: the code adapters.findocs takes from adapters.synthetic moves down into a shared generator module, and schema and labels stop importing detector lazily (the known-type check gets passed in, or moves up to the caller). Options: (a) write the spec on this outline, then you review it; (b) another layering (name it); (c) redact only first, bench later. I recommend (a): redact needs no code change to pass, and bench needs only the two cycle breaks.
 ---
 <!-- COMMENTS:END -->
