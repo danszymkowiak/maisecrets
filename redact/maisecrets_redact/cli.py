@@ -12,8 +12,9 @@ from . import __version__, extract, review
 
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
-        prog="redact", description="Extract the text of a document (PDF, CSV, Excel, text) and redact personal data "
-                                   "and secrets in it, before the text goes to a language model. See docs/REDACT.md.")
+        prog="redact", description="Extract the text of a document (PDF, CSV, Excel, HAR, vCard, iCalendar, text) "
+                                   "and redact personal data and secrets in it, before the text goes to a language "
+                                   "model. See docs/REDACT.md.")
     ap.add_argument("path", metavar="PATH", help="a file, or a directory to redact every supported file in")
     ap.add_argument("--out", metavar="DIR",
                     help="the folder the redacted text goes to (default: next to each file, in the same folder)")

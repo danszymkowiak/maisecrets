@@ -208,6 +208,64 @@ def _personal_type(w: list[str]) -> str | None:
     return None
 
 
+_HAR_FIELD = re.compile(r"(?:^|, )(request|response) (header|cookie|query|form) (.+)$")
+_SECRET_HTTP_HEADERS = {"cookie", "set-cookie", "authorization", "proxy-authorization"}
+
+
+def har_spans(doc: Document) -> list[Span]:
+    """The fields of a HAR file that name a secret (TASK-52): every cookie, the Cookie, Set-Cookie and Authorization
+    headers, a header whose name is a secret's (X-Api-Key), and a query or form value under a name header_type knows
+    (access_token, password, user). Deterministic hits, as a table's columns are."""
+    out = []
+    for p in doc.positions:
+        m = _HAR_FIELD.search(p.where)
+        if not m:
+            continue
+        kind, name = m.group(2), m.group(3)
+        if kind == "cookie" or (kind == "header" and name.lower() in _SECRET_HTTP_HEADERS):
+            typ = "SECRET"
+        elif kind == "header":
+            typ = "SECRET" if header_type(name) == "SECRET" else None
+        else:
+            typ = header_type(name)
+        if typ and doc.text[p.start:p.end].strip():
+            out.append(Span(p.start, p.end, typ, "fields"))
+    return out
+
+
+_CARD_FIELD = re.compile(r"(?:^|, )field ([A-Z0-9-]+)(?: ([A-Z0-9-]+))?$")
+_CARD_TYPES = {"FN": "NAME", "N": "NAME", "NICKNAME": "NAME", "CN": "NAME", "TEL": "PHONE", "EMAIL": "EMAIL",
+               "SENT-BY": "EMAIL", "ORGANIZER": "EMAIL", "ATTENDEE": "EMAIL", "ADR": "ADDRESS", "LABEL": "ADDRESS",
+               "LOCATION": "ADDRESS", "BDAY": "DOB", "IMPP": "USERNAME"}
+_FREE_TEXT = {"NOTE", "SUMMARY", "DESCRIPTION", "COMMENT", "X-ALT-DESC"}
+# a meeting's passcode: in a join link (?pwd=...) or after its label (Passcode: 482910); an escaped line break (\n,
+# RFC 5545 3.3.11) may stand right before the label
+_PASSCODE = re.compile(r"[?&](?:pwd|passcode|password|pin)=([^&\s\\]+)"
+                       r"|(?:(?<=\\n)|\b)(?i:(?:passcode|password|passwort|kennwort|meeting pin|pin)\s*[:=]\s*)"
+                       r"([^\s\\,;]+)")
+
+
+def card_spans(doc: Document) -> list[Span]:
+    """The labelled fields of a vCard or iCalendar file (TASK-53): FN and N a NAME, TEL a PHONE, ATTENDEE an EMAIL and
+    its CN a NAME, LOCATION and ADR an ADDRESS, BDAY a DOB; in free text (NOTE, DESCRIPTION...) a meeting passcode is
+    a SECRET, and the rest goes to the rules and models."""
+    out = []
+    for p in doc.positions:
+        m = _CARD_FIELD.search(p.where)
+        if not m:
+            continue
+        field, param = m.group(1), m.group(2)
+        typ = _CARD_TYPES.get(param or field)
+        value = doc.text[p.start:p.end]
+        if typ and value.strip():
+            out.append(Span(p.start, p.end, typ, "fields"))
+        elif field in _FREE_TEXT and not param:
+            for c in _PASSCODE.finditer(value):
+                g = 1 if c.group(1) else 2
+                out.append(Span(p.start + c.start(g), p.start + c.end(g), "SECRET", "fields"))
+    return out
+
+
 def _time_header(header: str) -> bool:
     w = _words(header)
     return any(x in _TIME_WORDS for x in w) or any(a + b in _TIME_PAIRS for a, b in zip(w, w[1:]))

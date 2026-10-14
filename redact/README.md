@@ -11,7 +11,7 @@ redact --help
 
 A table comes out as a table: `people.csv` as `people.csv.redacted.csv` (same delimiter, the
 header row kept), a workbook as one `lohn.xlsx.<sheet>.redacted.csv` per sheet. A PDF or a text
-file comes out as `<file>.redacted.txt`. An existing output is never overwritten.
+file, a HAR, a vCard or an iCalendar file comes out as `<file>.redacted.txt`. An existing output is never overwritten.
 
 ## Dependencies and licences
 

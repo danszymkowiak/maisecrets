@@ -1,9 +1,9 @@
 # redact: document redaction before a language model sees the text
 
 **Decided with the user on 2026-10-12 (TASK-34).** `redact` is a command the user runs as data
-prep: it extracts the text of documents known to hold personal data (PDF, CSV, Excel, plain
-text; one file or a whole directory) and redacts it before the text goes to Claude. The plugin
-redacts in the moment, fast and light; `redact` can afford local models and a human review,
+prep: it extracts the text of documents known to hold personal data (PDF, CSV, Excel, HAR, vCard,
+iCalendar, plain text; one file or a whole directory) and redacts it before the text goes to
+Claude. The plugin redacts in the moment, fast and light; `redact` can afford local models and a human review,
 because nobody waits for it in a prompt.
 
 ## What it never does
@@ -37,7 +37,17 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    (`first_name`, `surname`, `customer_name`), DOB, NATIONAL_ID (`ssn`, `ahv`), PASSPORT, TAX_ID,
    ACCOUNT (`iban`, `account_number`), PHONE and ADDRESS (`street`, `address_line_1`, not
    `email_address` or `ip_address`). `name`, `account`, `title` and `city` alone stay plain: a
-   password manager names its entries so. A notes column goes to the models. A model span
+   password manager names its entries so. A notes column goes to the models. A HAR file (a
+   browser's record of a session, TASK-52) is read field by field (`entry 3, request header
+   Cookie`): every cookie, the Cookie, Set-Cookie, Authorization and Proxy-Authorization headers,
+   a header named like a secret (`X-Api-Key`), and a query or form value under a name such as
+   `access_token`, `password` or `user` are hits; URLs and other headers stay, text bodies go to the
+   rules and models, and image, script and style bodies are left out. A vCard or iCalendar file
+   (TASK-53) is unfolded and read property by property (`card 2, field TEL`, `event 1, field
+   ATTENDEE CN`): FN, N and a CN parameter are a NAME, TEL a PHONE, EMAIL, ORGANIZER and ATTENDEE
+   an EMAIL, ADR and LOCATION an ADDRESS, BDAY a DOB; a meeting passcode in NOTE, SUMMARY or
+   DESCRIPTION (`?pwd=`, `Passcode: ...`) is a SECRET, and the rest of the free text goes to the
+   rules and models. Photos, logos, sounds and keys are left out. A model span
    on a GUID, or on a 10- or 13-digit timestamp under a time header, is dropped (TASK-50).
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a

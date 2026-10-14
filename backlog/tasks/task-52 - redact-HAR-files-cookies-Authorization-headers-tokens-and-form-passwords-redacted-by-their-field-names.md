@@ -3,9 +3,10 @@ id: TASK-52
 title: >-
   redact: HAR files - cookies, Authorization headers, tokens and form passwords
   redacted by their field names
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-14 06:51'
+updated_date: '2026-10-14 07:42'
 labels:
   - redact
 dependencies: []
@@ -20,6 +21,12 @@ A HAR (developer tools, Network, Save all as HAR) is JSON with every request and
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A synthetic HAR comes out with no cookie value, bearer token or posted password; URLs and other headers stay
-- [ ] #2 Positions name the entry and field, so a review item says where it is
+- [x] #1 A synthetic HAR comes out with no cookie value, bearer token or posted password; URLs and other headers stay
+- [x] #2 Positions name the entry and field, so a review item says where it is
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+extract._har: each request/response field a position (entry N, request header Cookie; query and form values each their own); URL kept as is with query values as positions; form raw text not written twice; binary/script/style bodies left out. pipeline.har_spans: cookies, Cookie/Set-Cookie/Authorization/Proxy-Authorization, secret-named headers, query/form values by header_type. Tests: test_har.py.
+<!-- SECTION:FINAL_SUMMARY:END -->
