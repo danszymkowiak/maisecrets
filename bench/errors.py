@@ -13,8 +13,13 @@ import json
 import sys
 from pathlib import Path
 
-from maisecrets_bench import errors, run, schema, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.domain import errors
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -23,17 +28,18 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--split", choices=("dev", "check", "all"), default="dev")
     args = ap.parse_args(argv)
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-        rdir = args.run or run.newest_full_run(data_dir() / "runs", manifest)
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        rdir = args.run or compose.newest_full_run(data_dir() / "runs", manifest)
         meta = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))
-        det = run.load_detections(rdir / "detections.parquet")
+        det = parquet_store.load_detections(rdir / "detections.parquet")
         recs = []
         for name in meta["datasets"]:
-            for s in schema.read(setup.default_out() / f"{name}.parquet"):
+            for s in parquet_store.read(sources.default_out() / f"{name}.parquet"):
                 if args.split != "all" and s.split != args.split:
                     continue
                 recs += errors.collect(s, det.get((s.dataset, s.sample_id), []),
-                                       run.UNLABELLED_NEGATIVE.get(s.dataset, True), run.JUDGED.get(s.dataset))
+                                       run_report.UNLABELLED_NEGATIVE.get(s.dataset, True),
+                                       run_report.JUDGED.get(s.dataset))
     except BenchError as exc:
         print(f"errors: {exc}", file=sys.stderr)
         return 1

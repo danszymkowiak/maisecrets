@@ -1,7 +1,7 @@
 import unittest
 
-from maisecrets_bench import passrate
-from maisecrets_bench.schema import Sample, Span
+from maisecrets_bench.domain import passrate
+from maisecrets_bench.domain.samples import Sample, Span
 
 
 def _sample(sid, text, spans):

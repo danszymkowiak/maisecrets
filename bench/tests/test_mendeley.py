@@ -13,9 +13,10 @@ import zipfile
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from maisecrets_bench.adapters import mendeley
-from maisecrets_bench.labels import LabelTable, load
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters.datasets import mendeley
+from maisecrets_bench.domain.labels import LabelTable
+from maisecrets_bench.adapters.compose import load_labels as load
+from maisecrets_bench.domain.bench_error import BenchError
 
 TABLE = LabelTable("mendeley", {"name": "OUT_OF_SCOPE", "email": "EMAIL", "ssn": "US_SSN"})
 RSQUO = chr(0x2019)

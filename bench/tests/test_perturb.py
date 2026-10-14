@@ -1,8 +1,8 @@
 import base64
 import unittest
 
-from maisecrets_bench import perturb
-from maisecrets_bench.schema import OUT_OF_SCOPE, Sample, Span
+from maisecrets_bench.domain import perturb
+from maisecrets_bench.domain.samples import OUT_OF_SCOPE, Sample, Span
 
 MAIL = "zq.tester" + "@" + "mailhost-sample.com"
 

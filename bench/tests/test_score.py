@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import score
-from maisecrets_bench.schema import Sample, Span
-from maisecrets_bench.score import Detection
+from maisecrets_bench.domain import score
+from maisecrets_bench.domain.samples import Sample, Span
+from maisecrets_bench.domain.score import Detection
 
 OOS = "OUT_OF_SCOPE"
 

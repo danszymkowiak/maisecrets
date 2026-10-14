@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import audit, schema
+from maisecrets_bench.domain import audit
+from maisecrets_bench.domain import samples as schema
 
 
 def fails(t: str, value: str) -> set[str]:

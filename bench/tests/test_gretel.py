@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 import unittest
 
-from maisecrets_bench.adapters import gretel
-from maisecrets_bench.labels import LabelTable
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters.datasets import gretel
+from maisecrets_bench.domain.labels import LabelTable
+from maisecrets_bench.domain.bench_error import BenchError
 
 TEXT = "Contact jo@example.com or call +49 30 1234567 about the account."
 TABLE = LabelTable("gretel", {"email": "EMAIL", "phone_number": "PHONE", "company": "OUT_OF_SCOPE"})

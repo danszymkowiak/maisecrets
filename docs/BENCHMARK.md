@@ -31,6 +31,17 @@ on 20261012-141549). The leave-one-out review (TASK-18) runs on this baseline, o
 
 The detector runs in a temp maisecrets home (`MAISECRETS_HOME`), never the real store.
 
+The package `maisecrets_bench` has three layers (TASK-62), checked by import-linter on every commit
+(`uv run --project bench --group dev lint-imports --config bench/pyproject.toml`):
+
+- `domain/`: samples, label tables, scores, floors, verdicts, the generators of the synthetic datasets, the reports.
+  No I/O, no clock, no environment, no plugin import.
+- `application/`: a run, a mutation judgement, an agent round and a setup (`run.py`, `mutate.py`, `round.py`,
+  `setup.py`), reaching the outside only through the ports in `application/ports.py`.
+- `adapters/`: the datasets (`datasets/*.py`, independent of each other), the plugin's detector (`plugin/`: the
+  detector, the worker pool, mutations, filters), parquet (`parquet_store.py`) and the repository's own files
+  (`files.py`). `compose.py` and `sources.py` put them together; the scripts in `bench/` use them.
+
 ## Datasets
 
 | dataset | unit | gold | role |
@@ -217,7 +228,7 @@ Per dataset, per type, per split, and per rule:
 
 ### Valid gold
 
-**2026-10-12 (TASK-21.6, `maisecrets_bench/validgold.py`; baseline run 20261012-013837).** Setup
+**2026-10-12 (TASK-21.6, `maisecrets_bench/domain/validgold.py`; baseline run 20261012-013837).** Setup
 checks every gold positive of a checksummed type with the detector's validator (IBAN mod 97, card
 Luhn, the German IDs) or the bench's own where the detector has none (ABA checksum, the SSN shape
 rules: no area 000, 666 or 9xx, no group 00, no serial 0000). A failing span becomes *uncertain*; a
@@ -248,7 +259,7 @@ synthetic tool output have no checksummed in-scope gold. The equal-weight mean r
 **Validity rules for the types without a checksum (TASK-30, gold revision valid3; baseline run
 20261012-094904, against 20261012-085837).** Decided 2026-10-12: clean the gold before more rule
 shaping. `bench/audit.py` counts, per dataset and type, the positives that fail each candidate rule
-(`maisecrets_bench/audit.py`; shapes only, never values; first run 20261012-094314), and the rules
+(`maisecrets_bench/domain/audit.py`; shapes only, never values; first run 20261012-094314), and the rules
 were chosen from it:
 
 - **Phone:** 7 to 15 digits (E.164; an `00` prefix and a `(0)` trunk do not count), no letters but
@@ -268,7 +279,7 @@ Trimming takes only a whole match of the pattern for these types (brackets and l
 shortened value passes a rule without a checksum as easily as the whole one. Our generators write
 only valid values (findocs and synthetic wrote a reserved area code: 59 and 35 phones; a test
 checks every generated positive). Cases no rule catches go into `bench/gold_exceptions.json`
-(`maisecrets_bench/exceptions.py`): place, a hash of the span's text, verdict (negative, uncertain,
+(`maisecrets_bench/domain/exceptions.py`): place, a hash of the span's text, verdict (negative, uncertain,
 drop) and a rationale; setup applies them and refuses a stale entry. It is empty so far.
 
 | dataset | type | gold | invalid | trimmed | negative | recall before | recall on valid gold |
@@ -371,7 +382,7 @@ unchanged; verdict accepted. The gitleaks rule files and `scripts/sync_gitleaks.
 
 The file and prose corpora hold no terminal output: no `printenv`, `git diff`, `grep -n`, `cat -n`,
 `kubectl get secret -o yaml`, docker config, `curl -v`, lockfile or `docker images --digests`. The
-setup generates such a dataset (`maisecrets_bench/adapters/synthetic.py`, TASK-11.19): ten templates,
+setup generates such a dataset (`maisecrets_bench/adapters/datasets/synthetic.py`, TASK-11.19): ten templates,
 300 samples each, from a fixed seed, in English. Secrets (GitHub, GitLab, AWS, Slack, Stripe, npm,
 JWT, passwords, also base64-wrapped in a Kubernetes secret and a docker `auth`), e-mail addresses,
 public IPs and phone numbers are `pos` spans; commit ids, UUIDs, SHA-256 and MD5 digests, npm
@@ -762,10 +773,10 @@ most 163 of them (wordlike-90). Two last ideas:
   bench repeats ten times or more, while 353 CredData false positives do; repeat10 is accepted on dev (CredData 1,752
   -> 1,541) and on check (round 20261013-105913). The threat model speaks against it: a debug log that prints the
   same `password=` line on every request repeats a real value, and the filter would let exactly that through.
-- **Learned filter** (`maisecrets_bench/learned.py`, `bench/learn.py`): a logistic regression over 28 numbers of a
+- **Learned filter** (`maisecrets_bench/adapters/plugin/learned.py`, `bench/learn.py`): a logistic regression over 28 numbers of a
   hit (length, character classes, three entropies, word coverage, the label's class, quoting, shapes, the rule),
   trained on the dev split only (15,930 finds, 2,021 false positives); the table of coefficients is
-  `maisecrets_bench/learned_table.py`. To keep every dev find its threshold has to sit below the worst-scored find,
+  `maisecrets_bench/domain/learned_table.py`. To keep every dev find its threshold has to sit below the worst-scored find,
   and there it drops 42 of the 2,021 dev false positives. The round accepts it (dev: CredData 1,752 -> 1,731; check:
   weighted false positives per 1,000 tokens -0.001), but it removes fewer false positives than wordlike-90 or the
   repeat count, on the data it was trained on. The strongest weights: word coverage (negative), normalised entropy,
@@ -779,7 +790,7 @@ repeat10 passes the bench, but whether its risk is acceptable is the user's call
 
 ### Presidio's remaining checksums (TASK-11.24, 2026-10-13)
 
-Presidio 2.2.364 validates more recognizers than the plugin's port does. `maisecrets_bench/validators.py` ports
+Presidio 2.2.364 validates more recognizers than the plugin's port does. `maisecrets_bench/domain/validators.py` ports
 seven of them (es-nif, es-nie, it-vat-code, nhs, us-npi, se-organisationsnummer, uk-vehicle-registration), each
 tested with the vectors of Presidio's own tests at that tag and compared with Presidio itself on 20,000 random
 values per recognizer: no disagreement. medical-license (a DEA check) has no published test vector in Presidio's
@@ -839,9 +850,9 @@ the floor rule does not trade a find for false positives. Porting the four into 
   a saturated dataset can serve as a guard (TASK-11.15).
 - **What a mutation can change:** disable a rule, add one, or set its regex, keywords, entropy, score,
   context, stopwords or validator. Three fields exist only in the bench, so an idea can be judged
-  before the plugin has it: `validator = "bench:aba"` (a checksum of `maisecrets_bench/validators.py`),
+  before the plugin has it: `validator = "bench:aba"` (a checksum of `maisecrets_bench/domain/validators.py`),
   `allow = [regex]` (a value that matches is skipped, on top of the rule's own allowlist) and
-  `filter = "bench:name"` (a function of `maisecrets_bench/filters.py` that gets the value, the text
+  `filter = "bench:name"` (a function of `maisecrets_bench/adapters/plugin/filters.py` that gets the value, the text
   and the value's offsets, so it can read the label before the value). A filter runs after the rule's
   validator, entropy, context and allowlist and before the hit claims its span: a dropped hit leaves
   the span to the next rule, as a failed validator does.

@@ -11,9 +11,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import detector, mutation
-from maisecrets_bench.paths import BenchError
-from maisecrets_bench.score import Counts
+from maisecrets_bench.adapters import files
+from maisecrets_bench.adapters.plugin import detector
+from maisecrets_bench.adapters.plugin import mutations
+from maisecrets_bench.domain import mutation
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.domain.score import Counts
 
 D = detector.detect
 MAIL = "zq.tester@example-mail.org"
@@ -23,7 +26,7 @@ def _load(text: str) -> mutation.Mutation:
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "m.toml"
         p.write_text(text, encoding="utf-8")
-        return mutation.load(p)
+        return files.load_mutation(p)
 
 
 class ApplyTests(unittest.TestCase):
@@ -31,7 +34,7 @@ class ApplyTests(unittest.TestCase):
         self.base = list(D.rules())
 
     def scan_with(self, m: mutation.Mutation, text: str) -> list:
-        rs = mutation.ruleset(m, D.default_ruleset())
+        rs = mutations.ruleset(m, D.default_ruleset())
         return [(x.kind, x.type) for x in D.scan(text, ruleset=rs)]
 
     def test_disable_removes_the_rule(self):
@@ -49,38 +52,38 @@ class ApplyTests(unittest.TestCase):
 
     def test_the_plugin_rules_stay_untouched(self):
         before = [r.id for r in self.base]
-        mutation.apply(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n'), self.base)
+        mutations.apply(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n'), self.base)
         self.assertEqual([r.id for r in self.base], before)
 
     def test_an_unknown_rule_is_named(self):
         with self.assertRaisesRegex(BenchError, "'no-such-rule'"):
-            mutation.apply(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'), self.base)
+            mutations.apply(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'), self.base)
 
     def test_an_unknown_field_is_named(self):
         with self.assertRaisesRegex(BenchError, "'colour'"):
-            mutation.apply(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\ncolour = "red"\n'), self.base)
+            mutations.apply(_load('name = "x"\n[[change]]\nop = "set"\nrule = "email"\ncolour = "red"\n'), self.base)
 
     def test_a_rule_of_another_region_is_skipped_in_a_group_without_it(self):
         # us-bank exists in the English group only; the German group must run the mutation too (round 1, 2026-10-11)
         m = _load('name = "x"\n[[change]]\nop = "disable"\nrule = "us-bank"\n')
         without = [r for r in self.base if r.id != "us-bank"]
-        self.assertEqual([r.id for r in mutation.apply(m, without, strict=False)], [r.id for r in without])
+        self.assertEqual([r.id for r in mutations.apply(m, without, strict=False)], [r.id for r in without])
 
     def test_validation_knows_the_rules_of_every_region(self):
-        mutation.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "it-fiscal-code"\n'))
+        mutations.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "it-fiscal-code"\n'))
         with self.assertRaisesRegex(BenchError, "'no-such-rule'"):
-            mutation.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'))
+            mutations.validate(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "no-such-rule"\n'))
 
     def test_normalise_turns_the_normaliser_stages_on(self):
         # TASK-11.25: a token split by an ANSI reset is found once the stage is on
         text = "use ghp_" + "A1b2C3d4E5f6G7h8I9" + "\x1b[0m" + "j0K1l2M3n4O5p6Q7r8"
         bare = dataclasses.replace(D.default_ruleset(), normalise=())
         none = mutation.Mutation("none", "", [])
-        self.assertEqual([x.type for x in D.scan(text, ruleset=mutation.ruleset(none, bare))], [])
+        self.assertEqual([x.type for x in D.scan(text, ruleset=mutations.ruleset(none, bare))], [])
         m = _load('name = "ansi"\n[[change]]\nop = "normalise"\nstages = ["ansi"]\n')
-        self.assertEqual([x.type for x in D.scan(text, ruleset=mutation.ruleset(m, bare))], ["SECRET"])
+        self.assertEqual([x.type for x in D.scan(text, ruleset=mutations.ruleset(m, bare))], ["SECRET"])
         self.assertFalse(m.disable_only)
-        mutation.validate(m)
+        mutations.validate(m)
 
     def test_a_mutation_without_a_normalise_change_keeps_the_shipped_stages(self):
         # TASK-44 turned stages on in the plugin; a mutation that dropped them was charged with their finds
@@ -88,13 +91,13 @@ class ApplyTests(unittest.TestCase):
         base = D.default_ruleset()
         self.assertTrue(base.normalise)
         m = _load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n')
-        self.assertEqual(mutation.ruleset(m, base).normalise, base.normalise)
+        self.assertEqual(mutations.ruleset(m, base).normalise, base.normalise)
         m = _load('name = "ansi"\n[[change]]\nop = "normalise"\nstages = ["ansi"]\n')
-        self.assertEqual(mutation.ruleset(m, base).normalise, ("ansi",))
+        self.assertEqual(mutations.ruleset(m, base).normalise, ("ansi",))
 
     def test_an_unknown_normaliser_stage_is_named(self):
         with self.assertRaisesRegex(BenchError, "'rot13'"):
-            mutation.validate(_load('name = "x"\n[[change]]\nop = "normalise"\nstages = ["rot13"]\n'))
+            mutations.validate(_load('name = "x"\n[[change]]\nop = "normalise"\nstages = ["rot13"]\n'))
 
     def test_unfix_switches_one_named_check_off(self):
         # url-query-secret drops a template value ({...}) by its fix "template-braces" (TASK-26)
@@ -108,21 +111,21 @@ class ApplyTests(unittest.TestCase):
 
     def test_unfix_without_a_rule_takes_the_fix_off_every_rule(self):
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "unfix"\nfix = "code-value"\n')
-        rules = mutation.apply(m, self.base)
+        rules = mutations.apply(m, self.base)
         self.assertFalse([r.id for r in rules if "code-value" in r.fixes])
         self.assertTrue([r.id for r in self.base if "code-value" in r.fixes])
 
     def test_an_unknown_fix_is_named(self):
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "unfix"\nfix = "rocket"\n')
         with self.assertRaisesRegex(BenchError, "rocket"):
-            mutation.validate(m)
+            mutations.validate(m)
 
     def test_vendored_swaps_the_vendored_secret_set(self):
         # TASK-19.3: the switch to Betterleaks judged like any change
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "betterleaks"\n'
                   '[[change]]\nop = "disable"\nrule = "jwt"\n')
-        mutation.validate(m)
-        ids = {r.id for r in mutation.ruleset(m, D.default_ruleset()).rules}
+        mutations.validate(m)
+        ids = {r.id for r in mutations.ruleset(m, D.default_ruleset()).rules}
         self.assertIn("aikido-ci-token", ids)
         self.assertNotIn("jwt", ids, "the later changes apply to the swapped set")
         self.assertIn("email", ids, "the other rules stay")
@@ -132,8 +135,8 @@ class ApplyTests(unittest.TestCase):
         # TASK-19.8: Betterleaks with gitleaks' generic-api-key in place of its own
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "betterleaks"\n'
                   '[[change]]\nop = "carry"\nrule = "generic-api-key"\nfrom = "carried"\n')
-        mutation.validate(m)
-        rules = mutation.ruleset(m, D.default_ruleset()).rules
+        mutations.validate(m)
+        rules = mutations.ruleset(m, D.default_ruleset()).rules
         gak = [r for r in rules if r.id == "generic-api-key"]
         self.assertEqual(len(gak), 1)
         gitleaks = next(r for r in D._load_carried() if r.id == "generic-api-key")
@@ -143,12 +146,12 @@ class ApplyTests(unittest.TestCase):
     def test_carry_of_an_unknown_rule_is_named(self):
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "carry"\nrule = "no-such"\nfrom = "carried"\n')
         with self.assertRaisesRegex(BenchError, "no-such"):
-            mutation.validate(m)
+            mutations.validate(m)
 
     def test_an_unknown_vendored_set_is_named(self):
         m = _load('name = "n"\nwhy = "w"\n[[change]]\nop = "vendored"\nset = "trufflehog"\n')
         with self.assertRaisesRegex(BenchError, "trufflehog"):
-            mutation.validate(m)
+            mutations.validate(m)
 
     def test_a_disable_only_mutation_says_so(self):
         self.assertTrue(_load('name = "x"\n[[change]]\nop = "disable"\nrule = "email"\n').disable_only)

@@ -14,3 +14,46 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["maisecrets_bench"]
+
+# Clean architecture, adapters > application > domain (TASK-62; the spec is backlog/docs/doc-1 in the repository).
+[tool.importlinter]
+root_package = "maisecrets_bench"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "layers: adapters > application > domain"
+type = "layers"
+containers = ["maisecrets_bench"]
+layers = ["adapters", "application", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "the dataset adapters are independent of each other"
+type = "independence"
+modules = ["maisecrets_bench.adapters.datasets.*"]
+
+[[tool.importlinter.contracts]]
+name = "the plugin, the parquet store and the repository files are independent of each other"
+type = "independence"
+modules = [
+    "maisecrets_bench.adapters.plugin",
+    "maisecrets_bench.adapters.parquet_store",
+    "maisecrets_bench.adapters.files",
+]
+
+[[tool.importlinter.contracts]]
+name = "domain and application import no plugin, data library or file format"
+type = "forbidden"
+source_modules = ["maisecrets_bench.domain", "maisecrets_bench.application"]
+forbidden_modules = ["maisecrets", "pyarrow", "datasets", "huggingface_hub", "openpyxl"]
+
+[[tool.importlinter.contracts]]
+name = "the domain does no I/O: no files, processes, clock or environment"
+type = "forbidden"
+source_modules = ["maisecrets_bench.domain"]
+forbidden_modules = ["os", "time", "tempfile", "subprocess", "multiprocessing", "concurrent", "tomllib", "importlib",
+                     "shutil", "socket", "urllib"]
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.15",
+]

@@ -17,10 +17,18 @@ import os
 import sys
 from pathlib import Path
 
-from maisecrets_bench import curves, entropy, run, schema, score, setup
-from maisecrets_bench.detector import detect, rule_index
-from maisecrets_bench.mutation import Mutation
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.adapters.plugin import pool
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.domain import curves
+from maisecrets_bench.domain import entropy
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain import score
+from maisecrets_bench.adapters.plugin.detector import detect, rule_index
+from maisecrets_bench.domain.mutation import Mutation
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def relaxing(idx: dict) -> tuple[Mutation, set, set]:
@@ -92,16 +100,16 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
     args = ap.parse_args(argv)
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-        rdir = args.run or run.newest_full_run(data_dir() / "runs", manifest)
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        rdir = args.run or compose.newest_full_run(data_dir() / "runs", manifest)
         names = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))["datasets"]
     except BenchError as exc:
         print(f"curves: {exc}", file=sys.stderr)
         return 1
-    samples = [s for n in names for s in schema.read(setup.default_out() / f"{n}.parquet")]
+    samples = [s for n in names for s in parquet_store.read(sources.default_out() / f"{n}.parquet")]
     idx = rule_index()
     relax, entropy_rules, gated = relaxing(idx)
-    det, _ = run.detect_samples(samples, args.jobs, mutation=relax)
+    det, _ = pool.detect_samples(samples, args.jobs, mutation=relax)
     ent_pts: dict[str, list] = {}
     var_pts: list[tuple] = []    # (rule, split, charset, {variant: value}, is_tp, passes today's gate)
     gate_pts: dict[str, list] = {}
@@ -109,7 +117,8 @@ def main(argv: list[str]) -> int:
         for d in det.get((s.dataset, s.sample_id), []):
             if d.rule not in entropy_rules and d.rule not in gated:
                 continue
-            kind = score.classify(s, d, run.UNLABELLED_NEGATIVE.get(s.dataset, True), run.JUDGED.get(s.dataset))
+            kind = score.classify(s, d, run_report.UNLABELLED_NEGATIVE.get(s.dataset, True),
+                                  run_report.JUDGED.get(s.dataset))
             if kind not in ("tp", "fp"):
                 continue
             if d.rule in entropy_rules:
@@ -122,7 +131,7 @@ def main(argv: list[str]) -> int:
                 window = detect._lower(s.text[max(0, d.start - 80):min(len(s.text), d.end + 40)])
                 gate_pts.setdefault(d.rule, []).append((detect._has_context_word(window, tuple(idx[d.rule]["context"])),
                                                         kind == "tp"))
-    out = ["# Precision-recall curves", "", *run.licence_notes(names), "",
+    out = ["# Precision-recall curves", "", *run_report.licence_notes(names), "",
            f"Relaxed run over {', '.join(names)} (baseline `{rdir.name}`). Approximate: with the gates open a "
            "candidate can take a span another rule would have claimed.", "",
            "## Entropy rules (carried from gitleaks)", "",

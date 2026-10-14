@@ -11,8 +11,9 @@ import json
 import sys
 from pathlib import Path
 
-from maisecrets_bench import floors, rank
-from maisecrets_bench.paths import data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.domain import rank
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -22,7 +23,7 @@ def main(argv: list[str]) -> int:
         print("rank: no leave-one-out run with a results.json", file=sys.stderr)
         return 1
     data = json.loads((src / "results.json").read_text(encoding="utf-8"))
-    text = rank.report(rank.rows(data["results"], floors.load().weights), Path(data["baseline"]).name)
+    text = rank.report(rank.rows(data["results"], compose.load_floors().weights), Path(data["baseline"]).name)
     (src / "rank.md").write_text(text, encoding="utf-8")
     print(text)
     return 0

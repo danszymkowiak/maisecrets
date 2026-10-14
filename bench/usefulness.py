@@ -13,8 +13,13 @@ import json
 import sys
 from pathlib import Path
 
-from maisecrets_bench import run, schema, setup, usefulness
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain import usefulness
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 SATURATED = 0.99        # a score at or above this leaves no room to show an improvement
 OVERLAP = 0.95          # probes moving two datasets the same way this often: one adds little
@@ -43,7 +48,7 @@ def verdicts(t: dict, same: dict) -> dict:
 
 def render(t: dict, same: dict, probes: list[str]) -> str:
     v = verdicts(t, same)
-    out = ["# Is each dataset worth keeping?", "", *run.licence_notes(t), "",
+    out = ["# Is each dataset worth keeping?", "", *run_report.licence_notes(t), "",
            "| dataset | positives | in scope | score | precision | recall | clean samples | rules firing | "
            "only here | probes that move it | verdict |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     for name, d in t.items():
@@ -77,13 +82,14 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--probes", type=int, default=30, help="how many of the most-firing rules to probe")
     args = ap.parse_args(argv)
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-        rdir = args.run or run.newest_full_run(data_dir() / "runs", manifest)
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        rdir = args.run or compose.newest_full_run(data_dir() / "runs", manifest)
         meta = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))
         if meta.get("limit"):
             raise BenchError(f"{rdir} ran with --limit; the check needs a full run")
-        samples = [s for name in meta["datasets"] for s in schema.read(setup.default_out() / f"{name}.parquet")]
-        det = run.load_detections(rdir / "detections.parquet")
+        samples = [s for name in meta["datasets"]
+                   for s in parquet_store.read(sources.default_out() / f"{name}.parquet")]
+        det = parquet_store.load_detections(rdir / "detections.parquet")
         hits: dict[str, int] = {}
         for ds in det.values():
             for d in ds:

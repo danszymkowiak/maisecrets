@@ -9,11 +9,11 @@ from __future__ import annotations
 import unittest
 from collections import defaultdict
 
-from maisecrets_bench import validators
-from maisecrets_bench.adapters import findocs
-from maisecrets_bench.detector import detect
-from maisecrets_bench.labels import load
-from maisecrets_bench.schema import OUT_OF_SCOPE
+from maisecrets_bench.domain import validators
+from maisecrets_bench.adapters.datasets import findocs
+from maisecrets_bench.adapters.plugin.detector import detect
+from maisecrets_bench.adapters.compose import load_labels as load
+from maisecrets_bench.domain.samples import OUT_OF_SCOPE
 
 
 def _build(n=15, seed=findocs.SEED):

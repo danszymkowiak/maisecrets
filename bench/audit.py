@@ -13,8 +13,11 @@ import json
 import sys
 import time
 
-from maisecrets_bench import audit, schema, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.domain import audit
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -22,13 +25,13 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--only", help="comma-separated datasets (default: all in the manifest)")
     args = ap.parse_args(argv)
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
         names = args.only.split(",") if args.only else sorted(manifest["datasets"])
         result = {}
         for name in names:
-            path = setup.default_out() / f"{name}.parquet"
+            path = sources.default_out() / f"{name}.parquet"
             if path.exists():
-                result.update(audit.audit(schema.read(path)))
+                result.update(audit.audit(parquet_store.read(path)))
     except BenchError as exc:
         print(f"audit: {exc}", file=sys.stderr)
         return 1

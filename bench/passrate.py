@@ -14,8 +14,9 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
-from maisecrets_bench import passrate, schema
-from maisecrets_bench.paths import data_dir
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.domain import passrate
+from maisecrets_bench.adapters.locations import data_dir
 
 CHECKS = {"es-nif": "bench:es_nif", "es-nie": "bench:es_nie", "it-vat-code": "bench:it_vat", "nhs": "bench:nhs",
           "us-npi": "bench:us_npi", "se-organisationsnummer": "bench:se_org",
@@ -30,7 +31,8 @@ def main(argv: list[str]) -> int:
         print("passrate: no run with a detections.parquet", file=sys.stderr)
         return 1
     names = json.loads((src / "datasets.json").read_text(encoding="utf-8"))["datasets"]
-    samples = {(s.dataset, s.sample_id): s for n in names for s in schema.read(data_dir() / "parquet" / f"{n}.parquet")}
+    samples = {(s.dataset, s.sample_id): s for n in names
+               for s in parquet_store.read(data_dir() / "parquet" / f"{n}.parquet")}
     dets = pq.read_table(src / "detections.parquet").to_pylist()
     text = passrate.report(passrate.table(samples, dets, CHECKS), src.name)
     (src / "passrate.md").write_text(text, encoding="utf-8")

@@ -10,9 +10,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench.adapters import tab
-from maisecrets_bench.labels import LabelTable
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters.datasets import tab
+from maisecrets_bench.domain.labels import LabelTable
+from maisecrets_bench.domain.bench_error import BenchError
 
 TEXT = "The applicant, Mr Test Person, lodged application no. 12345/01 on 3 May 2001."
 TABLE = LabelTable("tab", {t: "OUT_OF_SCOPE" for t in ("PERSON", "CODE", "DATETIME", "ORG")})

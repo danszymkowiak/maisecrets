@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import curves
+from maisecrets_bench.domain import curves
 
 
 class CurveTests(unittest.TestCase):

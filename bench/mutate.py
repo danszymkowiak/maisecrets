@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Judge rule mutations against a saved full run (docs/BENCHMARK.md, Judging a change):
 
-    uv run --project bench python bench/mutate.py bench/mutations/*.toml [--baseline <run>] [--guard tab]
+    uv run --project bench python bench/mutate_case.py bench/mutations/*.toml [--baseline <run>] [--guard tab]
 
 Writes <data>/mutations/<time>/report.md and results.json: each mutation accepted, neutral or rejected (recall floors
 per type first, then weighted false positives per 1,000 tokens; docs/BENCHMARK.md), ranked by verdict and then by
@@ -17,8 +17,14 @@ import sys
 import time
 from pathlib import Path
 
-from maisecrets_bench import mutate, mutation, run, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import files
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.application import mutate as mutate_case
+from maisecrets_bench.domain import mutation
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -31,15 +37,15 @@ def main(argv: list[str]) -> int:
                     help="recall points a dataset may lose when its score does not fall (default %(default).1f)")
     args = ap.parse_args(argv)
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-        base_dir = args.baseline or run.newest_full_run(data_dir() / "runs", manifest)
-        samples, det, names = mutate.baseline(base_dir, setup.default_out())
-        roles = {**run.default_roles(names), **{n: "guard" for n in args.guard.split(",") if n}}
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        base_dir = args.baseline or compose.newest_full_run(data_dir() / "runs", manifest)
+        samples, det, names = compose.baseline(base_dir, sources.default_out())
+        roles = {**run_report.default_roles(names), **{n: "guard" for n in args.guard.split(",") if n}}
         unknown = set(roles) - set(names)
         if unknown:
             raise BenchError(f"--guard names datasets not in the baseline: {', '.join(sorted(unknown))}")
-        muts = [mutation.load(p) for p in args.mutations]
-        results = mutate.evaluate(muts, samples, det, roles, args.jobs, args.recall_tolerance / 100)
+        muts = [files.load_mutation(p) for p in args.mutations]
+        results = compose.evaluate(muts, samples, det, roles, args.jobs, args.recall_tolerance / 100)
     except (BenchError, ValueError) as exc:
         print(f"mutate: {exc}", file=sys.stderr)
         return 1
@@ -47,7 +53,7 @@ def main(argv: list[str]) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "results.json").write_text(json.dumps({"baseline": str(base_dir), "roles": roles, "results": results},
                                                  indent=2, default=str) + "\n", encoding="utf-8")
-    text = mutate.report(results, base_dir, args.recall_tolerance / 100)
+    text = mutate_case.report(results, base_dir, args.recall_tolerance / 100)
     (out / "report.md").write_text(text, encoding="utf-8")
     print(text.split("\n## ")[0])
     print(f"report: {out / 'report.md'}")

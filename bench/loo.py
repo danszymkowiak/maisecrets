@@ -3,7 +3,7 @@
 
     uv run --project bench python bench/loo.py [--baseline <run>] [--guard tab]
 
-Writes <data>/loo/<time>/mutations/*.toml (one per rule), results.json and report.md (bench/mutate.py's format):
+Writes <data>/loo/<time>/mutations/*.toml (one per rule), results.json and report.md (bench/mutate_case.py's format):
 an accepted removal is a candidate; the rejected ones at the bottom are the rules that earn their place.
 """
 from __future__ import annotations
@@ -15,8 +15,15 @@ import sys
 import time
 from pathlib import Path
 
-from maisecrets_bench import loo, mutate, mutation, run, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import files
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.application import mutate as mutate_case
+from maisecrets_bench.domain import loo
+from maisecrets_bench.domain import mutation
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -29,20 +36,20 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
     out = data_dir() / "loo" / time.strftime("%Y%m%d-%H%M%S")
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-        base_dir = args.baseline or run.newest_full_run(data_dir() / "runs", manifest)
-        samples, det, names = mutate.baseline(base_dir, setup.default_out())
-        roles = {**run.default_roles(names), **{n: "guard" for n in args.guard.split(",") if n}}
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        base_dir = args.baseline or compose.newest_full_run(data_dir() / "runs", manifest)
+        samples, det, names = compose.baseline(base_dir, sources.default_out())
+        roles = {**run_report.default_roles(names), **{n: "guard" for n in args.guard.split(",") if n}}
         muts = loo.mutations(json.loads((base_dir / "metrics.json").read_text(encoding="utf-8")))
-        loo.write(muts, out / "mutations")
+        files.write_mutations(muts, out / "mutations")
         print(f"{len(muts)} rules fired in {base_dir.name}; judging each one left out", flush=True)
-        results = mutate.evaluate(muts, samples, det, roles, args.jobs, args.recall_tolerance / 100)
+        results = compose.evaluate(muts, samples, det, roles, args.jobs, args.recall_tolerance / 100)
     except (BenchError, ValueError) as exc:
         print(f"loo: {exc}", file=sys.stderr)
         return 1
     (out / "results.json").write_text(json.dumps({"baseline": str(base_dir), "roles": roles, "results": results},
                                                  indent=2, default=str) + "\n", encoding="utf-8")
-    text = mutate.report(results, base_dir, args.recall_tolerance / 100)
+    text = mutate_case.report(results, base_dir, args.recall_tolerance / 100)
     (out / "report.md").write_text(text, encoding="utf-8")
     print(text.split("\n## ")[0])
     print(f"report: {out / 'report.md'}")

@@ -8,9 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import exceptions
-from maisecrets_bench.paths import BenchError
-from maisecrets_bench.schema import Sample, Span
+from maisecrets_bench.adapters import files
+from maisecrets_bench.domain import exceptions
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.domain.samples import Sample, Span
 
 TEXT = "order SKU 4471-2209 shipped, call 030 1234567"
 
@@ -35,14 +36,14 @@ class ExceptionTests(unittest.TestCase):
         return p
 
     def test_a_negative_verdict_turns_the_span_negative(self):
-        (s,), n = exceptions.apply([sample()], exceptions.load(self.write([entry()])))
+        (s,), n = exceptions.apply([sample()], files.load_exceptions(self.write([entry()])))
         self.assertEqual([sp.gold for sp in s.spans], ["neg", "pos"])
         self.assertEqual(n, {"negative": 1})
 
     def test_uncertain_and_drop(self):
-        (s,), _ = exceptions.apply([sample()], exceptions.load(self.write([entry(verdict="uncertain")])))
+        (s,), _ = exceptions.apply([sample()], files.load_exceptions(self.write([entry(verdict="uncertain")])))
         self.assertEqual(s.spans[0].gold, "uncertain")
-        rows, n = exceptions.apply([sample()], exceptions.load(self.write([entry(verdict="drop")])))
+        rows, n = exceptions.apply([sample()], files.load_exceptions(self.write([entry(verdict="drop")])))
         self.assertEqual((rows, n), ([], {"drop": 1}))
 
     def test_a_stale_entry_is_refused(self):
@@ -50,27 +51,28 @@ class ExceptionTests(unittest.TestCase):
                     entry(text_sha256=exceptions.digest_text("something else"))):
             with self.subTest(bad=bad):
                 with self.assertRaisesRegex(BenchError, "stale"):
-                    exceptions.apply([sample()], exceptions.load(self.write([bad])))
+                    exceptions.apply([sample()], files.load_exceptions(self.write([bad])))
 
     def test_an_entry_without_a_rationale_or_with_an_unknown_verdict_is_refused(self):
         for bad in (entry(rationale=""), entry(verdict="maybe"), {k: v for k, v in entry().items() if k != "end"}):
             with self.subTest(bad=bad):
                 with self.assertRaises(BenchError):
-                    exceptions.load(self.write([bad]))
+                    files.load_exceptions(self.write([bad]))
 
     def test_entries_of_another_dataset_are_left_for_it(self):
-        (s,), n = exceptions.apply([sample()], exceptions.load(self.write([entry(dataset="other")])))
+        (s,), n = exceptions.apply([sample()], files.load_exceptions(self.write([entry(dataset="other")])))
         self.assertEqual([sp.gold for sp in s.spans], ["pos", "pos"])
         self.assertEqual(n, {})
 
     def test_the_digest_of_a_dataset_changes_with_its_entries_only(self):
-        a = exceptions.load(self.write([entry()]))
-        b = exceptions.load(self.write([entry(), entry(dataset="other")]))
+        a = files.load_exceptions(self.write([entry()]))
+        b = files.load_exceptions(self.write([entry(), entry(dataset="other")]))
         self.assertEqual(exceptions.digest(a, "toy"), exceptions.digest(b, "toy"))
-        self.assertNotEqual(exceptions.digest(a, "toy"), exceptions.digest(exceptions.load(self.write([])), "toy"))
+        empty = files.load_exceptions(self.write([]))
+        self.assertNotEqual(exceptions.digest(a, "toy"), exceptions.digest(empty, "toy"))
 
     def test_the_repository_file_loads(self):
-        exceptions.load()
+        files.load_exceptions()
 
 
 if __name__ == "__main__":

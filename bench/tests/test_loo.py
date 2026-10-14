@@ -1,5 +1,5 @@
 """Leave-one-out (TASK-18): one disable mutation per rule that fired in a run, written as TOML files that
-mutation.load reads back.
+files.load_mutation reads back.
 
 Run: uv run --project bench python -m unittest discover -s bench/tests
 """
@@ -9,7 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import loo, mutation
+from maisecrets_bench.adapters import files
+from maisecrets_bench.domain import loo
 
 METRICS = {"rules": {
     "us-ssn#2": {"hits": 4, "tp": 1, "fp": 3, "by_dataset": {}},
@@ -28,9 +29,9 @@ class LeaveOneOutTests(unittest.TestCase):
     def test_the_written_files_load_back_as_the_same_mutations(self):
         muts = loo.mutations(METRICS)
         with tempfile.TemporaryDirectory() as d:
-            paths = loo.write(muts, Path(d))
+            paths = files.write_mutations(muts, Path(d))
             self.assertEqual([p.name for p in paths], ["leave-out-email.toml", "leave-out-us-ssn-2.toml"])
-            back = [mutation.load(p) for p in paths]
+            back = [files.load_mutation(p) for p in paths]
         self.assertEqual([(m.name, m.why, m.changes) for m in back], [(m.name, m.why, m.changes) for m in muts])
 
     def test_a_run_without_rules_gives_nothing(self):

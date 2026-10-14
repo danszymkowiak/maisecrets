@@ -9,9 +9,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import floors, floorscore
-from maisecrets_bench.schema import Sample, Span
-from maisecrets_bench.score import Detection
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.domain import floors
+from maisecrets_bench.domain import floorscore
+from maisecrets_bench.domain.samples import Sample, Span
+from maisecrets_bench.domain.score import Detection
 
 FLOORS = """
 default_tier = "default"
@@ -36,7 +38,7 @@ def _floors() -> floors.Floors:
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "f.toml"
         p.write_text(FLOORS, encoding="utf-8")
-        return floors.load(p)
+        return compose.load_floors(p)
 
 
 F = _floors()

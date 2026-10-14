@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import labelclass
+from maisecrets_bench.domain import labelclass
 
 
 class WordTests(unittest.TestCase):

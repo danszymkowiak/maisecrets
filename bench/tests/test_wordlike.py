@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import wordlike
+from maisecrets_bench.domain import wordlike
 
 WORDS = frozenset({"user", "name", "max", "retry", "count", "connection", "timeout", "pool", "size", "the"})
 

@@ -14,8 +14,11 @@ import os
 import sys
 import time
 
-from maisecrets_bench import run, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -25,18 +28,18 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
     args = ap.parse_args(argv)
     try:
-        parquet = setup.default_out()
+        parquet = sources.default_out()
         manifest_path = parquet / "manifest.json"
         if not manifest_path.exists():
             raise BenchError(f"no benchmark data in {parquet}; run bench/setup.py first")
         known = sorted(json.loads(manifest_path.read_text(encoding="utf-8"))["datasets"])
-        names = args.only.split(",") if args.only else run.default_datasets(
+        names = args.only.split(",") if args.only else run_report.default_datasets(
             json.loads(manifest_path.read_text(encoding="utf-8")))
         missing = set(names) - set(known)
         if missing:
             raise BenchError(f"not set up: {', '.join(sorted(missing))}")
         out = data_dir() / "runs" / time.strftime("%Y%m%d-%H%M%S")
-        summary = run.run(parquet, names, out, args.jobs, args.limit)
+        summary = compose.run(parquet, names, out, args.jobs, args.limit)
     except BenchError as exc:
         print(f"run: {exc}", file=sys.stderr)
         return 1

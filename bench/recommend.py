@@ -15,8 +15,12 @@ import sys
 import time
 from pathlib import Path
 
-from maisecrets_bench import recommend, run, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.domain import recommend
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def main(argv: list[str]) -> int:
@@ -25,14 +29,14 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--mutations", type=Path, nargs="+", required=True, help="mutation run directories")
     args = ap.parse_args(argv)
     try:
-        manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-        base_dir = args.baseline or run.newest_full_run(data_dir() / "runs", manifest)
+        manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+        base_dir = args.baseline or compose.newest_full_run(data_dir() / "runs", manifest)
         baseline = json.loads((base_dir / "metrics.json").read_text(encoding="utf-8"))
         runs = [json.loads((d / "results.json").read_text(encoding="utf-8")) for d in args.mutations]
     except (BenchError, OSError, ValueError) as exc:
         print(f"recommend: {exc}", file=sys.stderr)
         return 1
-    text = recommend.page(baseline, runs, local_only=set(run.LOCAL_ONLY), baseline_id=base_dir.name)
+    text = recommend.page(baseline, runs, local_only=set(run_report.LOCAL_ONLY), baseline_id=base_dir.name)
     out = data_dir() / "recommendations" / time.strftime("%Y%m%d-%H%M%S")
     out.mkdir(parents=True, exist_ok=True)
     (out / "recommendations.md").write_text(text, encoding="utf-8")

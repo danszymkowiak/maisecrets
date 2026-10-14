@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import validgold
-from maisecrets_bench.adapters import findocs, synthetic
-from maisecrets_bench.labels import load
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters.datasets import findocs, synthetic
+from maisecrets_bench.adapters.compose import load_labels as load
 
 
 class GeneratedGoldTests(unittest.TestCase):
     def assert_all_valid(self, rows):
-        _, stats = validgold.mark(rows)
+        _, stats = compose.mark_gold(rows)
         for ds, types in stats.items():
             for t, c in types.items():
                 with self.subTest(dataset=ds, type=t):

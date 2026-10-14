@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 import unittest
 
-from maisecrets_bench import entropy
+from maisecrets_bench.domain import entropy
 
 
 class CharsetTests(unittest.TestCase):

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import rank
+from maisecrets_bench.domain import rank
 
 
 def result(name, fp, found=None, decided=()):

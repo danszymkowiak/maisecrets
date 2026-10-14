@@ -14,9 +14,10 @@ import statistics
 import sys
 import time
 
-from maisecrets_bench import detector  # noqa: F401  first: the plugin on the path, with a temp home
-from maisecrets_bench import schema
-from maisecrets_bench.paths import data_dir
+from maisecrets_bench.adapters.plugin import detector  # noqa: F401  first: the plugin on the path, with a temp home
+from maisecrets_bench.adapters import parquet_store
+
+from maisecrets_bench.adapters.locations import data_dir
 
 from maisecrets import decode, normalise  # noqa: E402
 
@@ -32,7 +33,7 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
     print("| dataset | texts | changed | decoded bytes p50 / p99 / max | ms p50 / p99 / max |\n|---|---|---|---|---|")
     for name in args.only.split(","):
-        rows = schema.read(data_dir() / "parquet" / f"{name}.parquet")[:args.limit]
+        rows = parquet_store.read(data_dir() / "parquet" / f"{name}.parquet")[:args.limit]
         sizes, times, changed = [], [], 0
         for s in rows:
             b = decode.Budget()

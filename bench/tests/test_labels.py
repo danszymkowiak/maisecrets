@@ -9,15 +9,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import labels
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import files
+from maisecrets_bench.domain import labels
+from maisecrets_bench.domain.bench_error import BenchError
 
 
 def _table(text: str) -> labels.LabelTable:
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "toy.toml"
         p.write_text(text, encoding="utf-8")
-        return labels.load("toy", p)
+        return compose.load_labels("toy", p)
 
 
 class LabelTableTests(unittest.TestCase):
@@ -36,9 +38,9 @@ class LabelTableTests(unittest.TestCase):
             _table('[labels]\nX = "NAME"\n')
 
     def test_every_shipped_table_loads(self):
-        for path in sorted(labels.TABLES.glob("*.toml")):
+        for path in sorted(files.LABEL_TABLES.glob("*.toml")):
             with self.subTest(path.name):
-                labels.load(path.stem, path)
+                compose.load_labels(path.stem, path)
 
 
 if __name__ == "__main__":

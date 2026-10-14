@@ -11,9 +11,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench.adapters import creddata
-from maisecrets_bench.labels import LabelTable
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters.datasets import creddata
+from maisecrets_bench.domain.labels import LabelTable
+from maisecrets_bench.domain.bench_error import BenchError
 
 HEADER = "Id,FileID,Domain,RepoName,FilePath,LineStart,LineEnd,GroundTruth,ValueStart,ValueEnd,CryptographyKey," \
          "PredefinedPattern,Category\n"

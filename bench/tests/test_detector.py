@@ -8,7 +8,7 @@ import os
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import detector
+from maisecrets_bench.adapters.plugin import detector
 
 
 class DetectorTests(unittest.TestCase):

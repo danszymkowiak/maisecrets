@@ -20,7 +20,8 @@ and OpenAI plugin directories.
 ## Git hooks (now)
 
 - `.githooks/pre-commit`: staged diff through our own detector, manifests
-  parse, unit tests. Installed by `scripts/install-hooks.sh`, which pins
+  parse, the import-linter contracts of redact and bench (their layers, TASK-62;
+  `backlog/docs/doc-1`), unit tests. Installed by `scripts/install-hooks.sh`, which pins
   `core.hooksPath` for this repo because the global `~/.git-hooks` would
   otherwise bypass it.
 - `.githooks/pre-push`: refuses tag pushes, runs unit tests, runs the hook

@@ -8,9 +8,9 @@ from __future__ import annotations
 import json
 import unittest
 
-from maisecrets_bench import errors
-from maisecrets_bench.schema import Sample, Span
-from maisecrets_bench.score import Detection
+from maisecrets_bench.domain import errors
+from maisecrets_bench.domain.samples import Sample, Span
+from maisecrets_bench.domain.score import Detection
 
 PW = "Zq7!mX2p"          # made up; the keyword and the value meet only at run time, so the tree scan stays quiet
 TEXT = "Dear Anna Testerova, your routing number is 021000021 and the pass" + "word: " + PW + " for now."

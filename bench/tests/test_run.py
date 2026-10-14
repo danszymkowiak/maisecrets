@@ -10,8 +10,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import run, schema
-from maisecrets_bench.schema import Sample, Span
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.adapters.plugin import detector
+from maisecrets_bench.adapters.plugin import pool
+from maisecrets_bench.application import mutate as mutate_case
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.samples import Sample, Span
 
 MAIL = "zq.tester@example-mail.org"        # made up; the report must not show it
 PHONE = "+49 30 9876 5432"
@@ -31,7 +36,7 @@ class PoolTests(unittest.TestCase):
     def test_workers_start_without_a_unix_socket(self):
         # Python 3.14's default on Linux, forkserver, opens a Unix socket, which the Claude Code sandbox denies;
         # spawn talks over pipes and is the default on macOS and Windows already
-        self.assertEqual(run.POOL_CONTEXT.get_start_method(), "spawn")
+        self.assertEqual(pool.POOL_CONTEXT.get_start_method(), "spawn")
 
 
 class OlderDetectorTests(unittest.TestCase):
@@ -48,29 +53,27 @@ class OlderDetectorTests(unittest.TestCase):
         old = types.SimpleNamespace(scan=scan, rules=lambda: [types.SimpleNamespace(id="email")],
                                     active_regions=lambda: types.SimpleNamespace(regions=("generic",),
                                                                                  languages=("en",)))
-        saved = run._detect, run._RULESET
+        saved = pool._detect, pool._RULESET
         try:
-            run._detect, run._RULESET = old, None
-            self.assertEqual([d.type for d in run._detections("ab")], ["EMAIL"])
-            self.assertEqual(run._describe()["rules"], ["email"])
+            pool._detect, pool._RULESET = old, None
+            self.assertEqual([d.type for d in pool._detections("ab")], ["EMAIL"])
+            self.assertEqual(pool._describe()["rules"], ["email"])
         finally:
-            run._detect, run._RULESET = saved
+            pool._detect, pool._RULESET = saved
         self.assertEqual(calls, ["ab"])
 
     def test_a_mutation_against_an_older_detector_stops_at_once_with_a_clear_error(self):
         # code review 2026-10-14, TASK-61: it failed with an AttributeError inside the process pool
         import types
         from unittest import mock
-        from maisecrets_bench import detector
-        from maisecrets_bench.paths import BenchError
+        from maisecrets_bench.domain.bench_error import BenchError
         with mock.patch.object(detector, "detect", types.SimpleNamespace(scan=lambda text: [])), \
-                mock.patch.object(run, "ProcessPoolExecutor", side_effect=AssertionError("no pool")):
+                mock.patch.object(pool, "ProcessPoolExecutor", side_effect=AssertionError("no pool")):
             with self.assertRaisesRegex(BenchError, "MAISECRETS_BENCH_DETECTOR"):
-                run.detect_samples(_samples(), 1, mutation=object())
+                pool.detect_samples(_samples(), 1, mutation=object())
 
     def test_a_type_the_older_detector_lacks_is_no_error(self):
         from unittest import mock
-        from maisecrets_bench import detector
         self.assertTrue(detector.unknown_type("NO_SUCH_TYPE"))
         with mock.patch.object(detector, "OLDER", True):
             self.assertFalse(detector.unknown_type("NO_SUCH_TYPE"))
@@ -81,9 +84,9 @@ class RunTests(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         d = Path(cls.tmp.name)
-        schema.write(_samples(), d / "toy.parquet")
+        compose.write_samples(_samples(), d / "toy.parquet")
         (d / "manifest.json").write_text(json.dumps({"datasets": {"toy": {"version": "t1"}}}))
-        cls.summary = run.run(d, ["toy"], d / "out", jobs=2)
+        cls.summary = compose.run(d, ["toy"], d / "out", jobs=2)
         cls.out = d / "out"
 
     @classmethod
@@ -107,11 +110,11 @@ class RunTests(unittest.TestCase):
         self.assertIn("| format:structured |", report)
 
     def test_a_cc_by_dataset_is_attributed_and_a_local_one_is_flagged(self):
-        notes = "\n".join(run.licence_notes(["nemotron", "mendeley", "ai4privacy", "gretel"]))
+        notes = "\n".join(run_report.licence_notes(["nemotron", "mendeley", "ai4privacy", "gretel"]))
         self.assertIn("Nemotron-PII", notes)
         self.assertIn("10.17632/tzrjx692jy", notes)
         self.assertIn("non-commercial", notes)
-        self.assertEqual(run.licence_notes(["gretel"]), [])
+        self.assertEqual(run_report.licence_notes(["gretel"]), [])
 
     def test_each_language_ran_with_its_own_regions(self):
         groups = self.summary["groups"]
@@ -130,16 +133,15 @@ class RunTests(unittest.TestCase):
                 self.assertNotIn(value, text, name)
 
     def test_the_detections_are_saved_and_reload_the_same(self):
-        det = run.load_detections(self.out / "detections.parquet")
+        det = parquet_store.load_detections(self.out / "detections.parquet")
         self.assertIn(("toy", "a"), det)
-        self.assertEqual(run.score_all(_samples(), det)["toy"]["dev"].found, 1)
+        self.assertEqual(run_report.score_all(_samples(), det)["toy"]["dev"].found, 1)
 
     def test_a_mutation_that_loses_a_find_is_rejected_and_reruns_only_where_the_rule_fired(self):
-        from maisecrets_bench import mutate
-        from maisecrets_bench.mutation import Mutation
-        samples, det, names = mutate.baseline(self.out, self.out.parent)
+        from maisecrets_bench.domain.mutation import Mutation
+        samples, det, names = compose.baseline(self.out, self.out.parent)
         m = Mutation("no email", "", [{"op": "disable", "rule": "email"}])
-        (r,) = mutate.evaluate([m], samples, det, {}, jobs=2)
+        (r,) = compose.evaluate([m], samples, det, {}, jobs=2)
         self.assertFalse(r["accepted"])
         self.assertEqual(r["rerun_samples"], 1, "only sample a had an e-mail hit")
         self.assertEqual(r["verdict"], "rejected")
@@ -147,7 +149,7 @@ class RunTests(unittest.TestCase):
         self.assertIn("toy", r["decided_by"][0])
         self.assertEqual(r["old_verdict"], "rejected", "the earlier verdict stays as a comparison")
         self.assertIn("toy: recall", " ".join(r["reasons"]))
-        text = mutate.report([r], self.out)
+        text = mutate_case.report([r], self.out)
         self.assertIn("| rejected |", text)
         self.assertIn("Decided by: EMAIL: gap worse", text)
         self.assertIn("| EMAIL | high | 0.99 |", text)
@@ -183,9 +185,9 @@ class LocaleGroupTests(unittest.TestCase):
                           ["locale:de_CH"]),
                    Sample("toy", "de", "g2", "de", swiss, [Span(a, a + len(cls.AHV), "AHV", "CH_AHV", "pos")], "dev"),
                    Sample("toy", "fr", "g3", "fr", "rien", [], "dev", ["locale:fr_FR"])]
-        schema.write(samples, d / "toy.parquet")
+        compose.write_samples(samples, d / "toy.parquet")
         (d / "manifest.json").write_text(json.dumps({"datasets": {"toy": {"version": "t1"}}}))
-        cls.summary = run.run(d, ["toy"], d / "out", jobs=1)
+        cls.summary = compose.run(d, ["toy"], d / "out", jobs=1)
 
     @classmethod
     def tearDownClass(cls):

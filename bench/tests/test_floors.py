@@ -10,16 +10,17 @@ import tomllib
 import unittest
 from pathlib import Path
 
-from maisecrets_bench import floors
-from maisecrets_bench.labels import TABLES
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.domain import floors
+from maisecrets_bench.adapters.files import LABEL_TABLES as TABLES
+from maisecrets_bench.domain.bench_error import BenchError
 
 
 def _load_text(text: str) -> floors.Floors:
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "floors.toml"
         p.write_text(text, encoding="utf-8")
-        return floors.load(p)
+        return compose.load_floors(p)
 
 
 MINI = """
@@ -40,7 +41,7 @@ prefixed_labels = ["synthetic:GITHUB"]
 
 class FloorTests(unittest.TestCase):
     def test_the_repository_table_loads_and_names_the_users_tiers(self):
-        f = floors.load()
+        f = compose.load_floors()
         self.assertEqual(f.tier_of("IBAN"), ("critical", 0.999))
         self.assertEqual(f.tier_of("CARD"), ("critical", 0.999))
         self.assertEqual(f.tier_of("EMAIL"), ("high", 0.99))
@@ -74,7 +75,7 @@ class FloorTests(unittest.TestCase):
         self.assertEqual(f.scoring_type("gretel", "iban", "IBAN"), "IBAN")
 
     def test_every_type_of_every_label_table_resolves_to_a_tier(self):
-        f = floors.load()
+        f = compose.load_floors()
         for path in sorted(TABLES.glob("*.toml")):
             dataset = path.stem
             for label, t in tomllib.loads(path.read_text(encoding="utf-8"))["labels"].items():
@@ -84,7 +85,7 @@ class FloorTests(unittest.TestCase):
                 self.assertIn(tier, ("critical", "high", "default", "none"), (dataset, label))
 
     def test_every_prefixed_part_is_a_creddata_category_part(self):
-        f = floors.load()
+        f = compose.load_floors()
         parts = {p for k in tomllib.loads((TABLES / "creddata.toml").read_text(encoding="utf-8"))["labels"]
                  for p in k.split(":")}
         self.assertLessEqual(f.prefixed_parts, parts)

@@ -18,13 +18,19 @@ import sys
 import time
 from pathlib import Path
 
-from maisecrets_bench import mutate, mutation, round as rnd, run, setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters import files
+from maisecrets_bench.adapters import sources
+from maisecrets_bench.application import mutate as mutate_case
+from maisecrets_bench.domain import mutation
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 
 def _newest_full_run() -> Path:
-    manifest = json.loads((setup.default_out() / "manifest.json").read_text(encoding="utf-8"))
-    return run.newest_full_run(data_dir() / "runs", manifest)
+    manifest = json.loads((sources.default_out() / "manifest.json").read_text(encoding="utf-8"))
+    return compose.newest_full_run(data_dir() / "runs", manifest)
 
 
 def main(argv: list[str]) -> int:
@@ -45,26 +51,26 @@ def main(argv: list[str]) -> int:
         rdir = args.run or _newest_full_run()
         if args.cmd == "brief":
             out.mkdir(parents=True, exist_ok=True)
-            (out / "brief.md").write_text(rnd.brief(rdir, setup.default_out()), encoding="utf-8")
+            (out / "brief.md").write_text(compose.round_brief(rdir, sources.default_out()), encoding="utf-8")
             print(f"brief: {out / 'brief.md'} (from {rdir.name})")
             return 0
         in_run = json.loads((rdir / "datasets.json").read_text(encoding="utf-8"))["datasets"]
-        roles = {**run.default_roles(in_run), **{n: "guard" for n in args.guard.split(",") if n}}
-        results = rnd.judge([mutation.load(p) for p in args.mutations], rdir, setup.default_out(), roles, args.jobs,
-                            args.recall_tolerance / 100)
+        roles = {**run_report.default_roles(in_run), **{n: "guard" for n in args.guard.split(",") if n}}
+        results = compose.round_judge([files.load_mutation(p) for p in args.mutations], rdir, sources.default_out(),
+                                      roles, args.jobs, args.recall_tolerance / 100)
     except BenchError as exc:
         print(f"round: {exc}", file=sys.stderr)
         return 1
     out.mkdir(parents=True, exist_ok=True)
     names = results[0]["dev"]["datasets"] if results else []
-    lines = ["# Round verdicts", "", *run.licence_notes(names), "", f"Baseline `{rdir.name}`.", "",
+    lines = ["# Round verdicts", "", *run_report.licence_notes(names), "", f"Baseline `{rdir.name}`.", "",
              "| proposal | verdict | dev FP/1k change | check FP/1k change | gaps narrowed (dev) | earlier verdict "
              "(dev / check) | dev mean change |", "|---|---|---|---|---|---|---|"]
     for r in results:
         d, c = r["dev"], r["check"]
         lines.append(f"| {r['name']} | {r['verdict']} | {d['objective_delta']:+.3f} | {c['objective_delta']:+.3f} | "
-                     f"{', '.join(d['gaps_narrowed']) or '-'} | {mutate.VERDICT_TEXT[d['old_verdict']]} / "
-                     f"{mutate.VERDICT_TEXT[c['old_verdict']]} | {100 * d['overall_delta']:+.2f} |")
+                     f"{', '.join(d['gaps_narrowed']) or '-'} | {mutate_case.VERDICT_TEXT[d['old_verdict']]} / "
+                     f"{mutate_case.VERDICT_TEXT[c['old_verdict']]} | {100 * d['overall_delta']:+.2f} |")
     for r in results:
         if r["dev"]["decided_by"]:
             lines.append(f"\n{r['name']}: dev rejected by: " + "; ".join(r["dev"]["decided_by"]))
@@ -74,7 +80,7 @@ def main(argv: list[str]) -> int:
             lines.append(f"\n{r['name']}: dev says {r['dev']['verdict']}, check says {r['check']['verdict']}")
     (out / "verdicts.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     # dev only: per-type floor status, false positives per 1,000 tokens and critical misses of each proposal
-    (out / "dev-report.md").write_text(mutate.report([r["dev"] for r in results], rdir), encoding="utf-8")
+    (out / "dev-report.md").write_text(mutate_case.report([r["dev"] for r in results], rdir), encoding="utf-8")
     (out / "results.json").write_text(json.dumps(results, indent=2, default=str) + "\n", encoding="utf-8")
     print("\n".join(lines))
     return 0

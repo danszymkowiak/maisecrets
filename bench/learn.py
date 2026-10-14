@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Train the learned filter of the generic keyword rules on the dev split (TASK-11.27 b; maisecrets_bench/learned.py):
+"""Train the learned filter of the generic keyword rules on the dev split (TASK-11.27 b;
+maisecrets_bench/adapters/plugin/learned.py):
 
     uv run --project bench python bench/learn.py [--run <data>/runs/<time>]
 
 Reads the hits of learned.RULES in a full run (default: the newest), labels each by the scorer (tp or fp; neutral,
-unjudged and unreviewed hits are left out), trains on dev only and writes maisecrets_bench/learned_table.py: the
+unjudged and unreviewed hits are left out), trains on dev only and writes maisecrets_bench/domain/learned_table.py: the
 coefficients and the threshold that keeps every dev find. Prints counts and the weights, never a value.
 """
 from __future__ import annotations
@@ -13,10 +14,13 @@ import argparse
 import sys
 from pathlib import Path
 
-from maisecrets_bench import learned, run, schema, score
-from maisecrets_bench.paths import data_dir
+from maisecrets_bench.adapters import parquet_store
+from maisecrets_bench.adapters.plugin import learned
+from maisecrets_bench.domain import run_report
+from maisecrets_bench.domain import score
+from maisecrets_bench.adapters.locations import data_dir
 
-OUT = Path(__file__).resolve().parent / "maisecrets_bench" / "learned_table.py"
+OUT = Path(__file__).resolve().parent / "maisecrets_bench" / "domain" / "learned_table.py"
 
 
 def main(argv: list[str]) -> int:
@@ -28,16 +32,17 @@ def main(argv: list[str]) -> int:
     src = args.run or runs[-1].parent
     import json
     names = json.loads((src / "datasets.json").read_text(encoding="utf-8"))["datasets"]
-    det = run.load_detections(src / "detections.parquet")
+    det = parquet_store.load_detections(src / "detections.parquet")
     xs, ys = [], []
     for n in names:
-        for s in schema.read(data_dir() / "parquet" / f"{n}.parquet"):
+        for s in parquet_store.read(data_dir() / "parquet" / f"{n}.parquet"):
             if s.split != "dev":
                 continue
             for d in det.get((s.dataset, s.sample_id), []):
                 if d.rule.split("#", 1)[0] not in learned.RULES:
                     continue
-                kind = score.classify(s, d, run.UNLABELLED_NEGATIVE.get(s.dataset, True), run.JUDGED.get(s.dataset))
+                kind = score.classify(s, d, run_report.UNLABELLED_NEGATIVE.get(s.dataset, True),
+                                      run_report.JUDGED.get(s.dataset))
                 if kind not in ("tp", "fp"):
                     continue
                 xs.append(learned.features(s.text[d.start:d.end], s.text, d.start, d.end, d.rule.split("#", 1)[0]))

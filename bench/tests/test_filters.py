@@ -1,8 +1,11 @@
 import unittest
 
-from maisecrets_bench import filters, mutation
-from maisecrets_bench.detector import detect
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters.plugin import filters
+from maisecrets_bench.adapters.plugin import mutations
+from maisecrets_bench.domain import entropy
+from maisecrets_bench.domain import mutation
+from maisecrets_bench.adapters.plugin.detector import detect
+from maisecrets_bench.domain.bench_error import BenchError
 
 # split so that the tree scan does not see a keyword and a value in one literal
 GLUED = "pass" + "word:" + "Kx7Q" + "p2Zr9"          # 9 characters glued to the label: the ds_value glued path
@@ -11,7 +14,7 @@ SPACED = "pass" + "word: " + "Kx7Q" + "p2Zr9Lm4Wn"
 
 def _hits(text: str, m: mutation.Mutation | None) -> list:
     try:
-        rs = mutation.ruleset(m, detect.default_ruleset()) if m else None
+        rs = mutations.ruleset(m, detect.default_ruleset()) if m else None
         return [(x.kind, x.value) for x in detect.scan(text, ruleset=rs)]
     finally:
         filters.ACTIVE.clear()
@@ -51,12 +54,12 @@ class FilterTests(unittest.TestCase):
 
     def test_an_unknown_filter_is_named(self):
         with self.assertRaisesRegex(BenchError, "bench:nope"):
-            mutation.validate(_with("ds-keyword-colon", "bench:nope"))
+            mutations.validate(_with("ds-keyword-colon", "bench:nope"))
 
     def test_a_filter_on_a_new_rule(self):
         m = mutation.Mutation("x", "", [{"op": "add", "id": "zz-test", "type": "SECRET", "regex": "zzq[0-9]{4}",
                                          "filter": "bench:drop_all"}])
-        mutation.validate(m)
+        mutations.validate(m)
         self.assertNotIn("zz-test", [k for k, _ in _hits("x zzq1234 y", m)])
 
 
@@ -145,7 +148,6 @@ class EntropyCharsetFilterTests(unittest.TestCase):
         self.assertFalse(keep("abab-abab-abab-abab!!", "", 0, 0))         # printable, below 3.594
 
     def test_every_charset_has_a_threshold(self):
-        from maisecrets_bench import entropy
         self.assertEqual(set(filters.ENTROPY_BY_CHARSET),
                          {"hex", "base32", "base62", "base64", "base64url", "printable"})
         self.assertTrue(all(entropy.charset(v) in filters.ENTROPY_BY_CHARSET for v in ("ab12", "AB==", "a_b-")))

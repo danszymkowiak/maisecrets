@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench.adapters import ai4privacy
-from maisecrets_bench.labels import LabelTable
-from maisecrets_bench.paths import BenchError
+from maisecrets_bench.adapters.datasets import ai4privacy
+from maisecrets_bench.domain.labels import LabelTable
+from maisecrets_bench.domain.bench_error import BenchError
 
 TEXT = "Mail zq@example.org or call 030 1234567, Mr Testerson."
 TABLE = LabelTable("ai4privacy", {"EMAIL": "EMAIL", "TEL": "PHONE", "LASTNAME1": "OUT_OF_SCOPE"})
@@ -42,7 +42,7 @@ class Ai4PrivacyTests(unittest.TestCase):
         (s,) = list(ai4privacy.samples([_rec("40768C", [], text=text)], TABLE, ai4privacy.Stats()))
         self.assertEqual([(x.start, x.end, x.gold, x.maisecrets_type) for x in s.spans],
                          [(0, 2, "uncertain", "OUT_OF_SCOPE")])
-        from maisecrets_bench import score
+        from maisecrets_bench.domain import score
         d = score.Detection(0, 1, "EMAIL", "email")
         self.assertEqual(score.classify(s, d, True), "neutral")
         self.assertEqual(score.classify(s, score.Detection(8, 11, "EMAIL", "email"), True), "fp")

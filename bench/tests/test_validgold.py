@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import validgold
-from maisecrets_bench.detector import detect
-from maisecrets_bench.schema import Sample, Span
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.adapters.plugin import gold as plugin_gold
+from maisecrets_bench.domain import validgold
+from maisecrets_bench.adapters.plugin.detector import detect
+from maisecrets_bench.domain.samples import Sample, Span
 
 IBAN_OK = "CH93 0076 2011 6238 5295 7"          # the Swiss IBAN example
 IBAN_BAD = "DE12 1234 5678 9012 3456 00"         # a generator invention, fails mod 97
@@ -25,7 +27,7 @@ def _sample(text: str, value: str, t: str, label: str = "x") -> Sample:
 
 class CheckTests(unittest.TestCase):
     def one(self, text, value, t):
-        (s,), stats = validgold.mark([_sample(text, value, t)])
+        (s,), stats = compose.mark_gold([_sample(text, value, t)])
         return s.spans[0], s.text, stats
 
     def test_a_valid_value_stays_pos(self):
@@ -64,14 +66,14 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(self.one("aba 011000016 x", "011000016", "ABA_ROUTING_NUMBER")[0].gold, "uncertain")
 
     def test_a_type_without_a_check_and_neg_spans_are_left_alone(self):
-        (s,), stats = validgold.mark([Sample("toy", "s1", "s1", "en", "key abcdef and 123",
+        (s,), stats = compose.mark_gold([Sample("toy", "s1", "s1", "en", "key abcdef and 123",
                                              [Span(4, 10, "k", "SECRET", "pos"), Span(15, 18, "n", "IBAN", "neg")])])
         self.assertEqual([sp.gold for sp in s.spans], ["pos", "neg"])
         self.assertEqual(stats, {})
 
     def test_every_checked_type_is_a_type_the_detector_reports(self):
-        from maisecrets_bench.detector import known_types
-        self.assertEqual(set(validgold.CHECKS), set(validgold._checks()))
+        from maisecrets_bench.adapters.plugin.detector import known_types
+        self.assertEqual(set(validgold.CHECKS), set(plugin_gold.checks()))
         self.assertLessEqual(set(validgold.CHECKS), known_types())
 
 
@@ -91,7 +93,7 @@ class ShrinkTests(unittest.TestCase):
     1 in 10) and the gold became a fragment no detector reports."""
 
     def one(self, text, value, t):
-        (s,), _ = validgold.mark([_sample(text, value, t)])
+        (s,), _ = compose.mark_gold([_sample(text, value, t)])
         return s.spans[0], s.text
 
     def test_a_fake_iban_is_not_cut_to_a_prefix_that_passes(self):
@@ -128,7 +130,7 @@ class ValidityTests(unittest.TestCase):
     span that is no value of its type at all becomes negative; an IBAN labelled as a bank number becomes IBAN."""
 
     def one(self, text, value, t):
-        (s,), stats = validgold.mark([_sample(text, value, t)])
+        (s,), stats = compose.mark_gold([_sample(text, value, t)])
         return s.spans[0], s.text, stats
 
     def test_a_plausible_phone_stays_and_a_placeholder_number_becomes_uncertain(self):

@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench.adapters import nemotron
-from maisecrets_bench.labels import LabelTable, load
-from maisecrets_bench.paths import BenchError
-from maisecrets_bench.split import split_of
+from maisecrets_bench.adapters.datasets import nemotron
+from maisecrets_bench.domain.labels import LabelTable
+from maisecrets_bench.adapters.compose import load_labels as load
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.domain.split import split_of
 
 TEXT = "Brian pays with 5490 3479 1287 6543 and writes to bq@example.com."
 TABLE = LabelTable("nemotron", {"first_name": "OUT_OF_SCOPE", "credit_debit_card": "CARD", "email": "EMAIL"})

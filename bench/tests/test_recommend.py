@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import recommend
+from maisecrets_bench.domain import recommend
 
 BASE = {"datasets": {"gretel": {"all": {"precision": 0.74, "recall": 0.81, "score": 0.77, "tp": 100, "fp": 35}},
                      "ai4privacy": {"all": {"precision": 0.97, "recall": 0.63, "score": 0.76, "tp": 9, "fp": 1}}},

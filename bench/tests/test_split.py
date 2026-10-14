@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import unittest
 
-from maisecrets_bench import split
+from maisecrets_bench.domain import split
 
 
 class SplitTests(unittest.TestCase):

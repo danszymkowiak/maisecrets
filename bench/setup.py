@@ -16,8 +16,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from maisecrets_bench import setup
-from maisecrets_bench.paths import BenchError, data_dir
+from maisecrets_bench.adapters import compose
+from maisecrets_bench.domain.bench_error import BenchError
+from maisecrets_bench.adapters.locations import data_dir
 
 DATASETS = ("creddata", "gretel", "synthetic", "nemotron", "mendeley", "findocs", "tab", "ai4privacy", "kagglepii")
 # TAB was dropped (saturated, out of scope); ai4privacy and kagglepii are opt-in (licence); synthetic and findocs are
@@ -48,34 +49,34 @@ def main(argv: list[str]) -> int:
         sources = []
         if "creddata" in wanted:
             if args.creddata:
-                sources.append(setup.creddata_source(args.creddata.resolve()))
+                sources.append(sources.creddata_source(args.creddata.resolve()))
             else:
                 print("creddata: skipped, no --creddata path (clone Samsung/CredData and run its download_data.py)")
         if "tab" in wanted:
-            sources.append(setup.tab_source(args.tab.resolve() if args.tab else None, cache))
+            sources.append(sources.tab_source(args.tab.resolve() if args.tab else None, cache))
         if "gretel" in wanted:
-            sources.append(setup.gretel_source(cache))
+            sources.append(sources.gretel_source(cache))
         if "synthetic" in wanted:
-            sources.append(setup.synthetic_source())
+            sources.append(sources.synthetic_source())
         if "nemotron" in wanted:
-            sources.append(setup.nemotron_source(cache))
+            sources.append(sources.nemotron_source(cache))
         if "mendeley" in wanted:
-            sources.append(setup.mendeley_source(cache))
+            sources.append(sources.mendeley_source(cache))
         if "findocs" in wanted:
-            sources.append(setup.findocs_source())
+            sources.append(sources.findocs_source())
         if "ai4privacy" in wanted:
-            from maisecrets_bench.adapters.ai4privacy import LICENCE_NOTE
+            from maisecrets_bench.adapters.datasets.ai4privacy import LICENCE_NOTE
             print(LICENCE_NOTE)
-            sources.append(setup.ai4privacy_source(cache))
+            sources.append(sources.ai4privacy_source(cache))
         if "kagglepii" in wanted:
-            from maisecrets_bench.adapters.kagglepii import LICENCE_NOTE as KAGGLE_NOTE
+            from maisecrets_bench.adapters.datasets.kagglepii import LICENCE_NOTE as KAGGLE_NOTE
             print(KAGGLE_NOTE)
-            sources.append(setup.kagglepii_source(cache))
-        setup.run(sources, setup.default_out(), log=print)
+            sources.append(sources.kagglepii_source(cache))
+        compose.setup_run(sources, sources.default_out(), log=print)
     except BenchError as exc:
         print(f"setup: {exc}", file=sys.stderr)
         return 1
-    print(f"data in {setup.default_out()}")
+    print(f"data in {sources.default_out()}")
     return 0
 
 

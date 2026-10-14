@@ -1,7 +1,7 @@
 import random
 import unittest
 
-from maisecrets_bench import learned
+from maisecrets_bench.adapters.plugin import learned
 
 
 class FeatureTests(unittest.TestCase):
