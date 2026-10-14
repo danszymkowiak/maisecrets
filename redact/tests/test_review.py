@@ -6,6 +6,8 @@ Run: uv run --project redact python -m unittest discover -s redact/tests
 """
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import sys
@@ -98,13 +100,13 @@ class TableTests(unittest.TestCase):
 
     def test_the_row_keeps_its_columns_and_the_city(self):
         d = Path(tempfile.mkdtemp())
-        src, out = d / "people.csv", d / "people.csv.redacted.txt"
+        src, out = d / "people.csv", d / "people.csv.redacted.csv"
         src.write_text("first,last,city\nMax,Muster,Zurich\n", encoding="utf-8")
         words = {"Max\tMuster": "NAME", "Zurich": "EMAIL"}
         result = app.run_file(src, out, model_detectors={"m1": fake("m1", words), "m2": fake("m2", words)},
                               regions=("generic",), interactive=False)
         self.assertEqual(result.status, "written")
-        row = out.read_text(encoding="utf-8").splitlines()[1].split("\t")
+        row = list(csv.reader(io.StringIO(out.read_text(encoding="utf-8"), newline="")))[1]
         self.assertEqual(len(row), 3, row)
         self.assertNotIn("Max", row[0])
         self.assertNotIn("Muster", row[1])

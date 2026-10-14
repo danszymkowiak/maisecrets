@@ -4,6 +4,8 @@ models took the record GUID for a national ID and the millisecond timestamps for
 2026-10-14: openai/privacy-filter and gliner2 label uppercase GUIDs ACCOUNT, pieces of them too)."""
 from __future__ import annotations
 
+import csv
+import io
 import sys
 import tempfile
 import unittest
@@ -144,7 +146,7 @@ class FirefoxExportTests(unittest.TestCase):
 
     def test_passwords_and_usernames_go_urls_guids_and_timestamps_stay(self):
         d = Path(tempfile.mkdtemp())
-        src, out = d / "logins.csv", d / "logins.csv.redacted.txt"
+        src, out = d / "logins.csv", d / "logins.csv.redacted.csv"
         src.write_text(HEADER + "\n" + ROW + "\n", encoding="utf-8")
 
         def model(name):
@@ -155,8 +157,8 @@ class FirefoxExportTests(unittest.TestCase):
         result = app.run_file(src, out, model_detectors={"m1": model("m1"), "m2": model("m2")}, regions=("generic",),
                               interactive=False)
         self.assertEqual(result.status, "written")
-        header, row = out.read_text(encoding="utf-8").splitlines()
-        self.assertEqual(header.split("\t"), HEADER.split(","))
-        self.assertEqual(row.split("\t"), ["https://login.example.com", "⟦USERNAME_1⟧", "⟦SECRET_1⟧", "",
+        header, row = csv.reader(io.StringIO(out.read_text(encoding="utf-8"), newline=""))
+        self.assertEqual(header, HEADER.split(","))
+        self.assertEqual(row, ["https://login.example.com", "⟦USERNAME_1⟧", "⟦SECRET_1⟧", "",
                                            "https://sso.example.com", GUID, "1710000000001", "1720000000002",
                                            "1730000000003"])

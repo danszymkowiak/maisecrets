@@ -49,9 +49,10 @@ class DirectoryTests(unittest.TestCase):
     def test_the_tree_is_mirrored_and_every_supported_file_redacted(self):
         summary = self.run_dir(recursive=True)
         got = sorted(str(p.relative_to(self.out)) for p in self.out.rglob("*") if p.is_file())
-        self.assertEqual(got, ["2025/auszug.pdf.redacted.txt", "2025/liste.xlsx.redacted.txt",
-                               "konten.csv.redacted.txt", "notes.txt.redacted.txt"])
-        for p in self.out.rglob("*.redacted.txt"):
+        # a table comes out as CSV, a workbook as one per sheet (TASK-54)
+        self.assertEqual(got, ["2025/auszug.pdf.redacted.txt", "2025/liste.xlsx.Sheet.redacted.csv",
+                               "konten.csv.redacted.csv", "notes.txt.redacted.txt"])
+        for p in self.out.rglob("*.redacted.*"):
             text = p.read_text(encoding="utf-8")
             self.assertNotIn(MAIL, text)
             self.assertNotIn(IBAN, text)
@@ -61,7 +62,7 @@ class DirectoryTests(unittest.TestCase):
     def test_the_same_value_keeps_its_placeholder_across_files(self):
         self.run_dir(recursive=True)
         notes = (self.out / "notes.txt.redacted.txt").read_text(encoding="utf-8")
-        listed = (self.out / "2025" / "liste.xlsx.redacted.txt").read_text(encoding="utf-8")
+        listed = (self.out / "2025" / "liste.xlsx.Sheet.redacted.csv").read_text(encoding="utf-8")
         self.assertIn("⟦EMAIL_1⟧", notes)
         self.assertIn("⟦EMAIL_1⟧", listed)
 
@@ -85,12 +86,12 @@ class DirectoryTests(unittest.TestCase):
         summary = app.run_dir(self.src, self.src, model_detectors={}, regions=("generic",), interactive=False,
                               recursive=True)
         self.assertTrue((self.src / "notes.txt.redacted.txt").exists())
-        self.assertTrue((self.src / "2025" / "liste.xlsx.redacted.txt").exists())
+        self.assertTrue((self.src / "2025" / "liste.xlsx.Sheet.redacted.csv").exists())
         self.assertNotIn(MAIL, (self.src / "notes.txt.redacted.txt").read_text(encoding="utf-8"))
         again = app.run_dir(self.src, self.src, model_detectors={}, regions=("generic",), interactive=False,
                             recursive=True)
         self.assertEqual(again.written, 0, "a second run does not redact its own output")
-        self.assertFalse(list(self.src.rglob("*.redacted.txt.redacted.txt")))
+        self.assertFalse(list(self.src.rglob("*.redacted.*.redacted.*")))
         self.assertEqual(again.exists, summary.written)
 
     def test_an_existing_output_is_not_overwritten(self):

@@ -75,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     if not src.is_file():
         print(f"redact: {src}: no such file or directory", file=sys.stderr)
         return 2
-    target = Path(args.out) / (src.name + ".redacted.txt") if args.out else src.with_name(src.name + ".redacted.txt")
+    target = Path(args.out) / app.output_name(src) if args.out else src.with_name(app.output_name(src))
     if target.exists():
         print(f"redact: {target} exists; nothing is overwritten", file=sys.stderr)
         return 1
@@ -90,12 +90,15 @@ def main(argv: list[str] | None = None) -> int:
     except (extract.Unsupported, extract.NoText, review.StaleReview, KeyError, ValueError) as exc:
         print(f"redact: {exc}", file=sys.stderr)
         return 1
+    if result.status == "exists":
+        print(f"redact: an output of {src.name} exists; nothing is overwritten", file=sys.stderr)
+        return 1
     if result.status == "review":
         print(f"redact: {result.open_items} span(s) need a decision: set each to \"redact\" or \"keep\" in "
               f"{target.name}.review.json and run again (or --no-review); nothing is written yet", file=sys.stderr)
         return 3
     found = ", ".join(f"{t} {n}" for t, n in sorted(result.counts.items())) or "nothing found"
-    print(f"redact: {src.name} -> {target} ({found})", file=sys.stderr)
+    print(f"redact: {src.name} -> {', '.join(str(p) for p in result.written)} ({found})", file=sys.stderr)
     return 0
 
 

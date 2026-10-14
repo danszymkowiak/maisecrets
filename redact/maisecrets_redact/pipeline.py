@@ -18,10 +18,22 @@ class Position:
 
 
 @dataclass(frozen=True)
+class Table:
+    """A table of the document (TASK-54): each cell's (start, end) in the text, row by row, so the redacted cells can
+    be written back as CSV. `name` is the sheet of a workbook, None for a CSV; `name_at` where the name is in the text
+    (a redacted name must not reach a file name)."""
+    name: str | None
+    delimiter: str
+    rows: tuple[tuple[tuple[int, int], ...], ...]
+    name_at: tuple[int, int] | None = None
+
+
+@dataclass(frozen=True)
 class Document:
     path: str
     text: str
     positions: tuple[Position, ...] = ()
+    tables: tuple[Table, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -61,6 +73,53 @@ def render(doc: Document, spans: Iterable[Span], placeholder: Callable[[Span, st
         at = s.end
     out.append(doc.text[at:])
     return "".join(out)
+
+
+def render_tables(doc: Document, spans: Iterable[Span],
+                  placeholder: Callable[[Span, str], str]) -> list[list[list[str]]]:
+    """Each table of the document as rows of redacted cells (TASK-54). A span lies in one cell (within_cells); the
+    placeholders are taken in text order, as render takes them. A span outside every cell is not written."""
+    ordered = sorted(spans, key=lambda s: (s.start, -s.end))
+    starts = [s.start for s in ordered]
+    out = []
+    for table in doc.tables:
+        rows = []
+        for row in table.rows:
+            cells = []
+            for a, b in row:
+                parts, at = [], a
+                for s in ordered[bisect.bisect_left(starts, a):bisect.bisect_left(starts, b)]:
+                    if s.start < at or s.end > b:
+                        continue
+                    parts += [doc.text[at:s.start], placeholder(s, doc.text[s.start:s.end])]
+                    at = s.end
+                parts.append(doc.text[at:b])
+                cells.append("".join(parts))
+            rows.append(cells)
+        out.append(rows)
+    return out
+
+
+def to_csv(rows: Iterable[list[str]], delimiter: str) -> str:
+    """Rows as CSV (RFC 4180): a cell with the delimiter, a quote, a tab or a line break is quoted."""
+    special = {delimiter, '"', "\t", "\n", "\r"}
+
+    def cell(v: str) -> str:
+        return '"' + v.replace('"', '""') + '"' if any(c in special for c in v) else v
+    return "".join(delimiter.join(cell(v) for v in row) + "\r\n" for row in rows)
+
+
+def safe_names(names: list[str]) -> list[str]:
+    """A file-name part for each sheet: characters other than letters, digits, space, dot, dash and underscore become
+    _, edge dots and spaces go; an empty name becomes sheet<n>, and a name taken twice gets -2, -3."""
+    out: list[str] = []
+    for n, name in enumerate(names, 1):
+        safe = re.sub(r"[^\w .-]", "_", name).strip(" .") or f"sheet{n}"
+        base, k = safe, 2
+        while safe in out:
+            safe, k = f"{base}-{k}", k + 1
+        out.append(safe)
+    return out
 
 
 def within_cells(doc: Document, spans: Iterable[Span]) -> list[Span]:

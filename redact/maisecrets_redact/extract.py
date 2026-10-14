@@ -1,5 +1,6 @@
 """Extractors (TASK-34.2): a document becomes flattened text and a map from text offsets back to its source. One
-function per format; the output is text, never a rebuilt PDF, CSV or workbook (docs/REDACT.md).
+function per format. A table also keeps where each of its cells lies in the text, so its redacted cells can be written
+back as CSV (TASK-54); a PDF is never rebuilt (docs/REDACT.md).
 
 - PDF: digital text with pypdf (BSD-3-Clause), page by page. No OCR: a PDF without text raises NoText.
 - CSV: the csv module, cell by cell, the delimiter sniffed; a column can be dropped by its header.
@@ -9,9 +10,10 @@ function per format; the output is text, never a rebuilt PDF, CSV or workbook (d
 from __future__ import annotations
 
 import csv
+import io
 from pathlib import Path
 
-from .pipeline import Document, Position
+from .pipeline import Document, Position, Table
 
 
 class Unsupported(ValueError):
@@ -28,6 +30,7 @@ class _Builder:
     def __init__(self) -> None:
         self.parts: list[str] = []
         self.positions: list[Position] = []
+        self.tables: list[Table] = []
         self.size = 0
 
     def add(self, text: str, where: str | None = None) -> None:
@@ -37,7 +40,7 @@ class _Builder:
         self.size += len(text)
 
     def document(self, path: Path) -> Document:
-        return Document(str(path), "".join(self.parts), tuple(self.positions))
+        return Document(str(path), "".join(self.parts), tuple(self.positions), tuple(self.tables))
 
 
 def _drop(headers: list[str], drop: set[str]) -> set[int]:
@@ -45,20 +48,26 @@ def _drop(headers: list[str], drop: set[str]) -> set[int]:
     return {i for i, h in enumerate(headers) if str(h or "").strip().lower() in wanted}
 
 
-def _table(b: _Builder, rows: list[list[str]], drop: set[str], prefix: str = "") -> None:
-    """Rows as tab-separated lines; the first row names the columns."""
-    if not rows:
-        return
-    headers = [str(h) if h is not None else "" for h in rows[0]]
+def _table(b: _Builder, rows: list[list[str]], drop: set[str], prefix: str = "", name: str | None = None,
+           delimiter: str = ",", name_at: tuple[int, int] | None = None) -> None:
+    """Rows as tab-separated lines; the first row names the columns. The table, without its dropped columns, is
+    recorded too."""
+    headers = [str(h) if h is not None else "" for h in rows[0]] if rows else []
     skip = _drop(headers, drop)
+    table = []
     for r, row in enumerate(rows, 1):
         cells = [(c, v) for c, v in enumerate(row) if c not in skip]
+        spans = []
         for n, (c, value) in enumerate(cells):
-            name = headers[c] if c < len(headers) and headers[c] else _column_letter(c)
-            b.add("" if value is None else str(value), f"{prefix}row {r}, column {name}")
+            header = headers[c] if c < len(headers) and headers[c] else _column_letter(c)
+            start = b.size
+            b.add("" if value is None else str(value), f"{prefix}row {r}, column {header}")
+            spans.append((start, b.size))
             if n < len(cells) - 1:
                 b.add("\t")
         b.add("\n")
+        table.append(tuple(spans))
+    b.tables.append(Table(name, delimiter, tuple(table), name_at))
 
 
 def _column_letter(i: int) -> str:
@@ -89,9 +98,10 @@ def _csv(path: Path, drop: set[str]) -> Document:
     try:
         dialect = csv.Sniffer().sniff(raw[:4096], delimiters=",;\t|")
     except csv.Error:
-        dialect = csv.excel
+        dialect = csv.excel_tab if path.suffix.lower() == ".tsv" else csv.excel
     b = _Builder()
-    _table(b, list(csv.reader(raw.splitlines(), dialect)), drop)
+    # newline="": a quoted cell may hold a line break
+    _table(b, list(csv.reader(io.StringIO(raw, newline=""), dialect)), drop, delimiter=dialect.delimiter)
     return b.document(path)
 
 
@@ -101,8 +111,10 @@ def _excel(path: Path, drop: set[str]) -> Document:
     b = _Builder()
     try:
         for ws in wb.worksheets:
+            at = b.size + 1
             b.add(f"[{ws.title}]\n")
-            _table(b, [list(r) for r in ws.iter_rows(values_only=True)], drop, prefix=f"sheet {ws.title}, ")
+            _table(b, [list(r) for r in ws.iter_rows(values_only=True)], drop, prefix=f"sheet {ws.title}, ",
+                   name=ws.title, name_at=(at, at + len(ws.title)))
             b.add("\n")
     finally:
         wb.close()

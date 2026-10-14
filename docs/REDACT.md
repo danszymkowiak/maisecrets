@@ -20,7 +20,8 @@ because nobody waits for it in a prompt.
 Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and writes files.
 
 1. **Extract** (TASK-34.2): a document becomes text plus a map from text offsets back to its
-   source (PDF page; sheet, row and column). Digital PDFs only, no OCR.
+   source (PDF page; sheet, row and column), and a table keeps where each cell lies in that text.
+   Digital PDFs only, no OCR.
 2. **Detect**: the plugin's deterministic rules first (TASK-34.3: secrets, IBAN, cards, e-mail,
    phone, country IDs, the terms file), then local PII models for what rules cannot find, such
    as names and free-form addresses (TASK-34.4, an optional extra). The models read the text
@@ -36,8 +37,14 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
    span only openai/privacy-filter finds, which is dropped (`models.VOTE_K`, `models.NOT_REVIEWED`).
-4. **Render** (TASK-34.6): `<file>.redacted.txt` next to each file, or a mirrored tree under `--out`, with
-   placeholders of the plugin's kind (one value, one placeholder, across the run).
+4. **Render** (TASK-34.6, TASK-54): a PDF or text file becomes `<file>.redacted.txt`; a CSV or TSV
+   becomes `<file>.redacted.csv` with the input's delimiter and its header row, and a workbook one
+   `<file>.<sheet>.redacted.csv` per sheet. Each cell is redacted on its own (no span crosses a cell)
+   and a cell holding the delimiter, a quote, a tab or a line break is quoted, so a row keeps its
+   columns. A sheet name unsafe in a file name is made safe; a sheet whose name was redacted is named
+   by its number (`sheet2`). The outputs go next to each file, or into a mirrored tree under `--out`,
+   with placeholders of the plugin's kind (one value, one placeholder, across the run). A workbook
+   is written whole or not at all: if one of its sheet outputs exists, none is written.
 
 Reversible mode (`--reversible`, a vault of the placeholder map, TASK-34.7) is not built: the
 user has no health-data use case for it (2026-10-13). A hook that redacts on read is out of scope: a post-read hook fires after the
@@ -47,16 +54,16 @@ text is already in the model's context.
 
 ```bash
 redact statement.pdf                    # writes statement.pdf.redacted.txt next to it
-redact lohn.xlsx --regions ch --drop-column Name
+redact lohn.xlsx --regions ch --drop-column Name   # writes lohn.xlsx.<sheet>.redacted.csv per sheet
 redact notes.txt --out ~/prep           # writes ~/prep/notes.txt.redacted.txt
-redact ~/tax-2025 --recursive           # writes each file's .redacted.txt next to it
+redact ~/tax-2025 --recursive           # writes each file's output next to it
 redact ~/tax-2025 -r --out ~/prep/tax   # mirrors the tree into ~/prep/tax/
 ```
 
 A directory run redacts every supported file and writes each output next to its file, in the same
 folder (user, 2026-10-14), or mirrors the tree into `--out`; subfolders only with `--recursive`.
-An earlier output (`*.redacted.txt`) is never taken as input, so a second run redacts nothing again.
-Unsupported files, a PDF without text and a link that points outside the tree are skipped with one
+An earlier output (`*.redacted.txt`, `*.redacted.csv`) is never taken as input, so a second run
+redacts nothing again. Unsupported files, a PDF without text and a link that points outside the tree are skipped with one
 line each; an `--out` folder inside the source tree is refused (the source folder itself is the
 default); an output that exists is kept. One value keeps one placeholder across the whole run.
 

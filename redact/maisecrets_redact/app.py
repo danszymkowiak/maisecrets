@@ -12,9 +12,37 @@ from .pipeline import Detector
 
 @dataclass
 class Result:
-    status: str                         # written, review
+    status: str                         # written, review, exists
     counts: dict = field(default_factory=dict)
     open_items: int = 0
+    written: tuple[Path, ...] = ()
+
+
+TEXT_SUFFIX, TABLE_SUFFIX = ".redacted.txt", ".redacted.csv"
+OUTPUT_SUFFIXES = (TEXT_SUFFIX, TABLE_SUFFIX)
+TABLES = (".csv", ".tsv", ".xlsx", ".xlsm")
+
+
+def output_name(path: Path) -> str:
+    """The output of a file (TASK-54): a table comes out as CSV, every other document as text. For a workbook it is
+    the base of one <file>.<sheet>.redacted.csv per sheet."""
+    return path.name + (TABLE_SUFFIX if path.suffix.lower() in TABLES else TEXT_SUFFIX)
+
+
+def _outputs(doc: pipeline.Document, target: Path, redact: list[pipeline.Span],
+             placeholder) -> list[tuple[Path, str]]:
+    """(path, content) of each output: one CSV per table (per sheet for a workbook), else the text."""
+    if not doc.tables:
+        return [(target, pipeline.render(doc, redact, placeholder))]
+    tables = pipeline.render_tables(doc, redact, placeholder)
+    if len(doc.tables) == 1 and doc.tables[0].name is None:
+        return [(target, pipeline.to_csv(tables[0], doc.tables[0].delimiter))]
+    base = target.name.removesuffix(TABLE_SUFFIX)
+    hidden = [t.name_at is not None and any(s.start < t.name_at[1] and t.name_at[0] < s.end for s in redact)
+              for t in doc.tables]
+    names = pipeline.safe_names(["" if h else (t.name or "") for t, h in zip(doc.tables, hidden)])
+    return [(target.with_name(f"{base}.{n}{TABLE_SUFFIX}"), pipeline.to_csv(rows, t.delimiter))
+            for n, t, rows in zip(names, doc.tables, tables)]
 
 
 def run_file(src: Path, target: Path, model_detectors: dict[str, Detector], regions: tuple[str, ...] | None,
@@ -43,10 +71,15 @@ def run_file(src: Path, target: Path, model_detectors: dict[str, Detector], regi
             return Result("review", open_items=sum(decided.get(i.id) is None for i in open_items))
         redact += [i.span for i in open_items if decided[i.id] == "redact"]
     names = names or rules.Placeholders()
-    text = pipeline.render(doc, redact, names.placeholder)
+    outputs = _outputs(doc, target, redact, names.placeholder)
+    if any(p.exists() for p, _ in outputs):
+        return Result("exists")          # an output is never overwritten, and a workbook is written whole or not at all
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(text, encoding="utf-8")
-    return Result("written", names.counts())
+    for p, content in outputs:
+        # newline="": a CSV's line ends are its own (\r\n), and a line break in a quoted cell stays as it was
+        with open(p, "w", encoding="utf-8", newline="") as f:
+            f.write(content)
+    return Result("written", names.counts(), written=tuple(p for p, _ in outputs))
 
 
 @dataclass
@@ -78,9 +111,6 @@ def files_of(root: Path, recursive: bool) -> list[Path]:
     return out
 
 
-OUTPUT_SUFFIX = ".redacted.txt"
-
-
 def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions: tuple[str, ...] | None,
             interactive: bool, recursive: bool = False, ask: Callable[[review.Item], str] | None = None,
             no_review: bool = False, drop_columns: frozenset[str] = frozenset(),
@@ -89,7 +119,7 @@ def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions:
     """Every supported file of `src` into the mirrored tree `out`, one placeholder per value across the run. The
     source files are never written; `out` may be `src` itself (each output next to its file, the default of the
     command), but no other folder inside the source tree; a symlink out of the tree is skipped; an earlier output
-    (`*.redacted.txt`) is never an input."""
+    (`*.redacted.txt`, `*.redacted.csv`) is never an input."""
     if out.resolve() != src.resolve() and _inside(out, src):
         raise ValueError(f"{out} is inside {src}: the output must not be written into the source tree")
     summary, names = DirSummary(), rules.Placeholders()
@@ -99,13 +129,13 @@ def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions:
             log(f"skip {rel}: a link that points outside the tree")
             summary.skipped += 1
             continue
-        if path.name.endswith(OUTPUT_SUFFIX):
+        if path.name.endswith(OUTPUT_SUFFIXES):
             continue   # an output of an earlier run, in place: redacting it again would nest names
         if path.suffix.lower() not in extract.SUPPORTED:
             log(f"skip {rel}: {path.suffix.lstrip('.') or 'no extension'} is not a supported type")
             summary.skipped += 1
             continue
-        target = out / rel.parent / (path.name + OUTPUT_SUFFIX)
+        target = out / rel.parent / output_name(path)
         if target.exists():
             log(f"keep {rel}: {target.name} exists and is not overwritten")
             summary.exists += 1
@@ -117,7 +147,10 @@ def run_dir(src: Path, out: Path, model_detectors: dict[str, Detector], regions:
             log(f"skip {rel}: {exc}")
             summary.skipped += 1
             continue
-        if result.status == "review":
+        if result.status == "exists":
+            log(f"keep {rel}: an output of it exists and is not overwritten")
+            summary.exists += 1
+        elif result.status == "review":
             log(f"review {rel}: {result.open_items} span(s) need a decision in {target.name}.review.json")
             summary.review += 1
         else:
