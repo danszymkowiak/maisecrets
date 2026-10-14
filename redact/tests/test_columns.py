@@ -47,6 +47,54 @@ class HeaderTests(unittest.TestCase):
             self.assertIsNone(pipeline.header_type(h), h)
 
 
+class HeaderWordTests(unittest.TestCase):
+    """Headers match by their words, not by the end of the squashed name (code review 2026-10-14, TASK-56): Bitwarden's
+    login_username was missed, an NLP table's token column and an isSecret flag were wiped, and a phone under candidate
+    was taken for a timestamp."""
+
+    def test_a_username_after_another_word(self):
+        for h in ("login_username", "db_user", "email_username", "account_login", "Login Name", "userID"):
+            self.assertEqual(pipeline.header_type(h), "USERNAME", h)
+
+    def test_a_token_or_a_flag_is_not_a_secret_and_a_named_token_is(self):
+        for h in ("token", "token_count", "isSecret", "has_password", "secretary", "last_login", "user_agent"):
+            self.assertIsNone(pipeline.header_type(h), h)
+        for h in ("access_token", "client_secret", "api_token", "accessToken", "refresh-token", "login_password"):
+            self.assertEqual(pipeline.header_type(h), "SECRET", h)
+
+    def test_time_headers_by_their_words(self):
+        for h in ("candidate", "mandate", "lifetime", "validate", "phone"):
+            self.assertFalse(pipeline._time_header(h), h)
+        for h in ("timeCreated", "created_at", "createdAt", "date", "Date", "last_modified", "timeLastUsed",
+                  "timestamp", "Last Modified"):
+            self.assertTrue(pipeline._time_header(h), h)
+
+
+# Header rows of the CSV exports of five password managers (their documented formats), with one synthetic entry each.
+EXPORTS = {
+    "bitwarden": ("folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp",
+                  ",,login,Example,,,0,https://example.com,testuser,testpass-bw,"),
+    "chrome": ("name,url,username,password,note", "example.com,https://example.com,testuser,testpass-ch,"),
+    "1password": ("Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes",
+                  "Example,https://example.com,testuser,testpass-op,,false,false,,"),
+    "lastpass": ("url,username,password,totp,extra,name,grouping,fav",
+                 "https://example.com,testuser,testpass-lp,,,Example,,0"),
+    "keepass": ("Account,Login Name,Password,Web Site,Comments", "Example,testuser,testpass-kp,https://example.com,"),
+}
+
+
+class PasswordManagerExportTests(unittest.TestCase):
+    def test_every_username_and_password_is_found(self):
+        for name, (header, row) in EXPORTS.items():
+            with self.subTest(export=name):
+                path = Path(tempfile.mkdtemp()) / f"{name}.csv"
+                path.write_text(header + "\n" + row + "\n", encoding="utf-8")
+                doc = extract.extract(path)
+                got = sorted((doc.text[s.start:s.end], s.type) for s in pipeline.column_spans(doc))
+                password = "testpass-" + row.split("testpass-")[1][:2]
+                self.assertEqual(got, [(password, "SECRET"), ("testuser", "USERNAME")])
+
+
 class ColumnSpanTests(unittest.TestCase):
     def test_the_password_and_username_cells_of_a_firefox_export(self):
         doc = firefox_export()

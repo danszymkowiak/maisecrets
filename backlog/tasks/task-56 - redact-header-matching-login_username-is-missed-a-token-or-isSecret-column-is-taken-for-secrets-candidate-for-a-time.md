@@ -3,9 +3,10 @@ id: TASK-56
 title: >-
   redact: header matching - login_username is missed, a token or isSecret column
   is taken for secrets, candidate for a time
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-14 07:16'
+updated_date: '2026-10-14 07:27'
 labels:
   - redact
 dependencies: []
@@ -21,8 +22,14 @@ Code review 2026-10-14 (medium), confirmed: header_type('login_username') and ('
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 login_username, db_user, email_username, account_login are USERNAME
-- [ ] #2 token, token_count, isSecret, secretary stay plain; access_token, client_secret, api_token stay SECRET
-- [ ] #3 candidate, mandate, lifetime, validate are not time headers; timeCreated, created_at, date, last_modified are
-- [ ] #4 Synthetic exports of Bitwarden, Chrome, 1Password, LastPass and KeePass have every username and password redacted
+- [x] #1 login_username, db_user, email_username, account_login are USERNAME
+- [x] #2 token, token_count, isSecret, secretary stay plain; access_token, client_secret, api_token stay SECRET
+- [x] #3 candidate, mandate, lifetime, validate are not time headers; timeCreated, created_at, date, last_modified are
+- [x] #4 Synthetic exports of Bitwarden, Chrome, 1Password, LastPass and KeePass have every username and password redacted
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Headers match by words (camelCase, _ - space split): last word or last two words name the type; is/has flags and last_login excluded; time headers by words. Tests: HeaderWordTests, PasswordManagerExportTests (Bitwarden, Chrome, 1Password, LastPass, KeePass).
+<!-- SECTION:FINAL_SUMMARY:END -->

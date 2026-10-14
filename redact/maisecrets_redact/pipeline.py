@@ -77,29 +77,43 @@ def within_cells(doc: Document, spans: Iterable[Span]) -> list[Span]:
 
 
 _CELL = re.compile(r"(?:^|, )row (\d+), column (.*)$")
-_SECRET_HEADERS = ("password", "passwd", "pwd", "passphrase", "secret", "token", "apikey", "privatekey")
-_USERNAME_HEADERS = {"username", "user", "login", "loginname", "userid"}
-_TIME_HEADERS = ("time", "date", "timestamp", "created", "modified", "updated", "changed", "lastused")
+# Headers match by their words (camelCase, _ - . and spaces split them; TASK-56): the last word names what a cell holds,
+# or the last two together (api_key, access_token, user_id). `token` alone is an NLP column, `is_secret` a flag.
+_SECRET_WORDS = {"password", "passwd", "pwd", "passphrase", "secret"}
+_SECRET_PAIRS = {"apikey", "privatekey", "secretkey", "accesskey", "accesstoken", "apitoken", "authtoken",
+                 "refreshtoken", "bearertoken", "sessiontoken", "idtoken"}
+_USERNAME_WORDS = {"username", "user", "login", "loginname", "userid"}
+_NOT_USERNAME_PAIRS = {"lastlogin", "firstlogin"}       # a time
+_FLAG_WORDS = {"is", "has"}
+_TIME_WORDS = {"time", "date", "datetime", "timestamp", "ts", "epoch", "mtime", "ctime", "created", "modified",
+               "updated", "changed", "at"}
+_TIME_PAIRS = {"lastused", "lastseen"}
 _GUID = re.compile(r"\{?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}?")
 _EPOCH = re.compile(r"\d{10}|\d{13}")       # seconds or milliseconds since 1970
+_WORD = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+")
 
 
-def _norm(header: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", header.lower())
+def _words(header: str) -> list[str]:
+    return [w.lower() for w in _WORD.findall(header)]
 
 
 def header_type(header: str) -> str | None:
     """The type of every cell under a header that names it (TASK-50): SECRET for password, client_secret, api-key...,
-    USERNAME for username, login...; None for any other header."""
-    h = _norm(header)
-    if h.endswith(_SECRET_HEADERS):
+    USERNAME for username, login_username...; None for any other header, a flag such as isSecret among them."""
+    w = _words(header)
+    if not w or w[0] in _FLAG_WORDS:
+        return None
+    pair = "".join(w[-2:])
+    if w[-1] in _SECRET_WORDS or pair in _SECRET_PAIRS:
         return "SECRET"
-    return "USERNAME" if h in _USERNAME_HEADERS else None
+    if (w[-1] in _USERNAME_WORDS or pair in _USERNAME_WORDS) and pair not in _NOT_USERNAME_PAIRS:
+        return "USERNAME"
+    return None
 
 
 def _time_header(header: str) -> bool:
-    h = _norm(header)
-    return h.startswith("time") or h.endswith(_TIME_HEADERS) or re.search(r"(_at|[a-z]At)$", header) is not None
+    w = _words(header)
+    return any(x in _TIME_WORDS for x in w) or any(a + b in _TIME_PAIRS for a, b in zip(w, w[1:]))
 
 
 def cell(doc: Document, offset: int, starts: list[int] | None = None) -> tuple[int, str, Position] | None:
