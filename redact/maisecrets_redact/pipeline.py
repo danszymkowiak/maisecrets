@@ -4,6 +4,7 @@ function, testable on its own; the CLI only reads files, calls these and writes 
 from __future__ import annotations
 
 import bisect
+import functools
 import re
 from dataclasses import dataclass, field
 from typing import Callable, Iterable
@@ -102,10 +103,10 @@ def render_tables(doc: Document, spans: Iterable[Span],
 
 def to_csv(rows: Iterable[list[str]], delimiter: str) -> str:
     """Rows as CSV (RFC 4180): a cell with the delimiter, a quote, a tab or a line break is quoted."""
-    special = {delimiter, '"', "\t", "\n", "\r"}
+    special = re.compile("[" + re.escape(delimiter) + '"\t\n\r]')
 
     def cell(v: str) -> str:
-        return '"' + v.replace('"', '""') + '"' if any(c in special for c in v) else v
+        return '"' + v.replace('"', '""') + '"' if special.search(v) else v
     return "".join(delimiter.join(cell(v) for v in row) + "\r\n" for row in rows)
 
 
@@ -122,13 +123,37 @@ def safe_names(names: list[str]) -> list[str]:
     return out
 
 
+def overlapping(spans: Iterable[Span]) -> Callable[[int, int], bool]:
+    """A test whether a stretch [start, end) overlaps any of the spans, in log time (TASK-59: the vote checked every
+    model span against every rule span)."""
+    merged: list[list[int]] = []
+    for s in sorted(spans, key=lambda s: s.start):
+        if s.start >= s.end:
+            continue
+        if merged and s.start <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], s.end)
+        else:
+            merged.append([s.start, s.end])
+    starts = [m[0] for m in merged]
+
+    def test(start: int, end: int) -> bool:
+        i = bisect.bisect_left(starts, end) - 1      # the last merged stretch that starts before end
+        return i >= 0 and merged[i][1] > start
+    return test
+
+
 def within_cells(doc: Document, spans: Iterable[Span]) -> list[Span]:
     """Each span cut at the edges of the document's positions (a table's cells, a PDF's pages), so one placeholder
     never covers two cells (TASK-49); a part between two positions that holds only blanks is dropped."""
     edges = sorted({e for p in doc.positions for e in (p.start, p.end)})
     out = []
     for s in spans:
-        cuts = [s.start] + [e for e in edges if s.start < e < s.end] + [s.end]
+        i, j = bisect.bisect_right(edges, s.start), bisect.bisect_left(edges, s.end)      # TASK-59
+        if i >= j:                          # inside one position: kept whole, as before
+            if doc.text[s.start:s.end].strip():
+                out.append(s)
+            continue
+        cuts = [s.start] + edges[i:j] + [s.end]
         for a, b in zip(cuts, cuts[1:]):
             if doc.text[a:b].strip():
                 out.append(Span(a, b, s.type, s.source, s.score))
@@ -171,6 +196,7 @@ def _words(header: str) -> list[str]:
     return [w.lower() for w in _WORD.findall(header)]
 
 
+@functools.lru_cache(maxsize=4096)      # once per column, not per cell (TASK-59)
 def header_type(header: str) -> str | None:
     """The type of every cell under a header that names it (TASK-50): SECRET for password, client_secret, api-key, a
     TOTP seed..., USERNAME for username, login_username..., and the personal types for first_name, dob, ssn, iban,
@@ -266,6 +292,7 @@ def card_spans(doc: Document) -> list[Span]:
     return out
 
 
+@functools.lru_cache(maxsize=4096)
 def _time_header(header: str) -> bool:
     w = _words(header)
     return any(x in _TIME_WORDS for x in w) or any(a + b in _TIME_PAIRS for a, b in zip(w, w[1:]))
@@ -308,6 +335,7 @@ def _token(doc: Document, s: Span, starts: list[int]) -> tuple[str, str | None]:
 
 
 _ID_WORDS = {"id", "guid", "uuid"}
+_ID_PIECE = re.compile(r"[0-9A-Fa-f{}-]+")      # a span on a GUID or a timestamp holds only these (TASK-59)
 _GUID_LABELS = {"ACCOUNT", "NATIONAL_ID"}       # what the models call a record's GUID in a table (TASK-50)
 
 
@@ -316,10 +344,10 @@ def _id_header(header: str) -> bool:
     return bool(w) and w[-1] in _ID_WORDS
 
 
-def _guid_verdict(doc: Document, s: Span, starts: list[int]) -> str | None:
-    """For a model span on a GUID or a piece of one (TASK-57): 'drop' under an id header, or labelled an account or a
-    national id in a table cell; 'ask' anywhere else (a UUID-shaped API key or customer id); None off a GUID."""
-    token, header = _token(doc, s, starts)
+def _guid_verdict(s: Span, token: str, header: str | None) -> str | None:
+    """For a model span on a GUID or a piece of one (token: the whole value, _token; TASK-57): 'drop' under an id
+    header, or labelled an account or a national id in a table cell; 'ask' anywhere else (a UUID-shaped API key or
+    customer id); None off a GUID."""
     if not _GUID.fullmatch(token):
         return None
     if header is not None and (_id_header(header) or s.type in _GUID_LABELS):
@@ -336,8 +364,11 @@ def plausible(doc: Document, spans: Iterable[Span]) -> list[Span]:
     for s in spans:
         if s.type == "EMAIL" and "@" not in doc.text[s.start:s.end]:
             continue
+        if not _ID_PIECE.fullmatch(doc.text[s.start:s.end].strip()):
+            out.append(s)
+            continue
         token, header = _token(doc, s, starts)
-        if _guid_verdict(doc, s, starts) == "drop" or (header is not None and _time_header(header)
+        if _guid_verdict(s, token, header) == "drop" or (header is not None and _time_header(header)
                                                         and _EPOCH.fullmatch(token)):
             continue
         out.append(s)
@@ -348,7 +379,8 @@ def doubtful(doc: Document, spans: Iterable[Span]) -> list[Span]:
     """The model spans a person decides even when the models agree (TASK-57): a GUID outside an id column. Dropped,
     a UUID-shaped key would be written in the clear; redacted, every record id would go."""
     starts = [p.start for p in doc.positions]
-    return [s for s in spans if _guid_verdict(doc, s, starts) == "ask"]
+    return [s for s in spans if _ID_PIECE.fullmatch(doc.text[s.start:s.end].strip())
+            and _guid_verdict(s, *_token(doc, s, starts)) == "ask"]
 
 
 @dataclass(frozen=True)
@@ -365,9 +397,13 @@ class Masked:
         punctuation."""
         if not self.segments:
             return list(spans)
-        out = []
+        out, starts = [], [seg[0] for seg in self.segments]
         for s in spans:
-            for ms, me, os_, placeholder in self.segments:
+            i = max(bisect.bisect_right(starts, s.start) - 1, 0)      # segments are sorted and touch (TASK-59)
+            for k in range(i, len(self.segments)):
+                ms, me, os_, placeholder = self.segments[k]
+                if ms >= s.end:
+                    break
                 a, b = max(s.start, ms), min(s.end, me)
                 if a >= b or placeholder:
                     continue

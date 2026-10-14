@@ -10,7 +10,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from .pipeline import Decision, Document, Span
+from .pipeline import Decision, Document, Span, overlapping
 
 
 class StaleReview(ValueError):
@@ -28,10 +28,12 @@ def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Sp
     spans were most of the review questions). ask: spans whose group a person decides even when the models agree
     (pipeline.doubtful, TASK-57)."""
     rules = sorted(rule_spans, key=lambda s: s.start)
-    loose = sorted((s for spans in model_spans.values() for s in spans if not any(_overlaps(s, r) for r in rules)),
+    on_rule, doubted = overlapping(rules), overlapping(ask)
+    loose = sorted((s for spans in model_spans.values() for s in spans if not on_rule(s.start, s.end)),
                    key=lambda s: (s.start, -s.end))
     redact, review = list(rules), []
     group: list[Span] = []
+    group_end = 0
 
     def close(group: list[Span]) -> None:
         if not group:
@@ -43,17 +45,17 @@ def decide(doc: Document, rule_spans: list[Span], model_spans: dict[str, list[Sp
         sources = {s.source for s in group}
         span = Span(start, end, kind, "+".join(sorted(sources)), min(s.score for s in group))
         agreed = bool(common) if k is None else len(sources) >= min(k, len(model_spans))
-        doubted = any(a.start < end and start < a.end for a in ask)
-        if agreed and not doubted:
+        if agreed and not doubted(start, end):
             redact.append(span)
         elif not sources <= set(not_reviewed):
             review.append(span)
 
     for s in loose:
-        if group and s.start >= max(g.end for g in group):
+        if group and s.start >= group_end:
             close(group)
             group = []
         group.append(s)
+        group_end = max(group_end, s.end) if len(group) > 1 else s.end
     close(group)
     return Decision(tuple(sorted(redact, key=lambda s: s.start)), tuple(sorted(review, key=lambda s: s.start)))
 
