@@ -9,6 +9,7 @@ restrictive terms runs only when its id is passed to accept its terms (memory: p
 from __future__ import annotations
 
 import bisect
+import json
 import os
 import re
 import warnings
@@ -240,22 +241,73 @@ def _hub_cache(env: Mapping[str, str]) -> Path:
     return Path(home).expanduser() / "hub"
 
 
+_CONFIGS = ("config.json", "gliner_config.json")
+_WEIGHTS = ("*.safetensors", "*.bin", "*.onnx")
+_TOKENIZERS = ("tokenizer.json", "tokenizer_config.json", "spm.model", "vocab.txt")
+
+
+def _snapshot(cache: Path, model_id: str) -> Path | None:
+    """The snapshot the libraries load offline: the one refs/main names, or the only one."""
+    repo = cache / ("models--" + model_id.replace("/", "--"))
+    ref = repo / "refs" / "main"
+    if ref.is_file():
+        d = repo / "snapshots" / ref.read_text(encoding="utf-8").strip()
+        return d if d.is_dir() else None
+    snaps = list((repo / "snapshots").glob("*"))
+    return snaps[0] if len(snaps) == 1 else None
+
+
+def _has(d: Path, names) -> bool:
+    return any(p.exists() for n in names for p in d.glob(n))     # exists(): a link into blobs/ that is there
+
+
+def cached(model_id: str, cache: Path) -> bool:
+    """Is the model complete in the cache (TASK-58): its snapshot holds a config and weights; a GLiNER model also
+    needs its base encoder's config when it ships no tokenizer of its own, and a bi-encoder its labels encoder."""
+    snap = _snapshot(cache, model_id)
+    if snap is None or not _has(snap, _CONFIGS) or not _has(snap, _WEIGHTS):
+        return False
+    gliner = snap / "gliner_config.json"
+    if not gliner.exists():
+        return True
+    try:
+        cfg = json.loads(gliner.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    needs = [cfg.get("labels_encoder")] + ([] if _has(snap, _TOKENIZERS) else [cfg.get("model_name")])
+    for dep in filter(None, needs):
+        d = _snapshot(cache, dep)
+        if d is None or not (d / "config.json").exists():
+            return False
+    return True
+
+
 def library_env(model_ids: list[str], env: Mapping[str, str]) -> dict[str, str]:
-    """The variables to set before the model libraries load. With every model in the local cache the Hub is not
-    asked at all (HF_HUB_OFFLINE): text never leaves the machine anyway, and now no request does either."""
+    """The variables to set before the model libraries load. With every model complete in the local cache the Hub is
+    not asked at all (HF_HUB_OFFLINE): text never leaves the machine anyway, and now no request does either."""
     out = {k: v for k, v in _QUIET.items() if k not in env}
     cache = _hub_cache(env)
-    if "HF_HUB_OFFLINE" not in env and all(
-            any((cache / ("models--" + mid.replace("/", "--")) / "snapshots").glob("*")) for mid in model_ids):
+    if "HF_HUB_OFFLINE" not in env and all(cached(mid, cache) for mid in model_ids):
         out["HF_HUB_OFFLINE"] = "1"
     return out
 
 
 def load(model_ids: list[str], accepted: tuple[str, ...] = ()) -> list[Detector]:
     check_terms(model_ids, accepted)
-    os.environ.update(library_env(model_ids, os.environ))
+    env = library_env(model_ids, os.environ)
+    os.environ.update(env)
     with warnings.catch_warnings():
         # the libraries' own deprecations, nothing the person can act on (gliner passes resume_download)
         warnings.filterwarnings("ignore", message=".*resume_download.*")
         warnings.filterwarnings("ignore", message=".*torch.jit.script.*")
-        return [detector_from(BACKENDS[MODELS[mid].backend](mid), mid) for mid in model_ids]
+        out = []
+        for mid in model_ids:
+            try:
+                out.append(detector_from(BACKENDS[MODELS[mid].backend](mid), mid))
+            except Exception as exc:
+                if "HF_HUB_OFFLINE" not in env:
+                    raise
+                raise RuntimeError(f"{mid} did not load with the Hugging Face Hub offline, which redact turned on "
+                                   f"because the cache looked complete ({exc.__class__.__name__}); run once with "
+                                   "HF_HUB_OFFLINE=0 to finish the download") from exc
+        return out

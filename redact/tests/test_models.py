@@ -91,12 +91,12 @@ class QuietOfflineTests(unittest.TestCase):
     """A run with the models cached contacts no server (HF_HUB_OFFLINE: the tool keeps text private, and asked the
     Hub on every run, user report 2026-10-14), and the libraries' progress bars and advisories stay quiet."""
 
-    def cache(self, *model_ids):
+    def cache(self, *model_ids, files=("config.json", "model.safetensors")):
         import tempfile
         from pathlib import Path
         root = Path(tempfile.mkdtemp())
         for mid in model_ids:
-            (root / "hub" / ("models--" + mid.replace("/", "--")) / "snapshots" / "abc").mkdir(parents=True)
+            snap(root, mid, files)
         return {"HF_HOME": str(root)}
 
     def test_offline_only_when_every_model_is_cached(self):
@@ -113,6 +113,79 @@ class QuietOfflineTests(unittest.TestCase):
         self.assertNotIn("TRANSFORMERS_VERBOSITY", mine)
         online = models.library_env(["a/one"], {**self.cache("a/one"), "HF_HUB_OFFLINE": "0"})
         self.assertNotIn("HF_HUB_OFFLINE", online)
+
+
+def snap(root, mid, files, config=None, ref="abc"):
+    """A model in a fake Hugging Face cache: snapshots/<ref>/<files>, refs/main naming it."""
+    import json
+    repo = root / "hub" / ("models--" + mid.replace("/", "--"))
+    d = repo / "snapshots" / ref
+    d.mkdir(parents=True, exist_ok=True)
+    for f in files:
+        (d / f).write_text(json.dumps(config) if config is not None and f == "gliner_config.json" else "x")
+    (repo / "refs").mkdir(exist_ok=True)
+    (repo / "refs" / "main").write_text(ref)
+    return d
+
+
+class CompleteSnapshotTests(unittest.TestCase):
+    """Offline only when each model's snapshot is complete (code review 2026-10-14, TASK-58): an interrupted first
+    download, or a GLiNER model without its base encoder, failed on every later run with 'not in local cache'."""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        self.root = Path(tempfile.mkdtemp())
+        self.env = {"HF_HOME": str(self.root)}
+
+    def offline(self, *mids):
+        return models.library_env(list(mids), self.env).get("HF_HUB_OFFLINE") == "1"
+
+    def test_a_snapshot_without_weights_or_config_is_not_complete(self):
+        snap(self.root, "a/cfg-only", ["config.json"])
+        snap(self.root, "a/weights-only", ["model.safetensors"])
+        snap(self.root, "a/full", ["config.json", "model.safetensors"])
+        snap(self.root, "a/bin", ["config.json", "pytorch_model.bin"])
+        self.assertFalse(self.offline("a/cfg-only"))
+        self.assertFalse(self.offline("a/weights-only"))
+        self.assertTrue(self.offline("a/full", "a/bin"))
+
+    def test_the_snapshot_refs_main_names_counts(self):
+        snap(self.root, "a/m", ["config.json", "model.safetensors"], ref="old")
+        snap(self.root, "a/m", ["config.json"], ref="new")       # an interrupted update
+        self.assertFalse(self.offline("a/m"))
+
+    def test_a_gliner_model_without_its_own_tokenizer_needs_its_base_encoder(self):
+        cfg = {"model_name": "base/encoder"}
+        snap(self.root, "g/m", ["gliner_config.json", "pytorch_model.bin"], config=cfg)
+        self.assertFalse(self.offline("g/m"))
+        snap(self.root, "base/encoder", ["config.json", "tokenizer_config.json"])
+        self.assertTrue(self.offline("g/m"))
+
+    def test_a_gliner_model_with_its_own_tokenizer_does_not(self):
+        snap(self.root, "g/t", ["gliner_config.json", "pytorch_model.bin", "tokenizer.json"],
+             config={"model_name": "base/absent"})
+        self.assertTrue(self.offline("g/t"))
+
+    def test_a_bi_encoder_needs_its_labels_encoder(self):
+        cfg = {"model_name": "base/absent", "labels_encoder": "labels/enc"}
+        snap(self.root, "g/bi", ["gliner_config.json", "pytorch_model.bin", "tokenizer.json"], config=cfg)
+        self.assertFalse(self.offline("g/bi"))
+        snap(self.root, "labels/enc", ["config.json"])
+        self.assertTrue(self.offline("g/bi"))
+
+    def test_a_load_that_fails_offline_says_the_tool_turned_it_on(self):
+        from unittest import mock
+        snap(self.root, "a/full", ["config.json", "model.safetensors"])
+
+        def broken(mid):
+            raise OSError("We couldn't connect to 'https://huggingface.co' ... not in the local cache")
+        with mock.patch.dict(models.os.environ, self.env, clear=True), \
+                mock.patch.dict(models.MODELS, {"a/full": models.MODELS["urchade/gliner_multi_pii-v1"]}), \
+                mock.patch.dict(models.BACKENDS, {models.MODELS["urchade/gliner_multi_pii-v1"].backend: broken}):
+            with self.assertRaisesRegex(RuntimeError, "HF_HUB_OFFLINE=0") as ctx:
+                models.load(["a/full"], accepted=("a/full",))
+        self.assertIn("offline", str(ctx.exception))
 
 
 class MergePiecesTests(unittest.TestCase):
