@@ -72,29 +72,69 @@ class HeaderWordTests(unittest.TestCase):
             self.assertTrue(pipeline._time_header(h), h)
 
 
-# Header rows of the CSV exports of five password managers (their documented formats), with one synthetic entry each.
+class PersonalHeaderTests(unittest.TestCase):
+    """A header that names a personal type makes its column a deterministic hit (TASK-51, user 2026-10-14: last_name
+    should redact): the vote no longer decides a column the file already labels."""
+
+    def test_personal_headers(self):
+        cases = {"NAME": ("first_name", "lastName", "Last Name", "full_name", "surname", "given_name", "family_name",
+                          "Vorname", "Nachname", "customer_name", "patient_name"),
+                 "DOB": ("dob", "DOB", "date_of_birth", "birthdate", "birth_date", "Birthday", "Geburtsdatum"),
+                 "NATIONAL_ID": ("ssn", "SSN", "social_security_number", "national_id", "ahv", "AHV-Nr"),
+                 "PASSPORT": ("passport", "passport_number"),
+                 "TAX_ID": ("tax_id", "TIN", "Steuernummer"),
+                 "ACCOUNT": ("iban", "IBAN", "account_number", "accountNo", "bank_account", "Kontonummer"),
+                 "PHONE": ("phone", "Phone Number", "mobile", "telephone", "tel", "fax", "home_phone", "Telefon"),
+                 "ADDRESS": ("address", "street", "street_address", "address_line_1", "Address2", "billing_address",
+                             "Strasse", "Adresse")}
+        for typ, headers in cases.items():
+            for h in headers:
+                self.assertEqual(pipeline.header_type(h), typ, h)
+
+    def test_a_2fa_seed_is_a_secret_and_notes_go_to_the_models(self):
+        for h in ("totp", "TOTP", "login_totp", "OTPAuth", "otp", "mfa_secret"):
+            self.assertEqual(pipeline.header_type(h), "SECRET", h)
+        for h in ("notes", "Notes", "note", "extra", "Comments"):
+            self.assertIsNone(pipeline.header_type(h), h)
+
+    def test_no_hit_on_headers_that_only_look_personal(self):
+        for h in ("name", "Name", "product_name", "city", "city_name", "company_name", "file_name", "Title", "account",
+                  "Account", "email_address", "ip_address", "mac_address", "web_address", "phone_type", "is_mobile",
+                  "birth_place", "zip", "country", "status", "grouping", "fav", "tags", "address_type"):
+            self.assertIsNone(pipeline.header_type(h), h)
+
+
+# Header rows of the CSV exports of six password managers (their documented formats), with one synthetic entry each:
+# username testuser, password testpass-<k>, and a 2FA seed testseed-<k> where the format has a column for it.
 EXPORTS = {
     "bitwarden": ("folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp",
-                  ",,login,Example,,,0,https://example.com,testuser,testpass-bw,"),
-    "chrome": ("name,url,username,password,note", "example.com,https://example.com,testuser,testpass-ch,"),
+                  ",,login,Example,a note,,0,https://example.com,testuser,testpass-bw,testseed-bw"),
+    "chrome": ("name,url,username,password,note", "example.com,https://example.com,testuser,testpass-ch,a note"),
     "1password": ("Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes",
-                  "Example,https://example.com,testuser,testpass-op,,false,false,,"),
+                  "Example,https://example.com,testuser,testpass-op,testseed-op,false,false,,a note"),
     "lastpass": ("url,username,password,totp,extra,name,grouping,fav",
-                 "https://example.com,testuser,testpass-lp,,,Example,,0"),
-    "keepass": ("Account,Login Name,Password,Web Site,Comments", "Example,testuser,testpass-kp,https://example.com,"),
+                 "https://example.com,testuser,testpass-lp,testseed-lp,a note,Example,,0"),
+    "keepass": ("Account,Login Name,Password,Web Site,Comments",
+                "Example,testuser,testpass-kp,https://example.com,a note"),
+    "keepassxc": ("Group,Title,Username,Password,URL,Notes,TOTP,Icon,Last Modified,Created",
+                  "Root,Example,testuser,testpass-kx,https://example.com,a note,testseed-kx,0,"
+                  "2026-01-01T00:00:00Z,2026-01-01T00:00:00Z"),
 }
 
 
 class PasswordManagerExportTests(unittest.TestCase):
-    def test_every_username_and_password_is_found(self):
+    def test_every_username_password_and_2fa_seed_is_found_and_nothing_else(self):
         for name, (header, row) in EXPORTS.items():
             with self.subTest(export=name):
                 path = Path(tempfile.mkdtemp()) / f"{name}.csv"
                 path.write_text(header + "\n" + row + "\n", encoding="utf-8")
                 doc = extract.extract(path)
                 got = sorted((doc.text[s.start:s.end], s.type) for s in pipeline.column_spans(doc))
-                password = "testpass-" + row.split("testpass-")[1][:2]
-                self.assertEqual(got, [(password, "SECRET"), ("testuser", "USERNAME")])
+                k = row.split("testpass-")[1][:2]
+                want = [(f"testpass-{k}", "SECRET"), ("testuser", "USERNAME")]
+                if "testseed-" in row:
+                    want.insert(1, (f"testseed-{k}", "SECRET"))
+                self.assertEqual(got, want)
 
 
 class ColumnSpanTests(unittest.TestCase):

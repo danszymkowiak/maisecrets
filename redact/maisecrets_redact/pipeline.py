@@ -138,12 +138,27 @@ def within_cells(doc: Document, spans: Iterable[Span]) -> list[Span]:
 _CELL = re.compile(r"(?:^|, )row (\d+), column (.*)$")
 # Headers match by their words (camelCase, _ - . and spaces split them; TASK-56): the last word names what a cell holds,
 # or the last two together (api_key, access_token, user_id). `token` alone is an NLP column, `is_secret` a flag.
-_SECRET_WORDS = {"password", "passwd", "pwd", "passphrase", "secret"}
+_SECRET_WORDS = {"password", "passwd", "pwd", "passphrase", "secret", "totp", "hotp", "otp"}   # a 2FA seed too
 _SECRET_PAIRS = {"apikey", "privatekey", "secretkey", "accesskey", "accesstoken", "apitoken", "authtoken",
-                 "refreshtoken", "bearertoken", "sessiontoken", "idtoken"}
+                 "refreshtoken", "bearertoken", "sessiontoken", "idtoken", "otpauth"}
 _USERNAME_WORDS = {"username", "user", "login", "loginname", "userid"}
 _NOT_USERNAME_PAIRS = {"lastlogin", "firstlogin"}       # a time
 _FLAG_WORDS = {"is", "has"}
+# Personal types (TASK-51). `name`, `account`, `title` and `city` alone stay plain: a password manager names its entries
+# so, and a product or a town is not a person.
+_NAME_WORDS = {"surname", "forename", "vorname", "nachname", "firstname", "lastname", "fullname", "givenname",
+               "familyname"}
+_NAME_OWNERS = {"first", "last", "full", "given", "family", "middle", "maiden", "customer", "contact", "employee",
+                "person", "patient"}
+_DOB_WORDS = {"dob", "birthdate", "birthday", "geburtsdatum", "geburtstag"}
+_NUMBER_WORDS = {"number", "num", "no", "nr"}           # stripped from the end: passport_number is passport
+_IDS = {"NATIONAL_ID": {"ssn", "ahv", "socialsecurity", "nationalid", "nin", "personnummer"},
+        "PASSPORT": {"passport"}, "TAX_ID": {"taxid", "tin", "steuernummer", "steuerid"},
+        "ACCOUNT": {"iban", "bankaccount", "kontonummer"}}
+_NUMBERED_ACCOUNT = {"account", "acct", "konto"}         # only with a number word: Account alone is an entry title
+_PHONE_WORDS = {"phone", "telephone", "mobile", "tel", "fax", "telefon", "handy"}
+_ADDRESS_WORDS = {"address", "addr", "street", "strasse", "adresse"}
+_NOT_POSTAL = {"email", "mail", "ip", "mac", "web", "url", "wallet", "server", "host", "ipv4", "ipv6", "bitcoin"}
 _TIME_WORDS = {"time", "date", "datetime", "timestamp", "ts", "epoch", "mtime", "ctime", "created", "modified",
                "updated", "changed", "at"}
 _TIME_PAIRS = {"lastused", "lastseen"}
@@ -157,8 +172,9 @@ def _words(header: str) -> list[str]:
 
 
 def header_type(header: str) -> str | None:
-    """The type of every cell under a header that names it (TASK-50): SECRET for password, client_secret, api-key...,
-    USERNAME for username, login_username...; None for any other header, a flag such as isSecret among them."""
+    """The type of every cell under a header that names it (TASK-50): SECRET for password, client_secret, api-key, a
+    TOTP seed..., USERNAME for username, login_username..., and the personal types for first_name, dob, ssn, iban,
+    phone, address... (TASK-51); None for any other header, a flag such as isSecret among them."""
     w = _words(header)
     if not w or w[0] in _FLAG_WORDS:
         return None
@@ -167,6 +183,28 @@ def header_type(header: str) -> str | None:
         return "SECRET"
     if (w[-1] in _USERNAME_WORDS or pair in _USERNAME_WORDS) and pair not in _NOT_USERNAME_PAIRS:
         return "USERNAME"
+    return _personal_type(w)
+
+
+def _personal_type(w: list[str]) -> str | None:
+    whole = "".join(w)
+    if whole in _NAME_WORDS or (len(w) > 1 and w[-1] == "name" and w[-2] in _NAME_OWNERS):
+        return "NAME"
+    if whole in _DOB_WORDS or ("birth" in w and ("date" in w or "day" in w)):
+        return "DOB"
+    core = list(w)
+    while len(core) > 1 and (core[-1] in _NUMBER_WORDS or core[-1].isdigit() or core[-1] == "line"):
+        core.pop()
+    joined = "".join(core)
+    for typ, names in _IDS.items():
+        if joined in names:
+            return typ
+    if joined in _NUMBERED_ACCOUNT and len(core) < len(w):
+        return "ACCOUNT"
+    if core[-1] in _PHONE_WORDS:
+        return "PHONE"
+    if core[-1] in _ADDRESS_WORDS and not _NOT_POSTAL & set(w):
+        return "ADDRESS"
     return None
 
 

@@ -32,7 +32,12 @@ Pure functions (`redact/maisecrets_redact/pipeline.py`); the CLI only reads and 
    cell under `password`, `client_secret`, `api_key` and the like is a SECRET, under `username` or
    `login` a USERNAME, so a browser or password-manager export comes out without its passwords.
    Headers match by their words, so `login_username` is a USERNAME, while `token` (an NLP column)
-   and a flag such as `isSecret` stay plain (TASK-56). A model span
+   and a flag such as `isSecret` stay plain (TASK-56). A TOTP or `otpauth` column is a SECRET (a
+   2FA seed), and a header that names a personal type makes a column hit too (TASK-51): NAME
+   (`first_name`, `surname`, `customer_name`), DOB, NATIONAL_ID (`ssn`, `ahv`), PASSPORT, TAX_ID,
+   ACCOUNT (`iban`, `account_number`), PHONE and ADDRESS (`street`, `address_line_1`, not
+   `email_address` or `ip_address`). `name`, `account`, `title` and `city` alone stay plain: a
+   password manager names its entries so. A notes column goes to the models. A model span
    on a GUID, or on a 10- or 13-digit timestamp under a time header, is dropped (TASK-50).
 3. **Decide** (TASK-34.5, TASK-34.8): a deterministic hit is redacted; a model span is redacted
    when two of the four default models find it, and goes to a person's review otherwise, except a
