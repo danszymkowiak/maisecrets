@@ -8,7 +8,6 @@ restrictive terms runs only when its id is passed to accept its terms (memory: p
 """
 from __future__ import annotations
 
-import bisect
 import json
 import os
 import re
@@ -53,21 +52,22 @@ WORD_RE = re.compile(r"\w+(?:[-_]\w+)*|\S")
 
 def windows(text: str, chunk: int, overlap: int, max_words: int | None = None) -> Iterator[tuple[int, int]]:
     """(start, end) of each chunk: `chunk` characters overlapping by `overlap`, and with `max_words` no more words
-    than that, so a model that drops words past its limit sees every word in some chunk. A chunk cut by the word cap
-    ends at a word start and the next one starts a sixth of the cap earlier."""
-    starts = [m.start() for m in WORD_RE.finditer(text)] if max_words else []
+    than that as GLiNER counts them in the chunk itself (a word the chunk starts or ends inside may count as two), so
+    a model that drops words past its limit sees every word in some chunk. A chunk cut by the word cap ends where its
+    last word ends, and the next one starts a sixth of the cap earlier, in words: a span of up to max_words // 6
+    words lies whole in one of the two (TASK-60)."""
     at = 0
     while True:
         end = min(len(text), at + chunk)
-        k = bisect.bisect_left(starts, at)
-        cut = bool(max_words) and len(starts) - k > max_words and starts[k + max_words] < end
+        tokens = list(WORD_RE.finditer(text, at, end)) if max_words else []
+        cut = len(tokens) > (max_words or 0)
         if cut:
-            end = starts[k + max_words]
+            end = tokens[max_words - 1].end()
         yield at, end
         if end >= len(text):
             return
         if cut:
-            nxt = starts[max(k + 1, k + max_words - max(1, max_words // 6))]
+            nxt = tokens[max(1, max_words - max(1, max_words // 6))].start()
         else:
             nxt = at + max(1, chunk - overlap)
         at = max(at + 1, nxt)
@@ -75,23 +75,26 @@ def windows(text: str, chunk: int, overlap: int, max_words: int | None = None) -
 
 def detector_from(backend: Backend, name: str, chunk: int = 2000, overlap: int = 200) -> Detector:
     """A detector over chunks of `chunk` characters that overlap by `overlap` (and of at most the backend's
-    `max_words` words, see windows). A span touching the cut edge of a chunk is left to the neighbour that holds it
-    whole; the same span from two chunks is kept once."""
+    `max_words` words, see windows). A span touching a chunk's cut end is left to the next chunk; a span at a later
+    chunk's start is kept only when the earlier chunk could not hold it inside (it reaches the earlier chunk's end or
+    past it): otherwise it is the earlier chunk's to find, and here may be the tail of a longer one (TASK-60). The
+    same span from two chunks is kept once."""
     max_words = getattr(backend, "max_words", None)
 
     def find(doc: Document) -> list[Span]:
-        text, seen, out = doc.text, set(), []
+        text, seen, out, prev_end = doc.text, set(), [], 0
         for at, end in windows(text, chunk, overlap, max_words):
             part = text[at:end]
             last = end >= len(text)
             for a, b, label, score in backend.spans(part):
-                if (b >= len(part) and not last) or (a == 0 and at > 0):
+                if (b >= len(part) and not last) or (a == 0 and at > 0 and at + b < prev_end):
                     continue
                 kind = LABELS.get(label.strip().lower())
                 key = (at + a, at + b, kind)
                 if kind and key not in seen:
                     seen.add(key)
                     out.append(Span(at + a, at + b, kind, name, float(score)))
+            prev_end = end
         return sorted(out, key=lambda s: (s.start, -s.end))
     return find
 

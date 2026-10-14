@@ -82,6 +82,42 @@ class WordCapTests(unittest.TestCase):
         det = models.detector_from(Capped({"Max Mustermann": "person"}), "fake")
         self.assertEqual(len(det(Document("t.txt", text))), 1)
 
+    def test_a_span_on_every_boundary_position_is_found_once_and_whole(self):
+        # code review 2026-10-14, TASK-60: a span starting at a later window's start and reaching past the earlier
+        # window's end was dropped by both. A real model labels the part of a name it sees at an edge: this one does
+        entity = "Erika Anna Muster"
+
+        class Truncating(FakeBackend):
+            max_words = 18           # an overlap of 18 // 6 = 3 words: a span of up to 3 words is always seen whole
+
+            def spans(self, text):
+                out = super().spans(text)
+                if out:
+                    return out
+                ws = entity.split()
+                for n in range(1, len(ws)):
+                    pre, suf = " ".join(ws[:n]), " ".join(ws[n:])
+                    if text.rstrip().endswith(pre):
+                        i = len(text.rstrip()) - len(pre)
+                        out.append((i, i + len(pre), "person", 0.9))
+                    if text.lstrip().startswith(suf):
+                        i = len(text) - len(text.lstrip())
+                        out.append((i, i + len(suf), "person", 0.9))
+                return out
+        for pos in range(60):
+            text = " ".join(["w"] * pos + entity.split() + ["v"] * (60 - pos))
+            det = models.detector_from(Truncating({entity: "person"}), "fake", chunk=100_000)
+            got = [text[s.start:s.end] for s in det(Document("t.txt", text))]
+            self.assertEqual(got, [entity], pos)
+
+    def test_no_window_holds_more_words_than_the_cap_even_from_inside_a_word(self):
+        import random
+        rng = random.Random(7)
+        text = " ".join("".join(rng.choice("abc-_,.") for _ in range(rng.randint(1, 9))) for _ in range(3000))
+        for chunk in (37, 120, 500):
+            for at, end in models.windows(text, chunk, chunk // 3, max_words=20):
+                self.assertLessEqual(len(models.WORD_RE.findall(text[at:end])), 20, (chunk, at, end))
+
     def test_the_gliner_backends_declare_their_cap(self):
         self.assertLess(models.GlinerBackend.max_words, 384)
         self.assertLess(models.Gliner2Backend.max_words, 384)
