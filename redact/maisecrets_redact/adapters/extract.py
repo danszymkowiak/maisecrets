@@ -80,8 +80,11 @@ def _column_letter(i: int) -> str:
 
 def _pdf(path: Path) -> Document:
     from pypdf import PdfReader
+    reader = PdfReader(str(path))
+    if reader.is_encrypted and not reader.decrypt(""):   # an empty user password opens most protected statements
+        raise NoText(f"{path.name}: the PDF needs a password to open (remove it first, e.g. with qpdf --decrypt)")
     b = _Builder()
-    for n, page in enumerate(PdfReader(str(path)).pages, 1):
+    for n, page in enumerate(reader.pages, 1):
         text = (page.extract_text() or "").strip()
         if text:
             b.add(text, f"page {n}")

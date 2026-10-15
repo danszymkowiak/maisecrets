@@ -67,4 +67,4 @@ class Unsupported(ValueError):
 
 
 class NoText(ValueError):
-    """A document with no extractable text (a scanned PDF: OCR is out of scope)."""
+    """A document with no extractable text (a scanned PDF: OCR is out of scope; a PDF locked by a password)."""

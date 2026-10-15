@@ -5,7 +5,8 @@ description = "Redact documents before they reach a language model: the maisecre
 requires-python = ">=3.12"
 dependencies = [
     "openpyxl>=3.1",
-    "pypdf>=5",
+    # [crypto]: cryptography, for AES-encrypted PDFs (tax and bank statements often are, with an empty user password)
+    "pypdf[crypto]>=5",
 ]
 
 [project.optional-dependencies]

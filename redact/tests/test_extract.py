@@ -75,6 +75,25 @@ class ExtractTests(unittest.TestCase):
         with self.assertRaisesRegex(extract.NoText, "no text"):
             extract.extract(p)
 
+    def encrypted(self, name: str, user_password: str) -> Path:
+        import io
+
+        from pypdf import PdfWriter
+        writer = PdfWriter(clone_from=io.BytesIO(minimal_pdf([["Steuererklaerung 2025", "Mail max@firma.example"]])))
+        writer.encrypt(user_password=user_password, owner_password="owner-testpass", algorithm="AES-256")
+        out = io.BytesIO()
+        writer.write(out)
+        return self.write(name, out.getvalue())
+
+    def test_an_aes_pdf_that_opens_without_a_password_gives_its_text(self):
+        # tax and bank statements often come AES-encrypted with an empty user password (print/copy restrictions)
+        doc = extract.extract(self.encrypted("tax.pdf", ""))
+        self.assertIn("max@firma.example", doc.text)
+
+    def test_a_pdf_that_needs_a_password_says_so(self):
+        with self.assertRaisesRegex(extract.NoText, "password"):
+            extract.extract(self.encrypted("locked.pdf", "user-testpass"))
+
     def test_a_csv_gives_each_cell_with_its_row_and_column(self):
         p = self.write("people.csv", "name;email;note\nMax Muster;max@firma.example;ok\nEva;eva@firma.example;-\n")
         doc = extract.extract(p)
